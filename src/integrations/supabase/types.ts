@@ -338,6 +338,7 @@ export type Database = {
           phone: string | null
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
           account_status?: Database["public"]["Enums"]["account_status"]
@@ -349,6 +350,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
           account_status?: Database["public"]["Enums"]["account_status"]
@@ -360,6 +362,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -734,6 +737,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      resolve_login_identifier: {
+        Args: { _identifier: string }
+        Returns: string
       }
     }
     Enums: {

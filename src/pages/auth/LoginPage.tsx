@@ -1,5 +1,5 @@
 /**
- * Login Page - Liquid-glass auth
+ * Login Page — Sign in with username, phone, or email
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, LogIn } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error: err } = await signIn(email, password);
+    const { error: err } = await signIn(identifier.trim(), password);
     if (err) {
       setError(err.message);
       setLoading(false);
@@ -41,7 +41,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm animate-fade-in-up">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <LogIn className="h-5 w-5 text-primary" />
@@ -50,7 +49,6 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground mt-1">Sign in to your Kaiferdata account</p>
         </div>
 
-        {/* Form */}
         <div className="glass-strong rounded-2xl p-5 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -59,15 +57,15 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs text-foreground/80">Email</Label>
+              <Label htmlFor="identifier" className="text-xs text-foreground/80">Username, phone, or email</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                id="identifier"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 required
                 className="h-11 rounded-xl bg-accent/30 border-border/40"
-                placeholder="you@email.com"
+                placeholder="kwame_asante or 0241234567"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -80,6 +78,7 @@ export default function LoginPage() {
                 required
                 className="h-11 rounded-xl bg-accent/30 border-border/40"
                 placeholder="••••••••"
+                autoComplete="current-password"
               />
             </div>
             <Button type="submit" className="w-full h-11 text-sm" disabled={loading}>
