@@ -1,5 +1,5 @@
 /**
- * NoticeBanner - Premium glass-styled notice display
+ * NoticeBanner - Glass-styled notice display
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +16,10 @@ const iconMap = {
 };
 
 const styleMap = {
-  service_notice: "bg-info/8 border-info/20 text-info",
-  maintenance_notice: "bg-warning/8 border-warning/20 text-warning",
-  info_notice: "bg-primary/8 border-primary/20 text-primary",
-  warning_notice: "bg-destructive/8 border-destructive/20 text-destructive",
+  service_notice: "border-info/20 text-info",
+  maintenance_notice: "border-warning/20 text-warning",
+  info_notice: "border-primary/20 text-primary",
+  warning_notice: "border-destructive/20 text-destructive",
 };
 
 interface NoticeBannerProps {
@@ -59,18 +59,16 @@ export function NoticeBanner({ audience }: NoticeBannerProps) {
         return (
           <div
             key={notice.id}
-            className={`flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border ${style} animate-fade-in`}
+            className={`flex items-start gap-2.5 px-4 py-3 rounded-xl glass-subtle border ${style} animate-fade-in`}
           >
-            <div className="h-5 w-5 rounded-md bg-current/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Icon className="h-3 w-3" />
-            </div>
+            <Icon className="h-4 w-4 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold">{notice.title}</p>
-              {notice.body && <p className="text-[11px] opacity-75 mt-0.5 leading-relaxed">{notice.body}</p>}
+              <p className="text-[13px] font-medium">{notice.title}</p>
+              {notice.body && <p className="text-[11px] opacity-70 mt-0.5 leading-relaxed">{notice.body}</p>}
             </div>
             <button
               onClick={() => setDismissed(prev => new Set(prev).add(notice.id))}
-              className="shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5"
+              className="shrink-0 opacity-40 hover:opacity-80 transition-opacity p-0.5"
             >
               <X className="h-3.5 w-3.5" />
             </button>

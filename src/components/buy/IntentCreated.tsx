@@ -1,5 +1,5 @@
 /**
- * IntentCreated - Premium success state after purchase intent creation
+ * IntentCreated - Success state with glass surfaces
  */
 import type { PurchaseIntent } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
@@ -23,43 +23,43 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5 animate-fade-in-up">
       {/* Success header */}
-      <div className="text-center py-4">
-        <div className="h-12 w-12 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3 animate-scale-in">
+      <div className="text-center py-5">
+        <div className="h-12 w-12 rounded-2xl bg-success/15 flex items-center justify-center mx-auto mb-3 animate-scale-in">
           <CheckCircle2 className="h-6 w-6 text-success" />
         </div>
-        <h3 className="text-lg font-extrabold text-foreground">Order Initialized</h3>
+        <h3 className="text-lg font-medium text-foreground">Order Initialized</h3>
         <p className="text-xs text-muted-foreground mt-1">
           Save your reference to track this order
         </p>
       </div>
 
       {/* Reference card */}
-      <div className="glass rounded-xl p-4 flex items-center justify-between gap-3">
+      <div className="glass-strong rounded-xl p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
             Reference
           </p>
-          <p className="font-mono text-sm font-bold text-foreground mt-0.5 truncate">
+          <p className="font-mono text-sm text-foreground mt-0.5 truncate">
             {intent.intent_reference}
           </p>
         </div>
         <button
           onClick={copyRef}
-          className="shrink-0 h-9 w-9 rounded-lg bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors active:scale-95"
+          className="shrink-0 h-9 w-9 rounded-lg bg-accent/50 hover:bg-accent flex items-center justify-center transition-colors active:scale-95"
         >
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
       {copied && (
-        <p className="text-[11px] text-success font-semibold text-center -mt-3 animate-fade-in">
+        <p className="text-[11px] text-success text-center -mt-3 animate-fade-in">
           Copied!
         </p>
       )}
 
       {/* Details */}
-      <div className="rounded-xl border border-border/60 bg-card divide-y divide-border/40">
+      <div className="rounded-xl glass-subtle divide-y divide-border/20">
         <Row label="Network" value={intent.network} />
         <Row
           label="Plan"
@@ -68,13 +68,13 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         <Row label="Phone" value={intent.phone_number} mono />
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-xs text-muted-foreground">Amount</span>
-          <span className="text-base font-extrabold text-primary">
+          <span className="text-base font-medium text-primary">
             GH₵{Number(intent.amount_expected).toLocaleString()}
           </span>
         </div>
         <div className="flex items-center justify-between px-4 py-2.5">
           <span className="text-xs text-muted-foreground">Status</span>
-          <span className="text-[11px] font-bold text-primary capitalize px-2 py-0.5 rounded-full bg-primary/10">
+          <span className="text-[11px] text-primary capitalize px-2.5 py-0.5 rounded-full bg-primary/10">
             {intent.status.replace("_", " ")}
           </span>
         </div>
@@ -85,12 +85,12 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         <Button
           variant="outline"
           onClick={onNewOrder}
-          className="flex-1 h-11 rounded-xl font-semibold"
+          className="flex-1 h-11"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           New Order
         </Button>
-        <Button asChild className="flex-[2] h-11 rounded-xl font-bold shadow-sm">
+        <Button asChild className="flex-[2] h-11">
           <Link to={`/track?ref=${intent.intent_reference}`}>
             Track Order
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -117,9 +117,7 @@ function Row({
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span
-        className={`text-sm font-semibold text-foreground ${mono ? "font-mono tracking-wide" : ""}`}
-      >
+      <span className={`text-sm text-foreground ${mono ? "font-mono" : ""}`}>
         {value}
       </span>
     </div>
