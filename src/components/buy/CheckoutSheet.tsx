@@ -1,5 +1,6 @@
 /**
  * CheckoutSheet — Premium liquid-glass checkout entry surface
+ * Now with multi-step payment flow states
  */
 import { useState, useEffect, useRef } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -18,8 +19,9 @@ import {
   User,
   Mail,
   ChevronLeft,
-  CheckCircle2,
   Sparkles,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +31,8 @@ const NET_DOT: Record<string, string> = {
   Telecel: "0 68% 48%",
   AirtelTigo: "212 78% 48%",
 };
+
+export type CheckoutStep = "details" | "review" | "processing" | "error";
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -43,6 +47,12 @@ interface CheckoutSheetProps {
   onCustomerEmailChange: (v: string) => void;
   onConfirm: () => void;
   loading: boolean;
+  /** Current processing sub-step label */
+  processingLabel?: string;
+  /** Error message from payment flow */
+  paymentError?: string | null;
+  /** Clear error and go back to review */
+  onClearError?: () => void;
 }
 
 export function CheckoutSheet({
@@ -58,9 +68,12 @@ export function CheckoutSheet({
   onCustomerEmailChange,
   onConfirm,
   loading,
+  processingLabel,
+  paymentError,
+  onClearError,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
-  const [step, setStep] = useState<"details" | "review">("details");
+  const [step, setStep] = useState<CheckoutStep>("details");
   const phoneRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus phone input when sheet opens
@@ -70,6 +83,23 @@ export function CheckoutSheet({
       return () => clearTimeout(t);
     }
   }, [open, step]);
+
+  // Sync processing/error states from parent
+  useEffect(() => {
+    if (loading) setStep("processing");
+    else if (paymentError) setStep("error");
+  }, [loading, paymentError]);
+
+  // Reset step when sheet closes
+  useEffect(() => {
+    if (!open) {
+      const t = setTimeout(() => {
+        setStep("details");
+        setPhoneError("");
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
 
   if (!network || !plan) return null;
 
@@ -82,7 +112,6 @@ export function CheckoutSheet({
     if (phoneError && cleaned.length >= 10) setPhoneError("");
   };
 
-  // Format phone for display: 0XX XXX XXXX
   const formatPhone = (p: string) => {
     if (p.length <= 3) return p;
     if (p.length <= 6) return `${p.slice(0, 3)} ${p.slice(3)}`;
@@ -102,11 +131,17 @@ export function CheckoutSheet({
   };
 
   const handleOpenChange = (v: boolean) => {
+    if (!v && step === "processing") return; // Don't dismiss during processing
     if (!v) setStep("details");
     onOpenChange(v);
   };
 
   const handleBack = () => setStep("details");
+
+  const handleRetry = () => {
+    onClearError?.();
+    setStep("review");
+  };
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
@@ -122,7 +157,7 @@ export function CheckoutSheet({
           <div className="h-[5px] w-10 rounded-full bg-[hsl(228_18%_78%/0.35)]" />
         </div>
 
-        {/* ── Top edge accent — network tinted ── */}
+        {/* ── Top edge accent ── */}
         <div
           className="h-[1px] mx-6"
           style={{
@@ -132,74 +167,74 @@ export function CheckoutSheet({
 
         <div className="overflow-y-auto px-5 pb-8 pt-3">
           {/* ── Header ── */}
-          <div className="text-center mb-5">
-            {step === "review" && (
-              <button
-                onClick={handleBack}
-                className="absolute left-5 top-14 flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors font-medium"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Edit
-              </button>
-            )}
-            <h2 className="text-[17px] font-bold text-foreground/90 tracking-tight">
-              {step === "details" ? "Complete Your Order" : "Review & Confirm"}
-            </h2>
-            <p className="text-[12px] text-muted-foreground/55 mt-1">
-              {step === "details"
-                ? "Enter the recipient phone number"
-                : "Verify everything looks correct"}
-            </p>
-          </div>
+          {step !== "processing" && step !== "error" && (
+            <div className="text-center mb-5">
+              {step === "review" && (
+                <button
+                  onClick={handleBack}
+                  className="absolute left-5 top-14 flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors font-medium"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              )}
+              <h2 className="text-[17px] font-bold text-foreground/90 tracking-tight">
+                {step === "details" ? "Complete Your Order" : "Review & Pay"}
+              </h2>
+              <p className="text-[12px] text-muted-foreground/55 mt-1">
+                {step === "details"
+                  ? "Enter the recipient phone number"
+                  : "Confirm details then pay securely"}
+              </p>
+            </div>
+          )}
 
-          {/* ── Selected plan summary card ── */}
-          <div className="glass-premium rounded-2xl overflow-hidden mb-6 shimmer-edge">
-            <div
-              className="h-[2px]"
-              style={{
-                background: `linear-gradient(90deg, transparent, hsl(${dotHsl} / 0.35), transparent)`,
-              }}
-            />
-            <div className="px-4 py-3.5 flex items-center gap-3">
-              {/* Network dot */}
+          {/* ── Selected plan summary card (always visible except processing) ── */}
+          {step !== "processing" && step !== "error" && (
+            <div className="glass-premium rounded-2xl overflow-hidden mb-6 shimmer-edge">
               <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 text-[12px] font-bold"
+                className="h-[2px]"
                 style={{
-                  background: `hsl(${dotHsl} / 0.1)`,
-                  color: `hsl(${dotHsl})`,
-                  boxShadow: `inset 0 1px 0 0 hsl(0 0% 100% / 0.5), 0 0 0 1px hsl(${dotHsl} / 0.12)`,
+                  background: `linear-gradient(90deg, transparent, hsl(${dotHsl} / 0.35), transparent)`,
                 }}
-              >
-                {network.charAt(0)}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                    {network}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/35">·</span>
-                  <span className="text-[10px] text-muted-foreground/40 font-medium truncate">
-                    {plan.plan_name}
-                  </span>
+              />
+              <div className="px-4 py-3.5 flex items-center gap-3">
+                <div
+                  className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 text-[12px] font-bold"
+                  style={{
+                    background: `hsl(${dotHsl} / 0.1)`,
+                    color: `hsl(${dotHsl})`,
+                    boxShadow: `inset 0 1px 0 0 hsl(0 0% 100% / 0.5), 0 0 0 1px hsl(${dotHsl} / 0.12)`,
+                  }}
+                >
+                  {network.charAt(0)}
                 </div>
-                <p className="text-[14px] font-bold text-foreground/80 mt-0.5 tracking-tight">
-                  {plan.volume}
-                </p>
-              </div>
-
-              <div className="text-right shrink-0">
-                <p className="text-[18px] font-bold text-gradient-gold tracking-tight">
-                  GH₵{Number(plan.amount).toLocaleString()}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                      {network}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/35">·</span>
+                    <span className="text-[10px] text-muted-foreground/40 font-medium truncate">
+                      {plan.plan_name}
+                    </span>
+                  </div>
+                  <p className="text-[14px] font-bold text-foreground/80 mt-0.5 tracking-tight">
+                    {plan.volume}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[18px] font-bold text-gradient-gold tracking-tight">
+                    GH₵{Number(plan.amount).toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* ── STEP: Details ── */}
           {step === "details" && (
             <div className="space-y-5 animate-fade-in">
-              {/* Phone number — primary input */}
               <div className="space-y-2.5">
                 <Label
                   htmlFor="checkout-phone"
@@ -228,7 +263,6 @@ export function CheckoutSheet({
                     )}
                     maxLength={11}
                   />
-                  {/* Ghana flag hint */}
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
                     <span className="text-[11px]">🇬🇭</span>
                   </div>
@@ -242,7 +276,6 @@ export function CheckoutSheet({
                 )}
               </div>
 
-              {/* Optional fields — collapsible feel */}
               <div className="space-y-3">
                 <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">
                   Optional Details
@@ -274,7 +307,7 @@ export function CheckoutSheet({
                     <Input
                       id="checkout-email"
                       type="email"
-                      placeholder="Optional"
+                      placeholder="For receipt"
                       value={customerEmail}
                       onChange={(e) => onCustomerEmailChange(e.target.value)}
                       className="h-11 rounded-xl text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
@@ -284,10 +317,8 @@ export function CheckoutSheet({
                 </div>
               </div>
 
-              {/* Divider */}
               <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
-              {/* CTA */}
               <Button
                 onClick={handleContinueToReview}
                 className="w-full h-13 rounded-2xl text-[14px] font-semibold"
@@ -308,7 +339,6 @@ export function CheckoutSheet({
           {/* ── STEP: Review ── */}
           {step === "review" && (
             <div className="space-y-5 animate-fade-in">
-              {/* Review rows */}
               <div className="rounded-2xl overflow-hidden glass-card">
                 <ReviewRow label="Network" value={network} />
                 <ReviewRow label="Bundle" value={plan.volume} />
@@ -321,7 +351,6 @@ export function CheckoutSheet({
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
-                {/* Total row — premium */}
                 <div className="flex items-center justify-between px-4 py-4 bg-[hsl(38_40%_96%/0.4)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
@@ -332,21 +361,18 @@ export function CheckoutSheet({
                 </div>
               </div>
 
-              {/* Trust message */}
               <div className="flex items-start gap-2.5 text-[10.5px] text-muted-foreground/50 px-1">
-                <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
+                <CreditCard className="h-4 w-4 shrink-0 mt-0.5 text-primary/55" />
                 <span className="leading-relaxed">
-                  Your order is secured with a unique tracking reference. Data is delivered instantly after confirmation.
+                  You'll be redirected to Paystack to complete payment securely via Mobile Money or Card.
                 </span>
               </div>
 
-              {/* Action buttons */}
               <div className="flex gap-2.5">
                 <Button
                   variant="glass"
                   onClick={handleBack}
                   className="flex-1 h-[52px] rounded-2xl text-[13px] font-semibold"
-                  disabled={loading}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Edit
@@ -354,19 +380,74 @@ export function CheckoutSheet({
                 <Button
                   onClick={onConfirm}
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
-                  disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      Processing…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Confirm & Pay
-                    </>
-                  )}
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                  Pay GH₵{Number(plan.amount).toLocaleString()}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP: Processing ── */}
+          {step === "processing" && (
+            <div className="py-10 space-y-6 animate-fade-in text-center">
+              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-gold-strong">
+                <Loader2 className="h-7 w-7 text-primary animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground/85 tracking-tight">
+                  {processingLabel || "Preparing Payment…"}
+                </h3>
+                <p className="text-[11px] text-muted-foreground/50 mt-2 leading-relaxed max-w-[220px] mx-auto">
+                  Securing your order and connecting to Paystack. Please don't close this screen.
+                </p>
+              </div>
+              {/* Progress dots */}
+              <div className="flex items-center justify-center gap-2">
+                {["Order Created", "Initializing", "Redirecting"].map((label, i) => {
+                  const active = processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
+                    (!processingLabel && i === 0);
+                  return (
+                    <div key={label} className="flex items-center gap-2">
+                      {i > 0 && <div className="h-px w-4 bg-border/30" />}
+                      <div className={cn(
+                        "h-2 w-2 rounded-full transition-all duration-300",
+                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(38_82%_44%/0.4)]" : "bg-border/40"
+                      )} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP: Error ── */}
+          {step === "error" && (
+            <div className="py-8 space-y-5 animate-fade-in text-center">
+              <div className="h-14 w-14 rounded-2xl glass-premium flex items-center justify-center mx-auto">
+                <AlertCircle className="h-7 w-7 text-destructive/70" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground/85 tracking-tight">
+                  Payment Failed
+                </h3>
+                <p className="text-[12px] text-muted-foreground/60 mt-2 leading-relaxed max-w-[260px] mx-auto">
+                  {paymentError || "Something went wrong. Please try again."}
+                </p>
+              </div>
+              <div className="flex gap-2.5 max-w-xs mx-auto">
+                <Button
+                  variant="glass"
+                  onClick={() => { onClearError?.(); handleOpenChange(false); }}
+                  className="flex-1 h-[48px] rounded-2xl text-[13px]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRetry}
+                  className="flex-[2] h-[48px] rounded-2xl text-[13px] font-semibold"
+                >
+                  Try Again
                 </Button>
               </div>
             </div>

@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
-import { IntentCreated } from "@/components/buy/IntentCreated";
+
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import {
   fetchDataPlans,
   getNetworks,
   filterPlansByNetwork,
   createPurchaseIntent,
+  initializePayment,
   type DataPlan,
   type PurchaseIntent,
 } from "@/services/purchaseIntent";
@@ -43,7 +44,6 @@ export default function BuyDataPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [intent, setIntent] = useState<PurchaseIntent | null>(null);
 
   // Track plan grid transition key for re-entrance animation
   const [plansKey, setPlansKey] = useState(0);
@@ -97,10 +97,17 @@ export default function BuyDataPage() {
     setCheckoutOpen(true);
   }, []);
 
+  const [processingLabel, setProcessingLabel] = useState("");
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
   const handleConfirm = async () => {
     if (!network || !plan) return;
     setSubmitting(true);
+    setPaymentError(null);
+
     try {
+      // Step 1: Create purchase intent
+      setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
         network,
@@ -108,18 +115,23 @@ export default function BuyDataPage() {
         customerEmail: customerEmail || undefined,
         customerName: customerName || undefined,
       });
-      setIntent(result);
-      setCheckoutOpen(false);
-      setSummaryVisible(false);
+
+      // Step 2: Initialize Paystack payment
+      setProcessingLabel("Initializing payment…");
+      const payment = await initializePayment(result.id);
+
+      // Step 3: Redirect to Paystack
+      setProcessingLabel("Redirecting to Paystack…");
+      window.location.href = payment.authorization_url;
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err?.message || "Failed to create order",
-        variant: "destructive",
-      });
-    } finally {
       setSubmitting(false);
+      setPaymentError(err?.message || "Something went wrong. Please try again.");
     }
+  };
+
+  const handleClearError = () => {
+    setPaymentError(null);
+    setSubmitting(false);
   };
 
   const resetFlow = () => {
@@ -128,7 +140,6 @@ export default function BuyDataPage() {
     setPhoneNumber("");
     setCustomerName("");
     setCustomerEmail("");
-    setIntent(null);
     setSummaryVisible(false);
   };
 
@@ -145,15 +156,6 @@ export default function BuyDataPage() {
     );
   }
 
-  if (intent) {
-    return (
-      <div className="container py-6 sm:py-10">
-        <div className="max-w-md mx-auto">
-          <IntentCreated intent={intent} onNewOrder={resetFlow} />
-        </div>
-      </div>
-    );
-  }
 
   const networkTint = network ? NETWORK_TINT[network] || "" : "";
 
@@ -331,6 +333,9 @@ export default function BuyDataPage() {
         onCustomerEmailChange={setCustomerEmail}
         onConfirm={handleConfirm}
         loading={submitting}
+        processingLabel={processingLabel}
+        paymentError={paymentError}
+        onClearError={handleClearError}
       />
     </div>
   );
