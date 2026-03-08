@@ -16,7 +16,6 @@ import { FullAdminLayout } from "@/layouts/FullAdminLayout";
 import { StaffLayout } from "@/layouts/StaffLayout";
 
 // Public pages
-import LandingPage from "@/pages/public/LandingPage";
 import BuyDataPage from "@/pages/public/BuyDataPage";
 import TrackOrderPage from "@/pages/public/TrackOrderPage";
 
@@ -50,7 +49,7 @@ const App = () => (
           <Routes>
             {/* ====== PUBLIC AREA ====== */}
             <Route element={<PublicLayout />}>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<BuyDataPage />} />
               <Route path="/buy" element={<BuyDataPage />} />
               <Route path="/track" element={<TrackOrderPage />} />
               <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />

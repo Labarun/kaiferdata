@@ -1,5 +1,5 @@
 /**
- * Index page - redirects to landing
+ * Index page - redirects to buy data (homepage)
  */
-import LandingPage from "@/pages/public/LandingPage";
-export default LandingPage;
+import BuyDataPage from "@/pages/public/BuyDataPage";
+export default BuyDataPage;
