@@ -1,5 +1,5 @@
 /**
- * Register Page - Premium aligned with public UI
+ * Register Page - Premium glass-inspired auth
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -7,8 +7,7 @@ import { signUp } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -36,62 +35,63 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="container flex min-h-[70vh] items-center justify-center py-8">
-        <Card className="w-full max-w-sm animate-fade-in">
-          <CardContent className="p-6 text-center space-y-3">
-            <h2 className="text-lg font-bold text-foreground">Check your email</h2>
-            <p className="text-sm text-muted-foreground">
-              We've sent a confirmation link to <strong className="text-foreground">{email}</strong>.
-            </p>
-            <Link to="/login" className="text-sm text-primary hover:underline inline-block mt-2">
-              Back to sign in
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm text-center animate-fade-in-up">
+          <div className="h-14 w-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="h-7 w-7 text-success" />
+          </div>
+          <h2 className="text-lg font-extrabold text-foreground mb-2">Check your email</h2>
+          <p className="text-sm text-muted-foreground">
+            We've sent a confirmation link to <strong className="text-foreground">{email}</strong>.
+          </p>
+          <Link to="/login" className="inline-block mt-5 text-sm text-primary hover:underline font-bold">
+            Back to sign in
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container flex min-h-[70vh] items-center justify-center py-8">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="text-center mb-6">
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center mx-auto mb-3">
-            <UserPlus className="h-5 w-5 text-primary-foreground" />
+    <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm animate-fade-in-up">
+        <div className="text-center mb-7">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <UserPlus className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Create account</h1>
+          <h1 className="text-xl font-extrabold text-foreground">Create account</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Get started with Kaiferdata</p>
         </div>
 
-        <Card>
-          <CardContent className="p-5">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-xs">{error}</div>
-              )}
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-xs">Full name</Label>
-                <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="h-10" maxLength={100} />
+        <div className="glass rounded-2xl p-5 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="px-3 py-2.5 rounded-xl bg-destructive/8 border border-destructive/15 text-destructive text-xs font-medium">
+                {error}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs">Email</Label>
-                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-10" maxLength={255} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-xs">Password</Label>
-                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-10" />
-              </div>
-              <Button type="submit" className="w-full h-10" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create account
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-bold">Full name</Label>
+              <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="h-11 rounded-xl" placeholder="Kwame Asante" maxLength={100} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-bold">Email</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-11 rounded-xl" placeholder="you@email.com" maxLength={255} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-bold">Password</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-11 rounded-xl" placeholder="Min 6 characters" />
+            </div>
+            <Button type="submit" className="w-full h-11 rounded-xl font-bold shadow-sm" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create account
+            </Button>
+          </form>
+        </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
+        <p className="text-center text-xs text-muted-foreground mt-5">
           Already have an account?{" "}
-          <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+          <Link to="/login" className="text-primary hover:underline font-bold">Sign in</Link>
         </p>
       </div>
     </div>
