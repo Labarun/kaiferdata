@@ -1,5 +1,5 @@
 /**
- * NetworkSelector - Premium network choice tiles with brand accents
+ * NetworkSelector - Premium segmented network tiles with brand accents
  */
 import { cn } from "@/lib/utils";
 
@@ -9,70 +9,67 @@ interface NetworkSelectorProps {
   onSelect: (network: string) => void;
 }
 
-const networkConfig: Record<string, { bg: string; border: string; text: string; dot: string; activeBg: string }> = {
+const networkMeta: Record<string, { dot: string; activeBg: string; activeBorder: string; activeRing: string }> = {
   MTN: {
-    bg: "bg-network-mtn/8",
-    border: "border-network-mtn/40",
-    text: "text-foreground",
     dot: "bg-network-mtn",
-    activeBg: "bg-network-mtn/15",
+    activeBg: "bg-network-mtn/12",
+    activeBorder: "border-network-mtn/50",
+    activeRing: "ring-network-mtn/20",
   },
   Telecel: {
-    bg: "bg-network-telecel/8",
-    border: "border-network-telecel/40",
-    text: "text-foreground",
     dot: "bg-network-telecel",
-    activeBg: "bg-network-telecel/15",
+    activeBg: "bg-network-telecel/10",
+    activeBorder: "border-network-telecel/50",
+    activeRing: "ring-network-telecel/20",
   },
   AirtelTigo: {
-    bg: "bg-network-airteltigo/8",
-    border: "border-network-airteltigo/40",
-    text: "text-foreground",
     dot: "bg-network-airteltigo",
-    activeBg: "bg-network-airteltigo/15",
+    activeBg: "bg-network-airteltigo/10",
+    activeBorder: "border-network-airteltigo/50",
+    activeRing: "ring-network-airteltigo/20",
   },
 };
 
-const defaultConfig = {
-  bg: "bg-muted/50",
-  border: "border-primary/40",
-  text: "text-foreground",
+const defaultMeta = {
   dot: "bg-primary",
   activeBg: "bg-primary/10",
+  activeBorder: "border-primary/40",
+  activeRing: "ring-primary/20",
 };
 
 export function NetworkSelector({ networks, selected, onSelect }: NetworkSelectorProps) {
   return (
-    <div className="grid grid-cols-3 gap-2.5">
-      {networks.map((network) => {
-        const isActive = selected === network;
-        const config = networkConfig[network] || defaultConfig;
+    <div className="flex gap-2">
+      {networks.map((net) => {
+        const isActive = selected === net;
+        const m = networkMeta[net] || defaultMeta;
 
         return (
           <button
-            key={network}
+            key={net}
             type="button"
-            onClick={() => onSelect(network)}
+            onClick={() => onSelect(net)}
             className={cn(
-              "relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all duration-200",
+              "relative flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200",
               isActive
-                ? `${config.activeBg} ${config.border} shadow-sm scale-[1.02]`
-                : `bg-card border-border/60 hover:border-border hover:shadow-sm hover:scale-[1.01]`
+                ? `${m.activeBg} ${m.activeBorder} ring-2 ${m.activeRing} shadow-sm`
+                : "bg-card border-border/50 hover:border-border hover:shadow-sm active:scale-[0.98]"
             )}
           >
-            <div className={cn(
-              "h-3 w-3 rounded-full transition-all duration-200",
-              isActive ? `${config.dot} shadow-sm` : "bg-muted-foreground/20"
-            )} />
-            <span className={cn(
-              "text-sm font-extrabold transition-colors",
-              isActive ? config.text : "text-foreground"
-            )}>
-              {network}
+            <span
+              className={cn(
+                "h-2.5 w-2.5 rounded-full transition-all duration-200",
+                isActive ? `${m.dot} shadow-sm scale-110` : "bg-muted-foreground/25"
+              )}
+            />
+            <span
+              className={cn(
+                "text-sm font-extrabold transition-colors duration-200",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {net}
             </span>
-            {isActive && (
-              <span className="text-[10px] font-semibold text-primary">Selected</span>
-            )}
           </button>
         );
       })}
