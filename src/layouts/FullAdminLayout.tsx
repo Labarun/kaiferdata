@@ -13,6 +13,7 @@ const navItems: AdminNavItem[] = [
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Transactions", path: "/admin/transactions", icon: ArrowRightLeft },
   { label: "Reconciliation", path: "/admin/reconciliation", icon: Scale },
+  { label: "Intents", path: "/admin/intents", icon: FileText },
   { label: "Deposits", path: "/admin/deposits", icon: ArrowDownToLine },
   { label: "Users", path: "/admin/users", icon: Users },
   { label: "Agents", path: "/admin/agents", icon: UserCheck },
