@@ -31,6 +31,13 @@ import UserDashboardHome from "@/pages/user/UserDashboardHome";
 import AgentDashboardHome from "@/pages/agent/AgentDashboardHome";
 import AdminDashboardHome from "@/pages/admin/AdminDashboardHome";
 import StaffDashboardHome from "@/pages/staff/StaffDashboardHome";
+import StaffOrdersPage from "@/pages/staff/StaffOrdersPage";
+import StaffOrderDetailPage from "@/pages/staff/StaffOrderDetailPage";
+import StaffTransactionsPage from "@/pages/staff/StaffTransactionsPage";
+import StaffTransactionDetailPage from "@/pages/staff/StaffTransactionDetailPage";
+import StaffIntentsPage from "@/pages/staff/StaffIntentsPage";
+import StaffIntentDetailPage from "@/pages/staff/StaffIntentDetailPage";
+import StaffIssueQueuePage from "@/pages/staff/StaffIssueQueuePage";
 
 // Admin functional pages
 import SystemControlsPage from "@/pages/admin/SystemControlsPage";
