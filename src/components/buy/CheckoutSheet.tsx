@@ -1,6 +1,5 @@
 /**
- * CheckoutSheet - Premium bottom-sheet checkout on mobile, drawer on desktop
- * Contains phone input, optional fields, review summary, and confirm CTA
+ * CheckoutSheet - Liquid-glass bottom-sheet checkout
  */
 import { useState } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -76,10 +75,10 @@ export function CheckoutSheet({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[92vh]">
+      <DrawerContent className="max-h-[92vh] bg-background/95 backdrop-blur-xl border-t border-border/30">
         <div className="overflow-y-auto px-5 pb-6 pt-2">
-          <DrawerHeader className="p-0 mb-4">
-            <DrawerTitle className="text-base font-extrabold text-foreground text-center">
+          <DrawerHeader className="p-0 mb-5">
+            <DrawerTitle className="text-base font-medium text-foreground text-center">
               {step === "details" ? "Complete Your Order" : "Review & Confirm"}
             </DrawerTitle>
             <DrawerDescription className="text-xs text-muted-foreground text-center">
@@ -89,23 +88,23 @@ export function CheckoutSheet({
             </DrawerDescription>
           </DrawerHeader>
 
-          {/* Plan summary strip */}
-          <div className="flex items-center justify-between rounded-xl bg-muted/50 border border-border/60 px-3.5 py-3 mb-5">
+          {/* Plan summary */}
+          <div className="flex items-center justify-between rounded-xl glass-subtle px-4 py-3.5 mb-5">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block h-2 w-2 rounded-full bg-primary shrink-0" />
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">
                   {network}
                 </span>
               </div>
-              <p className="text-sm font-bold text-foreground mt-0.5 truncate">
+              <p className="text-sm font-medium text-foreground mt-0.5 truncate">
                 {plan.volume}
-                <span className="text-xs font-medium text-muted-foreground ml-1.5">
+                <span className="text-xs text-muted-foreground ml-1.5">
                   {plan.plan_name}
                 </span>
               </p>
             </div>
-            <p className="text-lg font-extrabold text-primary shrink-0">
+            <p className="text-lg font-medium text-primary shrink-0">
               GH₵{Number(plan.amount).toLocaleString()}
             </p>
           </div>
@@ -113,8 +112,8 @@ export function CheckoutSheet({
           {step === "details" && (
             <div className="space-y-4 animate-fade-in">
               {/* Phone */}
-              <div className="space-y-1.5">
-                <Label htmlFor="checkout-phone" className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <div className="space-y-2">
+                <Label htmlFor="checkout-phone" className="text-xs text-foreground/80 flex items-center gap-1.5">
                   <Phone className="h-3 w-3 text-muted-foreground" />
                   Recipient Phone <span className="text-destructive">*</span>
                 </Label>
@@ -125,19 +124,19 @@ export function CheckoutSheet({
                   placeholder="0XX XXX XXXX"
                   value={phoneNumber}
                   onChange={(e) => handlePhoneInput(e.target.value)}
-                  className={`h-12 text-base rounded-xl font-semibold tracking-wide ${
+                  className={`h-12 text-base rounded-xl tracking-wide bg-accent/30 border-border/40 ${
                     phoneError ? "border-destructive focus-visible:ring-destructive" : ""
                   }`}
                   maxLength={11}
                 />
                 {phoneError && (
-                  <p className="text-[11px] text-destructive font-medium">{phoneError}</p>
+                  <p className="text-[11px] text-destructive">{phoneError}</p>
                 )}
               </div>
 
-              {/* Optional fields — collapsed row */}
+              {/* Optional fields */}
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="checkout-name" className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <User className="h-3 w-3" /> Name
                   </Label>
@@ -146,11 +145,11 @@ export function CheckoutSheet({
                     placeholder="Optional"
                     value={customerName}
                     onChange={(e) => onCustomerNameChange(e.target.value)}
-                    className="h-10 rounded-xl text-sm"
+                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/40"
                     maxLength={100}
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="checkout-email" className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <Mail className="h-3 w-3" /> Email
                   </Label>
@@ -160,7 +159,7 @@ export function CheckoutSheet({
                     placeholder="Optional"
                     value={customerEmail}
                     onChange={(e) => onCustomerEmailChange(e.target.value)}
-                    className="h-10 rounded-xl text-sm"
+                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/40"
                     maxLength={255}
                   />
                 </div>
@@ -168,7 +167,7 @@ export function CheckoutSheet({
 
               <Button
                 onClick={handleContinueToReview}
-                className="w-full h-12 rounded-xl text-sm font-bold shadow-sm"
+                className="w-full h-12 rounded-xl text-sm"
                 disabled={!canReview}
               >
                 Review Order
@@ -179,22 +178,20 @@ export function CheckoutSheet({
 
           {step === "review" && (
             <div className="space-y-4 animate-fade-in">
-              {/* Review rows */}
-              <div className="rounded-xl border border-border/60 bg-card divide-y divide-border/40">
+              <div className="rounded-xl glass-subtle divide-y divide-border/20">
                 <ReviewRow label="Network" value={network} />
                 <ReviewRow label="Plan" value={`${plan.volume} — ${plan.plan_name}`} />
                 <ReviewRow label="Phone" value={phoneNumber} mono />
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
-                <div className="flex items-center justify-between px-3.5 py-3">
-                  <span className="text-xs font-semibold text-muted-foreground">Total</span>
-                  <span className="text-lg font-extrabold text-primary">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="text-lg font-medium text-primary">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              {/* Security */}
               <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-0.5 text-success" />
                 <span>
@@ -202,19 +199,18 @@ export function CheckoutSheet({
                 </span>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2.5">
                 <Button
                   variant="outline"
                   onClick={() => setStep("details")}
-                  className="flex-1 h-11 rounded-xl font-semibold"
+                  className="flex-1 h-11"
                   disabled={loading}
                 >
                   Edit
                 </Button>
                 <Button
                   onClick={onConfirm}
-                  className="flex-[2] h-11 rounded-xl font-bold shadow-sm"
+                  className="flex-[2] h-11"
                   disabled={loading}
                 >
                   {loading ? (
@@ -241,10 +237,10 @@ function ReviewRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between px-3.5 py-2.5">
+    <div className="flex items-center justify-between px-4 py-2.5">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span
-        className={`text-sm font-semibold text-foreground text-right ${
+        className={`text-sm text-foreground text-right ${
           mono ? "font-mono tracking-wide" : ""
         }`}
       >

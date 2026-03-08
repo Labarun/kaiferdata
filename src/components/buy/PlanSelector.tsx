@@ -1,5 +1,5 @@
 /**
- * PlanSelector - Compact premium bundle cards with strong price/volume hierarchy
+ * PlanSelector - Compact glass bundle cards with price/volume hierarchy
  */
 import { cn } from "@/lib/utils";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -14,14 +14,14 @@ interface PlanSelectorProps {
 export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
   if (plans.length === 0) {
     return (
-      <div className="text-center py-8 rounded-xl border border-dashed border-border">
+      <div className="text-center py-8 rounded-xl glass-subtle">
         <p className="text-sm text-muted-foreground">No plans available for this network.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2.5">
       {plans.map((plan, i) => {
         const isActive = selected?.id === plan.id;
         return (
@@ -30,28 +30,28 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
             type="button"
             onClick={() => onSelect(plan)}
             className={cn(
-              "group relative flex flex-col rounded-xl border transition-all duration-200 text-left overflow-hidden",
+              "group relative flex flex-col rounded-xl transition-all duration-200 text-left overflow-hidden",
               "animate-fade-in active:scale-[0.97]",
               isActive
-                ? "bg-primary/8 border-primary/40 ring-2 ring-primary/15 shadow-sm"
-                : "bg-card border-border/50 hover:border-border hover:shadow-sm"
+                ? "glass-strong border-primary/30 shadow-[0_0_20px_-6px_hsl(42_88%_56%/0.15)]"
+                : "glass-subtle hover:bg-accent/30"
             )}
-            style={{ animationDelay: `${i * 25}ms` }}
+            style={{ animationDelay: `${i * 20}ms` }}
           >
-            {/* Top accent bar */}
+            {/* Top accent */}
             <div
               className={cn(
                 "h-0.5 w-full transition-all duration-200",
-                isActive ? "bg-primary" : "bg-transparent"
+                isActive ? "bg-primary/60" : "bg-transparent"
               )}
             />
 
-            <div className="p-3 flex flex-col gap-1.5">
+            <div className="p-3.5 flex flex-col gap-1.5">
               {/* Volume + check */}
               <div className="flex items-start justify-between">
                 <span
                   className={cn(
-                    "text-base font-extrabold leading-tight",
+                    "text-base font-medium leading-tight",
                     isActive ? "text-primary" : "text-foreground"
                   )}
                 >
@@ -72,7 +72,7 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
               {/* Price */}
               <span
                 className={cn(
-                  "text-sm font-extrabold mt-0.5",
+                  "text-sm font-medium mt-0.5",
                   isActive ? "text-primary" : "text-foreground"
                 )}
               >

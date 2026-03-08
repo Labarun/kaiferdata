@@ -1,5 +1,5 @@
 /**
- * Register Page - Premium glass-inspired auth
+ * Register Page - Liquid-glass auth
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -37,14 +37,14 @@ export default function RegisterPage() {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm text-center animate-fade-in-up">
-          <div className="h-14 w-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <div className="h-14 w-14 rounded-2xl bg-success/15 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="h-7 w-7 text-success" />
           </div>
-          <h2 className="text-lg font-extrabold text-foreground mb-2">Check your email</h2>
+          <h2 className="text-lg font-medium text-foreground mb-2">Check your email</h2>
           <p className="text-sm text-muted-foreground">
             We've sent a confirmation link to <strong className="text-foreground">{email}</strong>.
           </p>
-          <Link to="/login" className="inline-block mt-5 text-sm text-primary hover:underline font-bold">
+          <Link to="/login" className="inline-block mt-5 text-sm text-primary hover:underline">
             Back to sign in
           </Link>
         </div>
@@ -55,34 +55,34 @@ export default function RegisterPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm animate-fade-in-up">
-        <div className="text-center mb-7">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+        <div className="text-center mb-8">
+          <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <UserPlus className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-xl font-extrabold text-foreground">Create account</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Get started with Kaiferdata</p>
+          <h1 className="text-xl font-medium text-foreground">Create account</h1>
+          <p className="text-sm text-muted-foreground mt-1">Get started with Kaiferdata</p>
         </div>
 
-        <div className="glass rounded-2xl p-5 sm:p-6">
+        <div className="glass-strong rounded-2xl p-5 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="px-3 py-2.5 rounded-xl bg-destructive/8 border border-destructive/15 text-destructive text-xs font-medium">
+              <div className="px-3.5 py-2.5 rounded-xl bg-destructive/10 border border-destructive/15 text-destructive text-xs">
                 {error}
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs font-bold">Full name</Label>
-              <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="h-11 rounded-xl" placeholder="Kwame Asante" maxLength={100} />
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-xs text-foreground/80">Full name</Label>
+              <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="Kwame Asante" maxLength={100} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-bold">Email</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-11 rounded-xl" placeholder="you@email.com" maxLength={255} />
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs text-foreground/80">Email</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="you@email.com" maxLength={255} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-bold">Password</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-11 rounded-xl" placeholder="Min 6 characters" />
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-xs text-foreground/80">Password</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="Min 6 characters" />
             </div>
-            <Button type="submit" className="w-full h-11 rounded-xl font-bold shadow-sm" disabled={loading}>
+            <Button type="submit" className="w-full h-11 text-sm" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create account
             </Button>
@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-xs text-muted-foreground mt-5">
           Already have an account?{" "}
-          <Link to="/login" className="text-primary hover:underline font-bold">Sign in</Link>
+          <Link to="/login" className="text-primary hover:underline">Sign in</Link>
         </p>
       </div>
     </div>

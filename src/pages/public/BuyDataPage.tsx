@@ -1,12 +1,10 @@
 /**
- * BuyDataPage - Premium guided buying interface
- * Network + plan browse → bottom-sheet checkout on mobile, side panel on desktop
+ * BuyDataPage - Premium guided buying with liquid-glass surfaces
  */
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
@@ -24,7 +22,6 @@ import {
 export default function BuyDataPage() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const isMobile = useIsMobile();
 
   const [plans, setPlans] = useState<DataPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +56,6 @@ export default function BuyDataPage() {
 
   const handlePlanSelect = (p: DataPlan) => {
     setPlan(p);
-    // Auto-open checkout sheet
     setCheckoutOpen(true);
   };
 
@@ -101,13 +97,12 @@ export default function BuyDataPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <p className="text-xs text-muted-foreground font-medium">Loading plans…</p>
+          <p className="text-xs text-muted-foreground">Loading plans…</p>
         </div>
       </div>
     );
   }
 
-  // Intent created — show success
   if (intent) {
     return (
       <div className="container py-6 sm:py-10">
@@ -120,27 +115,27 @@ export default function BuyDataPage() {
 
   return (
     <div className="min-h-[70vh]">
-      {/* Compact hero header */}
-      <div className="bg-hero-gradient">
-        <div className="container py-5 sm:py-7">
+      {/* Header */}
+      <div className="bg-hero-gradient border-b border-border/20">
+        <div className="container py-6 sm:py-8">
           <div className="max-w-lg mx-auto text-center">
-            <h1 className="text-lg sm:text-xl font-extrabold text-hero-foreground">
+            <h1 className="text-xl sm:text-2xl font-medium text-hero-foreground">
               Buy Data Bundle
             </h1>
-            <p className="text-xs text-hero-muted mt-1">
+            <p className="text-xs text-hero-muted mt-1.5">
               Select your network and plan to get started
             </p>
           </div>
         </div>
       </div>
 
-      <div className="container py-5 sm:py-6">
+      <div className="container py-5 sm:py-7">
         <div className="max-w-lg mx-auto space-y-5">
           <NoticeBanner audience="public" />
 
           {/* Network selector */}
           <section>
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">
               Choose Network
             </p>
             <NetworkSelector
@@ -153,8 +148,8 @@ export default function BuyDataPage() {
           {/* Plan grid */}
           {network && (
             <section className="animate-fade-in">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
                   {network} Plans
                 </p>
                 <p className="text-[11px] text-muted-foreground">
@@ -169,22 +164,22 @@ export default function BuyDataPage() {
             </section>
           )}
 
-          {/* Sticky bottom summary when plan selected but sheet closed */}
+          {/* Sticky bottom summary */}
           {plan && !checkoutOpen && (
             <div className="sticky bottom-4 z-30 animate-fade-in">
               <button
                 onClick={() => setCheckoutOpen(true)}
-                className="w-full glass rounded-2xl p-3.5 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
+                className="w-full glass-strong rounded-2xl p-4 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
               >
                 <div className="min-w-0 text-left">
-                  <p className="text-xs font-bold text-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {plan.volume} · {network}
                   </p>
-                  <p className="text-sm font-extrabold text-primary">
+                  <p className="text-base font-medium text-primary">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
-                <div className="shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1.5">
+                <div className="shrink-0 h-9 px-5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 shadow-[0_2px_12px_-3px_hsl(42_88%_56%/0.35)]">
                   Continue →
                 </div>
               </button>
@@ -193,7 +188,6 @@ export default function BuyDataPage() {
         </div>
       </div>
 
-      {/* Checkout bottom sheet / side panel */}
       <CheckoutSheet
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
