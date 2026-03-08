@@ -1,13 +1,13 @@
 /**
- * Admin Order Detail Page — Full operational view with timeline, supplier logs, linked records
+ * Admin Order Detail Page — Full operational view with timeline, supplier logs, retry action
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
+import { RetryFulfillmentButton } from "@/components/admin/RetryFulfillmentButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Loader2, Copy, Clock, CheckCircle2, XCircle, Truck, Package,
   CreditCard, FileText, ArrowRight, Server,
@@ -28,47 +28,38 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (!orderId) return;
-    async function fetch() {
-      const [orderRes, timelineRes, logsRes] = await Promise.all([
-        supabase.from("orders").select("*").eq("id", orderId).single(),
-        supabase.from("order_status_history").select("*").eq("order_id", orderId).order("changed_at", { ascending: true }),
-        supabase.from("supplier_request_logs").select("*").eq("order_id", orderId).order("created_at", { ascending: false }),
-      ]);
+    const [orderRes, timelineRes, logsRes] = await Promise.all([
+      supabase.from("orders").select("*").eq("id", orderId).single(),
+      supabase.from("order_status_history").select("*").eq("order_id", orderId).order("changed_at", { ascending: true }),
+      supabase.from("supplier_request_logs").select("*").eq("order_id", orderId).order("created_at", { ascending: false }),
+    ]);
 
-      const o = orderRes.data;
-      setOrder(o);
-      setTimeline(timelineRes.data || []);
-      setSupplierLogs(logsRes.data || []);
+    const o = orderRes.data;
+    setOrder(o);
+    setTimeline(timelineRes.data || []);
+    setSupplierLogs(logsRes.data || []);
 
-      if (o?.intent_id) {
-        const { data: i } = await supabase.from("purchase_intents").select("*").eq("id", o.intent_id as string).single();
-        setIntent(i);
-      }
-      if (o?.payment_record_id) {
-        const { data: p } = await supabase.from("payment_records").select("*").eq("id", o.payment_record_id as string).single();
-        setPayment(p);
-      }
-      setLoading(false);
+    if (o?.intent_id) {
+      const { data: i } = await supabase.from("purchase_intents").select("*").eq("id", o.intent_id as string).single();
+      setIntent(i);
     }
-    fetch();
+    if (o?.payment_record_id) {
+      const { data: p } = await supabase.from("payment_records").select("*").eq("id", o.payment_record_id as string).single();
+      setPayment(p);
+    }
+    setLoading(false);
   }, [orderId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  if (!order) {
-    return <div className="text-center py-16 text-sm text-muted-foreground">Order not found.</div>;
-  }
+  if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (!order) return <div className="text-center py-16 text-sm text-muted-foreground">Order not found.</div>;
 
   const snap = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const Icon = STATUS_ICON[order.status as string] || Clock;
+  const isRecovered = !!(order.metadata as Record<string, unknown>)?.recovered_by_admin;
 
   const copyId = () => {
     navigator.clipboard.writeText(order.public_order_id as string);
@@ -83,15 +74,27 @@ export default function AdminOrderDetailPage() {
         description={`${order.network} · ${snap.volume || ""} · GH₵${Number(order.amount_charged).toLocaleString()}`}
       />
 
-      {/* Status + ID header */}
+      {/* Status + actions */}
       <div className="flex items-center gap-3 flex-wrap">
         <OperationsBadge status={order.status as string} className="text-xs px-3 py-1" />
+        {isRecovered && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+            Recovered
+          </span>
+        )}
         {order.supplier_status && (
           <span className="text-[11px] text-muted-foreground">Supplier: {order.supplier_status as string}</span>
         )}
-        <button onClick={copyId} className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-1 ml-auto">
-          <Copy className="h-3 w-3" /> {copied ? "Copied!" : "Copy ID"}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <RetryFulfillmentButton
+            orderId={orderId!}
+            orderStatus={order.status as string}
+            onSuccess={() => fetchAll()}
+          />
+          <button onClick={copyId} className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-1">
+            <Copy className="h-3 w-3" /> {copied ? "Copied!" : "Copy ID"}
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -230,9 +233,7 @@ export default function AdminOrderDetailPage() {
                     <p className="text-[11px] text-destructive">{log.error_message as string}</p>
                   )}
                   <details className="mt-1">
-                    <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
-                      Raw response
-                    </summary>
+                    <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Raw response</summary>
                     <pre className="text-[10px] text-muted-foreground bg-muted rounded p-2 mt-1 overflow-x-auto max-h-32">
                       {JSON.stringify(log.response_payload, null, 2)}
                     </pre>
