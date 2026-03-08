@@ -1,57 +1,71 @@
 /**
- * PublicLayout - Premium public layout with conversion-focused navigation
+ * PublicLayout - Premium Ghana fintech layout with liquid-glass header
  */
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDashboardPath } from "@/services/auth";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ShoppingCart, Search } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, ShoppingCart, MapPin, MessageCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
-  { label: "Buy Data", path: "/buy", primary: true },
+  { label: "Buy Data", path: "/buy" },
   { label: "Track Order", path: "/track" },
 ];
 
 export function PublicLayout() {
   const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => setMobileOpen(false), [location.pathname]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Notice banner at very top */}
-      <div className="bg-card border-b">
-        <div className="container py-0">
-          <NoticeBanner audience="public" />
-        </div>
+      {/* Top notice strip */}
+      <div className="relative z-40">
+        <NoticeBanner audience="public" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md">
-        <div className="container flex h-14 items-center justify-between gap-4">
+      {/* Premium sticky glass header */}
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "glass shadow-sm"
+            : "bg-card/80 backdrop-blur-sm border-b border-border/50"
+        }`}
+      >
+        <div className="container flex h-14 items-center justify-between gap-3">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">K</span>
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm transition-transform duration-200 group-hover:scale-105">
+              <span className="text-sm font-extrabold text-primary-foreground">K</span>
             </div>
-            <span className="text-base font-bold text-foreground tracking-tight hidden sm:inline">
+            <span className="text-[15px] font-extrabold text-foreground tracking-tight">
               Kaiferdata
             </span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+          <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
                   isActive(link.path)
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-primary/12 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                 }`}
               >
                 {link.label}
@@ -59,66 +73,70 @@ export function PublicLayout() {
             ))}
           </nav>
 
-          {/* Desktop auth */}
+          {/* Desktop auth actions */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
             {user ? (
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="h-8 rounded-lg text-xs font-semibold">
                 <Link to={getDashboardPath(user.role)}>Dashboard</Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" asChild className="h-8 rounded-lg text-xs font-semibold">
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button size="sm" asChild>
-                  <Link to="/register">Register</Link>
+                <Button size="sm" asChild className="h-8 rounded-lg text-xs font-semibold shadow-sm">
+                  <Link to="/register">Get Started</Link>
                 </Button>
               </>
             )}
           </div>
 
-          {/* Mobile: Buy Data shortcut + menu */}
-          <div className="flex md:hidden items-center gap-1">
-            <Button variant="default" size="sm" asChild className="h-8 px-3">
+          {/* Mobile: quick buy + menu */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <Button size="sm" asChild className="h-8 px-3 rounded-lg text-xs font-bold shadow-sm">
               <Link to="/buy">
-                <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                <ShoppingCart className="h-3.5 w-3.5 mr-1" />
                 Buy
               </Link>
             </Button>
-            <button className="p-2 rounded-md hover:bg-muted" onClick={() => setMobileOpen(!mobileOpen)}>
+            <button
+              className="p-2 rounded-lg hover:bg-muted/60 transition-colors"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile nav drawer */}
+        {/* Mobile slide menu */}
         {mobileOpen && (
-          <div className="md:hidden border-t bg-card animate-fade-in">
-            <div className="container py-3 space-y-1">
+          <div className="md:hidden glass border-t border-border/30 animate-fade-in">
+            <div className="container py-4 space-y-1">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block px-3 py-2.5 rounded-md text-sm font-medium ${
-                    isActive(link.path) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                    isActive(link.path)
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted/60"
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-2 border-t mt-2 space-y-1.5">
+              <div className="pt-3 border-t border-border/30 mt-3 space-y-2">
                 {user ? (
-                  <Button asChild className="w-full" size="sm">
-                    <Link to={getDashboardPath(user.role)} onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                  <Button asChild className="w-full h-10 rounded-lg font-semibold">
+                    <Link to={getDashboardPath(user.role)}>Dashboard</Link>
                   </Button>
                 ) : (
                   <>
-                    <Button variant="outline" className="w-full" size="sm" asChild>
-                      <Link to="/login" onClick={() => setMobileOpen(false)}>Sign in</Link>
+                    <Button variant="outline" className="w-full h-10 rounded-lg font-semibold" asChild>
+                      <Link to="/login">Sign in</Link>
                     </Button>
-                    <Button className="w-full" size="sm" asChild>
-                      <Link to="/register" onClick={() => setMobileOpen(false)}>Register</Link>
+                    <Button className="w-full h-10 rounded-lg font-semibold" asChild>
+                      <Link to="/register">Get Started</Link>
                     </Button>
                   </>
                 )}
@@ -133,33 +151,52 @@ export function PublicLayout() {
         <Outlet />
       </main>
 
+      {/* Floating WhatsApp - refined pill */}
+      <a
+        href="https://wa.me/233000000000"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 h-10 px-4 rounded-full bg-success text-success-foreground shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 text-xs font-semibold"
+      >
+        <MessageCircle className="h-4 w-4" />
+        <span className="hidden sm:inline">Support</span>
+      </a>
+
       {/* Footer */}
       <footer className="border-t bg-card">
         <div className="container py-8">
           <div className="grid gap-6 sm:grid-cols-3">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-                  <span className="text-xs font-bold text-primary-foreground">K</span>
+                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
+                  <span className="text-[10px] font-extrabold text-primary-foreground">K</span>
                 </div>
-                <span className="text-sm font-bold text-foreground">Kaiferdata</span>
+                <span className="text-sm font-extrabold text-foreground">Kaiferdata</span>
               </div>
-              <p className="text-xs text-muted-foreground">Fast, reliable data and airtime services.</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Quick Links</p>
-              <div className="space-y-1">
-                <Link to="/buy" className="block text-xs text-muted-foreground hover:text-foreground">Buy Data</Link>
-                <Link to="/track" className="block text-xs text-muted-foreground hover:text-foreground">Track Order</Link>
-                <Link to="/login" className="block text-xs text-muted-foreground hover:text-foreground">Sign In</Link>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Ghana's premium data bundle platform. Fast, secure, and reliable.
+              </p>
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                <span>Accra, Ghana</span>
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Support</p>
-              <p className="text-xs text-muted-foreground">Contact support coming soon.</p>
+              <p className="text-xs font-bold text-foreground mb-2.5 uppercase tracking-wider">Quick Links</p>
+              <div className="space-y-1.5">
+                <Link to="/buy" className="block text-xs text-muted-foreground hover:text-foreground transition-colors">Buy Data</Link>
+                <Link to="/track" className="block text-xs text-muted-foreground hover:text-foreground transition-colors">Track Order</Link>
+                <Link to="/login" className="block text-xs text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground mb-2.5 uppercase tracking-wider">Support</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Need help? Reach us on WhatsApp or email for instant support.
+              </p>
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t text-center text-xs text-muted-foreground">
+          <div className="mt-6 pt-4 border-t text-center text-[11px] text-muted-foreground">
             &copy; {new Date().getFullYear()} Kaiferdata. All rights reserved.
           </div>
         </div>
