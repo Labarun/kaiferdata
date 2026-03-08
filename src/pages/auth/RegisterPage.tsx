@@ -1,5 +1,5 @@
 /**
- * Register Page - Liquid-glass auth
+ * Register Page — Username, phone, email
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Loader2, UserPlus, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
-  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,15 +21,18 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    const { error: err } = await signUp(email, password, fullName);
+    if (username.length < 3) { setError("Username must be at least 3 characters."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError("Username can only contain letters, numbers, and underscores."); return; }
+    if (phone.length < 10) { setError("Enter a valid phone number."); return; }
+
+    setLoading(true);
+    const { error: err } = await signUp(email, password, username, phone);
     if (err) {
       setError(err.message);
       setLoading(false);
       return;
     }
-
     setSuccess(true);
     setLoading(false);
   };
@@ -71,16 +75,59 @@ export default function RegisterPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs text-foreground/80">Full name</Label>
-              <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="Kwame Asante" maxLength={100} />
+              <Label htmlFor="username" className="text-xs text-foreground/80">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                className="h-11 rounded-xl bg-accent/30 border-border/40"
+                placeholder="e.g. kwame_asante"
+                maxLength={30}
+                autoComplete="username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-xs text-foreground/80">Phone number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                required
+                className="h-11 rounded-xl bg-accent/30 border-border/40"
+                placeholder="0241234567"
+                maxLength={15}
+                autoComplete="tel"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs text-foreground/80">Email</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="you@email.com" maxLength={255} />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="h-11 rounded-xl bg-accent/30 border-border/40"
+                placeholder="you@email.com"
+                maxLength={255}
+                autoComplete="email"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-xs text-foreground/80">Password</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-11 rounded-xl bg-accent/30 border-border/40" placeholder="Min 6 characters" />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="h-11 rounded-xl bg-accent/30 border-border/40"
+                placeholder="Min 6 characters"
+                autoComplete="new-password"
+              />
             </div>
             <Button type="submit" className="w-full h-11 text-sm" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

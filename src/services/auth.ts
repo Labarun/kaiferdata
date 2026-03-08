@@ -1,7 +1,5 @@
 /**
  * Kaiferdata Auth Service
- * Centralized authentication utilities for the platform.
- * All auth operations go through this service.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -13,25 +11,47 @@ export interface AuthUser {
   id: string;
   email: string;
   fullName: string;
+  username: string;
+  phone: string;
   role: AppRole;
   accountStatus: AccountStatus;
 }
 
 /** Sign up a new user */
-export async function signUp(email: string, password: string, fullName: string) {
+export async function signUp(email: string, password: string, username: string, phone: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: { full_name: username, username, phone },
       emailRedirectTo: window.location.origin,
     },
   });
+
+  // After signup, update profile with username and phone
+  if (data?.user && !error) {
+    await supabase
+      .from("profiles")
+      .update({ username, phone, full_name: username })
+      .eq("user_id", data.user.id);
+  }
+
   return { data, error };
 }
 
-/** Sign in with email/password */
-export async function signIn(email: string, password: string) {
+/** Resolve a username or phone to email, then sign in */
+export async function signIn(identifier: string, password: string) {
+  let email = identifier;
+
+  // If it doesn't look like an email, resolve it
+  if (!identifier.includes("@")) {
+    const { data } = await supabase.rpc("resolve_login_identifier", { _identifier: identifier });
+    if (!data) {
+      return { data: null, error: { message: "No account found with that username or phone number." } as Error };
+    }
+    email = data as string;
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   return { data, error };
 }
@@ -50,7 +70,7 @@ export async function resetPassword(email: string) {
   return { data, error };
 }
 
-/** Update password (used on reset-password page) */
+/** Update password */
 export async function updatePassword(password: string) {
   const { data, error } = await supabase.auth.updateUser({ password });
   return { data, error };
@@ -61,14 +81,12 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, account_status")
+    .select("full_name, email, account_status, username, phone")
     .eq("user_id", user.id)
     .single();
 
-  // Fetch highest-priority role
   const { data: roleData } = await supabase
     .from("user_roles")
     .select("role")
@@ -83,6 +101,8 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     id: user.id,
     email: profile?.email || user.email || "",
     fullName: profile?.full_name || "",
+    username: profile?.username || "",
+    phone: profile?.phone || "",
     role: primaryRole as AppRole,
     accountStatus: (profile?.account_status || "active") as AccountStatus,
   };
