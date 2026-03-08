@@ -156,15 +156,6 @@ export default function BuyDataPage() {
     );
   }
 
-  if (intent) {
-    return (
-      <div className="container py-6 sm:py-10">
-        <div className="max-w-md mx-auto">
-          <IntentCreated intent={intent} onNewOrder={resetFlow} />
-        </div>
-      </div>
-    );
-  }
 
   const networkTint = network ? NETWORK_TINT[network] || "" : "";
 
