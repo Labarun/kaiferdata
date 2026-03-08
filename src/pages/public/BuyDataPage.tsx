@@ -140,7 +140,6 @@ export default function BuyDataPage() {
     setPhoneNumber("");
     setCustomerName("");
     setCustomerEmail("");
-    setIntent(null);
     setSummaryVisible(false);
   };
 
