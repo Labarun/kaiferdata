@@ -53,6 +53,7 @@ const App = () => (
               <Route path="/" element={<BuyDataPage />} />
               <Route path="/buy" element={<BuyDataPage />} />
               <Route path="/track" element={<TrackOrderPage />} />
+              <Route path="/payment/callback" element={<PaymentCallbackPage />} />
               <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
               <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
