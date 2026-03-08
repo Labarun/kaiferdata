@@ -31,6 +31,13 @@ import UserDashboardHome from "@/pages/user/UserDashboardHome";
 import AgentDashboardHome from "@/pages/agent/AgentDashboardHome";
 import AdminDashboardHome from "@/pages/admin/AdminDashboardHome";
 import StaffDashboardHome from "@/pages/staff/StaffDashboardHome";
+import StaffOrdersPage from "@/pages/staff/StaffOrdersPage";
+import StaffOrderDetailPage from "@/pages/staff/StaffOrderDetailPage";
+import StaffTransactionsPage from "@/pages/staff/StaffTransactionsPage";
+import StaffTransactionDetailPage from "@/pages/staff/StaffTransactionDetailPage";
+import StaffIntentsPage from "@/pages/staff/StaffIntentsPage";
+import StaffIntentDetailPage from "@/pages/staff/StaffIntentDetailPage";
+import StaffIssueQueuePage from "@/pages/staff/StaffIssueQueuePage";
 
 // Admin functional pages
 import SystemControlsPage from "@/pages/admin/SystemControlsPage";
@@ -108,12 +115,13 @@ const App = () => (
             {/* ====== STAFF PANEL ====== */}
             <Route element={<ProtectedRoute allowedRoles={["staff", "admin"]}><StaffLayout /></ProtectedRoute>}>
               <Route path="/staff" element={<StaffDashboardHome />} />
-              <Route path="/staff/orders" element={<ScaffoldPage title="Orders" description="Order management" />} />
-              <Route path="/staff/users" element={<ScaffoldPage title="Users" description="User management" />} />
-              <Route path="/staff/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
-              <Route path="/staff/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
-              <Route path="/staff/transactions" element={<ScaffoldPage title="Transactions" description="Transaction viewing" />} />
-              <Route path="/staff/agent-applications" element={<ScaffoldPage title="Agent Applications" description="Review agent applications" />} />
+              <Route path="/staff/orders" element={<StaffOrdersPage />} />
+              <Route path="/staff/orders/:orderId" element={<StaffOrderDetailPage />} />
+              <Route path="/staff/transactions" element={<StaffTransactionsPage />} />
+              <Route path="/staff/transactions/:transactionId" element={<StaffTransactionDetailPage />} />
+              <Route path="/staff/intents" element={<StaffIntentsPage />} />
+              <Route path="/staff/intents/:intentId" element={<StaffIntentDetailPage />} />
+              <Route path="/staff/issues" element={<StaffIssueQueuePage />} />
             </Route>
 
             {/* ====== CATCH-ALL ====== */}
