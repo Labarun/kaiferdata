@@ -134,6 +134,155 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          amount_charged: number
+          beneficiary_number: string
+          bundle_code: string
+          bundle_name: string
+          bundle_snapshot: Json
+          created_at: string
+          currency: string
+          delivery_message: string | null
+          id: string
+          intent_id: string | null
+          metadata: Json | null
+          network: string
+          origin_type: string
+          payment_record_id: string | null
+          public_order_id: string
+          source_channel: string
+          status: Database["public"]["Enums"]["order_status"]
+          supplier_reference: string | null
+          supplier_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          amount_charged: number
+          beneficiary_number: string
+          bundle_code: string
+          bundle_name: string
+          bundle_snapshot?: Json
+          created_at?: string
+          currency?: string
+          delivery_message?: string | null
+          id?: string
+          intent_id?: string | null
+          metadata?: Json | null
+          network: string
+          origin_type?: string
+          payment_record_id?: string | null
+          public_order_id: string
+          source_channel?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          supplier_reference?: string | null
+          supplier_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          amount_charged?: number
+          beneficiary_number?: string
+          bundle_code?: string
+          bundle_name?: string
+          bundle_snapshot?: Json
+          created_at?: string
+          currency?: string
+          delivery_message?: string | null
+          id?: string
+          intent_id?: string | null
+          metadata?: Json | null
+          network?: string
+          origin_type?: string
+          payment_record_id?: string | null
+          public_order_id?: string
+          source_channel?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          supplier_reference?: string | null
+          supplier_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_payment_record_id_fkey"
+            columns: ["payment_record_id"]
+            isOneToOne: false
+            referencedRelation: "payment_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_identifier: string | null
+          id: string
+          intent_id: string | null
+          internal_reference: string
+          provider: string
+          provider_reference: string
+          provider_response: Json | null
+          status: Database["public"]["Enums"]["payment_status"]
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_identifier?: string | null
+          id?: string
+          intent_id?: string | null
+          internal_reference: string
+          provider?: string
+          provider_reference: string
+          provider_response?: Json | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_identifier?: string | null
+          id?: string
+          intent_id?: string | null
+          internal_reference?: string
+          provider?: string
+          provider_reference?: string
+          provider_response?: Json | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_status: Database["public"]["Enums"]["account_status"]
@@ -463,6 +612,15 @@ export type Database = {
         | "maintenance_notice"
         | "info_notice"
         | "warning_notice"
+      order_status:
+        | "paid"
+        | "queued"
+        | "processing"
+        | "delivered"
+        | "failed"
+        | "cancelled"
+        | "refunded"
+      payment_status: "pending" | "verified" | "failed" | "reversed"
       transaction_direction: "inflow" | "outflow"
       transaction_status: "pending" | "completed" | "failed" | "reversed"
       transaction_type: "credit" | "debit" | "reversal" | "adjustment"
@@ -614,6 +772,16 @@ export const Constants = {
         "info_notice",
         "warning_notice",
       ],
+      order_status: [
+        "paid",
+        "queued",
+        "processing",
+        "delivered",
+        "failed",
+        "cancelled",
+        "refunded",
+      ],
+      payment_status: ["pending", "verified", "failed", "reversed"],
       transaction_direction: ["inflow", "outflow"],
       transaction_status: ["pending", "completed", "failed", "reversed"],
       transaction_type: ["credit", "debit", "reversal", "adjustment"],

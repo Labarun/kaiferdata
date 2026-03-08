@@ -1,6 +1,6 @@
 /**
  * Purchase Intent Service
- * Creates and manages purchase intents for guest and user buy flows.
+ * Creates and manages purchase intents + payment verification for guest buy flows.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -47,7 +47,6 @@ export async function createPurchaseIntent(params: {
 }): Promise<PurchaseIntent> {
   const intentRef = generateIntentRef();
 
-  // Create plan snapshot for immutability
   const planSnapshot = {
     id: params.plan.id,
     plan_code: params.plan.plan_code,
@@ -92,14 +91,25 @@ export async function initializePayment(intentId: string): Promise<{
     body: { intent_id: intentId },
   });
 
-  if (error) {
-    throw new Error(error.message || "Payment initialization failed");
-  }
+  if (error) throw new Error(error.message || "Payment initialization failed");
+  if (!data?.success) throw new Error(data?.error || "Payment initialization failed");
+  return data;
+}
 
-  if (!data?.success) {
-    throw new Error(data?.error || "Payment initialization failed");
-  }
+/** Verify a Paystack payment and create order (server-side via edge function) */
+export async function verifyPayment(reference: string): Promise<{
+  success: boolean;
+  order?: Record<string, unknown>;
+  already_processed?: boolean;
+  error?: string;
+  status?: string;
+  intent_reference?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke("verify-payment", {
+    body: { reference },
+  });
 
+  if (error) throw new Error(error.message || "Payment verification failed");
   return data;
 }
 
@@ -113,4 +123,32 @@ export async function lookupIntent(reference: string): Promise<PurchaseIntent | 
 
   if (error) return null;
   return data;
+}
+
+/** Lookup an order by public order ID or intent reference */
+export async function lookupOrder(ref: string): Promise<Record<string, unknown> | null> {
+  const trimmed = ref.trim().toUpperCase();
+
+  // Try public_order_id first
+  const { data: byOrderId } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("public_order_id", trimmed)
+    .maybeSingle();
+
+  if (byOrderId) return byOrderId;
+
+  // Try via intent reference
+  const intent = await lookupIntent(trimmed);
+  if (intent) {
+    const { data: byIntent } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("intent_id", intent.id)
+      .maybeSingle();
+
+    if (byIntent) return byIntent;
+  }
+
+  return null;
 }
