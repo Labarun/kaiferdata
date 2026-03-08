@@ -6,33 +6,32 @@
 
 @layer base {
   :root {
-    /* ── Light liquid-glass base ── */
-    --background: 220 16% 96%;
-    --foreground: 224 20% 16%;
+    --background: 225 20% 95%;
+    --foreground: 224 24% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 20% 16%;
+    --card-foreground: 224 24% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 20% 16%;
+    --popover-foreground: 224 24% 12%;
 
-    /* Warm liquid gold */
-    --primary: 40 85% 48%;
+    /* Rich warm gold */
+    --primary: 38 82% 44%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 224 16% 32%;
+    --secondary: 225 16% 91%;
+    --secondary-foreground: 224 18% 28%;
 
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 225 14% 92%;
+    --muted-foreground: 224 10% 46%;
 
-    --accent: 220 14% 94%;
-    --accent-foreground: 224 16% 22%;
+    --accent: 225 16% 93%;
+    --accent-foreground: 224 18% 18%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 155 55% 38%;
+    --success: 152 52% 36%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 88% 52%;
@@ -41,33 +40,36 @@
     --info: 210 70% 50%;
     --info-foreground: 0 0% 100%;
 
-    --border: 220 14% 88%;
-    --input: 220 14% 88%;
-    --ring: 40 85% 48%;
+    --border: 225 16% 86%;
+    --input: 225 16% 86%;
+    --ring: 38 82% 44%;
 
     --radius: 0.875rem;
 
     /* Network brand */
-    --network-mtn: 48 100% 48%;
-    --network-telecel: 0 72% 50%;
-    --network-airteltigo: 210 80% 50%;
+    --network-mtn: 46 100% 46%;
+    --network-telecel: 0 68% 48%;
+    --network-airteltigo: 212 78% 48%;
 
-    /* ── Light liquid glass tokens ── */
-    --glass-bg: 0 0% 100% / 0.6;
-    --glass-border: 220 20% 80% / 0.45;
-    --glass-highlight: 0 0% 100% / 0.7;
-    --glass-shadow: 224 30% 60% / 0.08;
-    --glass-edge-light: 40 50% 80% / 0.15;
+    /* Glass tokens */
+    --glass-bg: 0 0% 100% / 0.55;
+    --glass-border: 225 18% 78% / 0.5;
+    --glass-highlight: 0 0% 100% / 0.75;
+    --glass-shadow-sm: 224 30% 55% / 0.06;
+    --glass-shadow-md: 224 30% 50% / 0.1;
+    --glass-shadow-lg: 224 30% 45% / 0.14;
+    --glass-edge-gold: 40 50% 75% / 0.18;
+    --glass-edge-cool: 220 30% 80% / 0.12;
 
-    /* Sidebar (admin) — kept dark for admin panels */
+    /* Sidebar (admin) */
     --sidebar-background: 226 28% 5%;
     --sidebar-foreground: 220 12% 65%;
-    --sidebar-primary: 40 85% 48%;
+    --sidebar-primary: 38 82% 44%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 226 18% 11%;
     --sidebar-accent-foreground: 220 12% 82%;
     --sidebar-border: 226 14% 13%;
-    --sidebar-ring: 40 85% 48%;
+    --sidebar-ring: 38 82% 44%;
 
     --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -80,6 +82,11 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(38 50% 92% / 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 90% 90%, hsl(212 40% 92% / 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse 50% 35% at 5% 70%, hsl(38 45% 90% / 0.2) 0%, transparent 40%);
+    background-attachment: fixed;
   }
 }
 
@@ -88,63 +95,85 @@
     font-family: var(--font-mono);
   }
 
-  /* ── Light liquid glass surfaces ── */
+  /* ── Premium liquid glass surfaces ── */
   .glass {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(20px) saturate(1.6);
-    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.65);
+    -webkit-backdrop-filter: blur(20px) saturate(1.65);
     border: 1px solid hsl(var(--glass-border));
     box-shadow:
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
-      inset 0 -0.5px 0 0 hsl(220 20% 70% / 0.1),
-      0 4px 16px -4px hsl(var(--glass-shadow));
+      inset 0 -0.5px 0 0 hsl(var(--glass-edge-cool)),
+      0 1px 2px 0 hsl(var(--glass-shadow-sm)),
+      0 4px 16px -4px hsl(var(--glass-shadow-md));
   }
 
   .glass-subtle {
-    background: hsl(0 0% 100% / 0.4);
-    backdrop-filter: blur(12px) saturate(1.4);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
-    border: 1px solid hsl(220 20% 85% / 0.5);
-    box-shadow: inset 0 1px 0 0 hsl(0 0% 100% / 0.6);
+    background: hsl(0 0% 100% / 0.38);
+    backdrop-filter: blur(14px) saturate(1.45);
+    -webkit-backdrop-filter: blur(14px) saturate(1.45);
+    border: 1px solid hsl(225 18% 82% / 0.45);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.55),
+      0 1px 3px -1px hsl(var(--glass-shadow-sm));
   }
 
   .glass-strong {
-    background: hsl(0 0% 100% / 0.72);
-    backdrop-filter: blur(28px) saturate(1.7);
-    -webkit-backdrop-filter: blur(28px) saturate(1.7);
-    border: 1px solid hsl(220 20% 82% / 0.5);
+    background: hsl(0 0% 100% / 0.75);
+    backdrop-filter: blur(32px) saturate(1.75);
+    -webkit-backdrop-filter: blur(32px) saturate(1.75);
+    border: 1px solid hsl(225 18% 80% / 0.55);
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.8),
-      inset 0 -0.5px 0 0 hsl(220 16% 75% / 0.12),
-      0 8px 32px -8px hsl(224 30% 50% / 0.08);
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.85),
+      inset 0 -0.5px 0 0 hsl(225 16% 72% / 0.1),
+      0 1px 2px 0 hsl(var(--glass-shadow-sm)),
+      0 8px 32px -8px hsl(var(--glass-shadow-md));
   }
 
   .glass-card {
-    background: hsl(0 0% 100% / 0.55);
-    backdrop-filter: blur(16px) saturate(1.5);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
-    border: 1px solid hsl(220 20% 84% / 0.45);
+    background: hsl(0 0% 100% / 0.52);
+    backdrop-filter: blur(18px) saturate(1.55);
+    -webkit-backdrop-filter: blur(18px) saturate(1.55);
+    border: 1px solid hsl(225 18% 82% / 0.45);
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.65),
-      inset 0 0 0 0.5px hsl(var(--glass-edge-light)),
-      0 2px 8px -2px hsl(224 30% 55% / 0.06);
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.7),
+      inset 0 0 0 0.5px hsl(var(--glass-edge-gold)),
+      0 1px 3px -1px hsl(var(--glass-shadow-sm)),
+      0 4px 12px -4px hsl(var(--glass-shadow-md));
   }
 
   .glass-elevated {
-    background: hsl(0 0% 100% / 0.68);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid hsl(220 20% 82% / 0.5);
+    background: hsl(0 0% 100% / 0.65);
+    backdrop-filter: blur(28px) saturate(1.7);
+    -webkit-backdrop-filter: blur(28px) saturate(1.7);
+    border: 1px solid hsl(225 18% 80% / 0.5);
     box-shadow:
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.75),
-      inset 0 0 0 0.5px hsl(40 50% 80% / 0.1),
-      0 8px 28px -6px hsl(224 30% 50% / 0.1),
-      0 0 0 1px hsl(220 20% 85% / 0.2);
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.8),
+      inset 0 0 0 0.5px hsl(var(--glass-edge-gold)),
+      inset 0 -0.5px 0 0 hsl(var(--glass-edge-cool)),
+      0 1px 2px 0 hsl(var(--glass-shadow-sm)),
+      0 6px 20px -4px hsl(var(--glass-shadow-md)),
+      0 16px 48px -12px hsl(var(--glass-shadow-lg));
+  }
+
+  .glass-premium {
+    background:
+      linear-gradient(165deg, hsl(0 0% 100% / 0.72), hsl(0 0% 100% / 0.52));
+    backdrop-filter: blur(24px) saturate(1.65);
+    -webkit-backdrop-filter: blur(24px) saturate(1.65);
+    border: 1px solid hsl(225 18% 80% / 0.5);
+    box-shadow:
+      inset 0 1.5px 0 0 hsl(0 0% 100% / 0.85),
+      inset 0 0 0 0.5px hsl(40 45% 78% / 0.15),
+      inset 0 -0.5px 0 0 hsl(220 25% 75% / 0.1),
+      0 1px 2px 0 hsl(var(--glass-shadow-sm)),
+      0 8px 24px -6px hsl(var(--glass-shadow-md)),
+      0 20px 56px -16px hsl(var(--glass-shadow-lg));
   }
 
   /* ── Text gradients ── */
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(40 90% 45%), hsl(32 80% 38%));
+    background: linear-gradient(135deg, hsl(38 88% 48%), hsl(28 75% 36%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -153,18 +182,50 @@
   /* ── Hero backgrounds ── */
   .bg-hero-gradient {
     background:
-      radial-gradient(ellipse 70% 50% at 50% 0%, hsl(220 20% 94%) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 40% at 80% 100%, hsl(40 60% 90% / 0.4) 0%, transparent 50%),
-      radial-gradient(ellipse 40% 30% at 10% 60%, hsl(210 50% 92% / 0.3) 0%, transparent 50%),
-      linear-gradient(180deg, hsl(220 16% 97%) 0%, hsl(220 16% 95%) 100%);
+      radial-gradient(ellipse 65% 45% at 50% -5%, hsl(38 40% 92% / 0.5) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 35% at 85% 90%, hsl(212 45% 90% / 0.35) 0%, transparent 45%),
+      radial-gradient(ellipse 40% 30% at 8% 55%, hsl(38 40% 88% / 0.3) 0%, transparent 40%),
+      linear-gradient(175deg, hsl(225 18% 97%) 0%, hsl(225 18% 94%) 100%);
   }
 
   /* ── Ambient glow ── */
   .glow-gold {
-    box-shadow: 0 0 40px -8px hsl(40 85% 48% / 0.15);
+    box-shadow:
+      0 0 0 1px hsl(38 60% 70% / 0.12),
+      0 4px 20px -4px hsl(38 82% 44% / 0.15),
+      0 12px 40px -12px hsl(38 82% 44% / 0.1);
+  }
+
+  .glow-gold-strong {
+    box-shadow:
+      0 0 0 1px hsl(38 60% 65% / 0.18),
+      0 4px 16px -2px hsl(38 82% 44% / 0.2),
+      0 12px 44px -10px hsl(38 82% 44% / 0.15);
   }
 
   .glow-soft {
-    box-shadow: 0 0 40px -12px hsl(220 20% 60% / 0.1);
+    box-shadow: 0 0 36px -10px hsl(225 20% 55% / 0.1);
+  }
+
+  /* ── Premium shimmer ── */
+  .shimmer-edge {
+    position: relative;
+  }
+  .shimmer-edge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      hsl(0 0% 100% / 0.08) 45%,
+      hsl(0 0% 100% / 0.15) 50%,
+      hsl(0 0% 100% / 0.08) 55%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: light-sweep 5s ease-in-out infinite;
+    pointer-events: none;
   }
 }

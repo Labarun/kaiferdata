@@ -1,5 +1,5 @@
 /**
- * PublicLayout — Light liquid-glass layout
+ * PublicLayout — Premium light liquid-glass shell
  */
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,27 +23,25 @@ export function PublicLayout() {
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       {/* Sticky glass header */}
       <header
-        className={`sticky top-0 z-50 transition-all duration-400 ${
+        className={`sticky top-0 z-50 transition-all duration-500 ${
           scrolled
             ? "glass-strong"
-            : "bg-transparent border-b border-border/40"
+            : "bg-transparent"
         }`}
       >
         <div className="container flex h-14 items-center justify-between gap-3">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0 group">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/15 flex items-center justify-center transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-[0_0_12px_-4px_hsl(40_85%_48%/0.25)]">
-              <span className="text-[11px] font-bold text-primary">K</span>
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/8 border border-primary/15 flex items-center justify-center transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-[0_0_16px_-4px_hsl(38_82%_44%/0.25)] shimmer-edge overflow-hidden">
+              <span className="text-xs font-bold text-primary">K</span>
             </div>
-            <span className="text-sm font-medium text-foreground/80 tracking-tight">
+            <span className="text-[15px] font-semibold text-foreground/75 tracking-tight">
               Kaiferdata
             </span>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
             {[
               { label: "Buy Data", path: "/" },
@@ -52,10 +50,10 @@ export function PublicLayout() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3.5 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
+                className={`px-4 py-1.5 rounded-xl text-[13px] transition-all duration-200 ${
                   location.pathname === link.path
-                    ? "text-primary font-medium bg-primary/8"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    ? "text-primary font-medium glass-subtle"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
                 }`}
               >
                 {link.label}
@@ -63,25 +61,23 @@ export function PublicLayout() {
             ))}
           </nav>
 
-          {/* Desktop auth */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
             {user ? (
-              <Button asChild size="sm" className="h-8 text-xs">
+              <Button asChild size="sm" className="h-9 text-xs">
                 <Link to={getDashboardPath(user.role)}>Dashboard</Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild className="h-8 text-xs text-muted-foreground">
+                <Button variant="ghost" size="sm" asChild className="h-9 text-xs text-muted-foreground">
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button size="sm" asChild className="h-8 text-xs">
+                <Button size="sm" asChild className="h-9 text-xs">
                   <Link to="/register">Get Started</Link>
                 </Button>
               </>
             )}
           </div>
 
-          {/* Mobile right */}
           <div className="flex md:hidden items-center gap-1.5">
             {user && (
               <Button size="sm" asChild className="h-8 px-3 text-xs">
@@ -89,7 +85,7 @@ export function PublicLayout() {
               </Button>
             )}
             <button
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -97,7 +93,6 @@ export function PublicLayout() {
           </div>
         </div>
 
-        {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden glass-strong border-t border-border/30 animate-fade-in">
             <div className="container py-3 space-y-0.5">
@@ -108,16 +103,16 @@ export function PublicLayout() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                  className={`flex items-center px-3.5 py-3 rounded-xl text-sm transition-colors ${
                     location.pathname === link.path
-                      ? "text-primary font-medium bg-primary/8"
-                      : "text-foreground/60 hover:text-foreground"
+                      ? "text-primary font-medium bg-primary/6"
+                      : "text-foreground/55 hover:text-foreground"
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-3 border-t border-border/30 mt-3 space-y-2">
+              <div className="pt-3 border-t border-border/25 mt-3 space-y-2">
                 {user ? (
                   <Button asChild className="w-full h-11">
                     <Link to={getDashboardPath(user.role)}>Dashboard</Link>
@@ -147,34 +142,36 @@ export function PublicLayout() {
         href="https://wa.me/233000000000"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 z-40 glass-elevated h-9 px-3.5 rounded-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-95"
+        className="fixed bottom-5 right-5 z-40 glass-elevated h-10 px-4 rounded-full flex items-center gap-2.5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-95 hover:glow-soft"
         aria-label="WhatsApp Support"
       >
-        <MessageCircle className="h-3.5 w-3.5 text-success" />
-        <span className="hidden sm:inline text-[11px]">Support</span>
+        <div className="h-5 w-5 rounded-full bg-success/12 flex items-center justify-center">
+          <MessageCircle className="h-3 w-3 text-success" />
+        </div>
+        <span className="hidden sm:inline text-[11px] font-medium">Support</span>
       </a>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-[hsl(220_16%_97%)]">
-        <div className="container py-7">
+      <footer className="border-t border-border/40 bg-[hsl(225_18%_97%/0.6)] backdrop-blur-sm">
+        <div className="container py-8">
           <div className="grid gap-5 sm:grid-cols-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-5 w-5 rounded-md bg-primary/12 border border-primary/12 flex items-center justify-center">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="h-6 w-6 rounded-lg bg-primary/12 border border-primary/10 flex items-center justify-center">
                   <span className="text-[9px] font-bold text-primary">K</span>
                 </div>
-                <span className="text-xs font-medium text-foreground/70">Kaiferdata</span>
+                <span className="text-xs font-semibold text-foreground/65">Kaiferdata</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Ghana's premium data bundle platform.
               </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-muted-foreground/70">
                 <MapPin className="h-3 w-3" />
                 <span>Accra, Ghana</span>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground/60 mb-2 uppercase tracking-wider">Links</p>
+              <p className="text-[10px] font-semibold text-muted-foreground/50 mb-2.5 uppercase tracking-wider">Links</p>
               <div className="space-y-1.5">
                 <Link to="/" className="block text-[11px] text-muted-foreground hover:text-foreground transition-colors">Buy Data</Link>
                 <Link to="/track" className="block text-[11px] text-muted-foreground hover:text-foreground transition-colors">Track Order</Link>
@@ -182,13 +179,13 @@ export function PublicLayout() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground/60 mb-2 uppercase tracking-wider">Support</p>
+              <p className="text-[10px] font-semibold text-muted-foreground/50 mb-2.5 uppercase tracking-wider">Support</p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Reach us on WhatsApp for instant help.
+                Reach us on WhatsApp for instant help with orders and bundles.
               </p>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-border/40 text-center text-[10px] text-muted-foreground/50">
+          <div className="mt-6 pt-4 border-t border-border/30 text-center text-[10px] text-muted-foreground/45">
             &copy; {new Date().getFullYear()} Kaiferdata. All rights reserved.
           </div>
         </div>

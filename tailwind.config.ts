@@ -63,11 +63,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        hero: {
-          DEFAULT: "hsl(var(--hero))",
-          foreground: "hsl(var(--hero-foreground))",
-          muted: "hsl(var(--hero-muted))",
-        },
         network: {
           mtn: "hsl(var(--network-mtn))",
           telecel: "hsl(var(--network-telecel))",
@@ -147,7 +142,7 @@ export default {
         "pulse-soft": "pulse-soft 2.5s ease-in-out infinite",
         "glow-pulse": "glow-pulse 3s ease-in-out infinite",
         "float": "float 4s ease-in-out infinite",
-        "light-sweep": "light-sweep 4s ease-in-out infinite",
+        "light-sweep": "light-sweep 5s ease-in-out infinite",
       },
     },
   },
