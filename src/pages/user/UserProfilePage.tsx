@@ -1,16 +1,15 @@
 /**
- * User Profile Page — Account info and settings
+ * User Profile Page — Premium liquid-glass account management
  */
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RoleBadge } from "@/components/shared/RoleBadge";
 import { AccountStatusBadge } from "@/components/shared/AccountStatusBadge";
-import { UserCircle, Save, Loader2 } from "lucide-react";
+import { UserCircle, Save, Loader2, Mail, Phone, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 export default function UserProfilePage() {
@@ -39,64 +38,75 @@ export default function UserProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="animate-fade-in space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Profile</h1>
+    <div className="space-y-6">
+      <div className="animate-fade-in">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Profile</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Manage your account information</p>
       </div>
 
-      {/* Account summary */}
-      <Card className="glass-card">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserCircle className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-foreground">{user.fullName || user.username}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <RoleBadge role={user.role} />
-                <AccountStatusBadge status={user.accountStatus} />
-              </div>
+      {/* Account hero card */}
+      <div className="glass-wallet-hero rounded-2xl p-6 animate-fade-in animate-stagger-1">
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
+            <UserCircle className="h-8 w-8 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-foreground truncate">{user.fullName || user.username}</p>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <RoleBadge role={user.role} />
+              <AccountStatusBadge status={user.accountStatus} />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Edit form */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Personal Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="glass-card rounded-xl overflow-hidden animate-fade-in animate-stagger-2">
+        <div className="px-5 py-3.5 border-b border-border/20">
+          <h3 className="section-label flex items-center gap-2"><Shield className="h-3.5 w-3.5" /> Personal Information</h3>
+        </div>
+        <div className="p-5 space-y-5">
           <div className="space-y-1.5">
-            <Label className="text-xs">Username</Label>
-            <Input value={user.username} disabled className="bg-muted/50 text-sm" />
-            <p className="text-[10px] text-muted-foreground">Username cannot be changed</p>
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Mail className="h-3 w-3" /> Email
+            </Label>
+            <Input value={user.email} disabled className="bg-muted/30 text-sm rounded-xl h-11 border-0" />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Email</Label>
-            <Input value={user.email} disabled className="bg-muted/50 text-sm" />
+            <Label className="text-xs text-muted-foreground">Username</Label>
+            <Input value={user.username} disabled className="bg-muted/30 text-sm rounded-xl h-11 border-0" />
+            <p className="text-[10px] text-muted-foreground/50">Username cannot be changed</p>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Full Name</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="text-sm" />
+            <Label className="text-xs text-muted-foreground">Full Name</Label>
+            <Input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="text-sm rounded-xl h-11 glass-subtle border-0"
+            />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Phone Number</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="text-sm" placeholder="0XX XXX XXXX" />
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Phone className="h-3 w-3" /> Phone Number
+            </Label>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="text-sm rounded-xl h-11 glass-subtle border-0"
+              placeholder="0XX XXX XXXX"
+            />
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl h-11">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Changes
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

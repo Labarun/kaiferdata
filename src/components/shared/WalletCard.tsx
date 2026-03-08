@@ -1,11 +1,10 @@
 /**
- * WalletCard - Displays wallet balance summary (GH₵)
+ * WalletCard — Premium liquid-glass wallet hero surface (GH₵)
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { Wallet } from "lucide-react";
+import { Wallet, TrendingUp, Lock } from "lucide-react";
 
 export function WalletCard({ compact }: { compact?: boolean }) {
   const { user } = useAuth();
@@ -44,29 +43,39 @@ export function WalletCard({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <Card className="glass-premium shimmer-edge overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <Wallet className="h-5 w-5 text-primary" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
+    <div className="glass-wallet-hero rounded-2xl shimmer-edge overflow-hidden p-6 relative">
+      {/* Ambient glow dot */}
+      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+
+      <div className="flex items-center gap-3 mb-5">
+        <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/10">
+          <Wallet className="h-5 w-5 text-primary" />
         </div>
-        {loading ? (
-          <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
-        ) : (
-          <>
-            <p className="text-3xl font-bold text-foreground tracking-tight">
-              GH₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
-            </p>
-            {locked > 0 && (
-              <p className="text-xs text-muted-foreground mt-1.5">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Wallet Balance</p>
+        </div>
+        <div className="ml-auto flex items-center gap-1 text-[10px] text-primary/60 font-medium">
+          <TrendingUp className="h-3 w-3" /> GHS
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-10 w-40 bg-muted/40 animate-pulse rounded-xl" />
+      ) : (
+        <>
+          <p className="text-4xl font-bold text-foreground tracking-tight leading-none">
+            GH₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+          </p>
+          {locked > 0 && (
+            <div className="flex items-center gap-1.5 mt-2.5">
+              <Lock className="h-3 w-3 text-muted-foreground/60" />
+              <p className="text-xs text-muted-foreground">
                 Locked: GH₵{locked.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
               </p>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
