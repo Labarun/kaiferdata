@@ -44,7 +44,6 @@ export default function BuyDataPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [intent, setIntent] = useState<PurchaseIntent | null>(null);
 
   // Track plan grid transition key for re-entrance animation
   const [plansKey, setPlansKey] = useState(0);
