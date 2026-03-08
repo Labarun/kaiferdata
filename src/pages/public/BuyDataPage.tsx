@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
-import { IntentCreated } from "@/components/buy/IntentCreated";
+
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import {
   fetchDataPlans,
