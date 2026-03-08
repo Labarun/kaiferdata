@@ -28,6 +28,12 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
 // Dashboard pages
 import UserDashboardHome from "@/pages/user/UserDashboardHome";
+import UserWalletPage from "@/pages/user/UserWalletPage";
+import UserOrdersPage from "@/pages/user/UserOrdersPage";
+import UserOrderDetailPage from "@/pages/user/UserOrderDetailPage";
+import UserTransactionsPage from "@/pages/user/UserTransactionsPage";
+import UserProfilePage from "@/pages/user/UserProfilePage";
+import UserBuyDataPage from "@/pages/user/UserBuyDataPage";
 import AgentDashboardHome from "@/pages/agent/AgentDashboardHome";
 import AdminDashboardHome from "@/pages/admin/AdminDashboardHome";
 import StaffDashboardHome from "@/pages/staff/StaffDashboardHome";
