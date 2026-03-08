@@ -1,5 +1,5 @@
 /**
- * IntentCreated - Success state with glass surfaces
+ * IntentCreated — Light liquid-glass success state
  */
 import type { PurchaseIntent } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
@@ -26,17 +26,17 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
     <div className="space-y-5 animate-fade-in-up">
       {/* Success header */}
       <div className="text-center py-5">
-        <div className="h-12 w-12 rounded-2xl bg-success/15 flex items-center justify-center mx-auto mb-3 animate-scale-in">
+        <div className="h-12 w-12 rounded-2xl bg-success/12 flex items-center justify-center mx-auto mb-3 animate-scale-in">
           <CheckCircle2 className="h-6 w-6 text-success" />
         </div>
-        <h3 className="text-lg font-medium text-foreground">Order Initialized</h3>
+        <h3 className="text-lg font-semibold text-foreground">Order Initialized</h3>
         <p className="text-xs text-muted-foreground mt-1">
           Save your reference to track this order
         </p>
       </div>
 
       {/* Reference card */}
-      <div className="glass-strong rounded-xl p-4 flex items-center justify-between gap-3">
+      <div className="glass-elevated rounded-xl p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
             Reference
@@ -47,7 +47,7 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         </div>
         <button
           onClick={copyRef}
-          className="shrink-0 h-9 w-9 rounded-lg bg-accent/50 hover:bg-accent flex items-center justify-center transition-colors active:scale-95"
+          className="shrink-0 h-9 w-9 rounded-lg bg-accent hover:bg-accent/70 flex items-center justify-center transition-colors active:scale-95"
         >
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
@@ -59,7 +59,7 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
       )}
 
       {/* Details */}
-      <div className="rounded-xl glass-subtle divide-y divide-border/20">
+      <div className="rounded-xl glass-card divide-y divide-border/40">
         <Row label="Network" value={intent.network} />
         <Row
           label="Plan"
@@ -68,13 +68,13 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         <Row label="Phone" value={intent.phone_number} mono />
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-xs text-muted-foreground">Amount</span>
-          <span className="text-base font-medium text-primary">
+          <span className="text-base font-bold text-primary">
             GH₵{Number(intent.amount_expected).toLocaleString()}
           </span>
         </div>
         <div className="flex items-center justify-between px-4 py-2.5">
           <span className="text-xs text-muted-foreground">Status</span>
-          <span className="text-[11px] text-primary capitalize px-2.5 py-0.5 rounded-full bg-primary/10">
+          <span className="text-[11px] text-primary font-medium capitalize px-2.5 py-0.5 rounded-full bg-primary/10">
             {intent.status.replace("_", " ")}
           </span>
         </div>
@@ -105,19 +105,11 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
   );
 }
 
-function Row({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`text-sm text-foreground ${mono ? "font-mono" : ""}`}>
+      <span className={`text-sm text-foreground/80 ${mono ? "font-mono" : ""}`}>
         {value}
       </span>
     </div>

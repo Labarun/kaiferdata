@@ -1,5 +1,5 @@
 /**
- * BuyDataPage — Premium Ghana-only data buying experience (homepage)
+ * BuyDataPage — Light liquid-glass Ghana buy-data experience (homepage)
  */
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -46,13 +46,11 @@ export default function BuyDataPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Only show Ghana networks that have plans, but always show all 3
   const networks = useMemo(() => {
     const available = getNetworks(plans);
     return GHANA_NETWORKS.filter((n) => available.includes(n));
   }, [plans]);
 
-  // Auto-select first network if none selected
   useEffect(() => {
     if (!network && networks.length > 0 && !loading) {
       setNetwork(networks[0]);
@@ -132,22 +130,17 @@ export default function BuyDataPage() {
     <div className="min-h-[70vh]">
       {/* ─── Compact hero intro ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-35%] left-1/2 -translate-x-1/2 w-[480px] h-[280px] rounded-full bg-[hsl(226_30%_16%/0.5)] blur-[100px]" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] h-[120px] rounded-full bg-[hsl(42_88%_56%/0.025)] blur-[60px]" />
-        </div>
-
-        <div className="container relative pt-8 pb-6 sm:pt-12 sm:pb-8">
+        <div className="container relative pt-8 pb-5 sm:pt-10 sm:pb-7">
           <div className="max-w-lg mx-auto text-center">
             {/* Status pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle text-[11px] text-muted-foreground mb-4 animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-[11px] text-muted-foreground mb-4 animate-fade-in">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-soft" />
               <span>Service Online</span>
-              <span className="h-3 w-px bg-border/30" />
+              <span className="h-3 w-px bg-border/60" />
               <span>Instant Delivery</span>
             </div>
 
-            <h1 className="text-[1.5rem] sm:text-[1.75rem] font-medium tracking-[-0.02em] text-foreground leading-[1.15] animate-fade-in-up">
+            <h1 className="text-[1.5rem] sm:text-[1.75rem] font-semibold tracking-[-0.025em] text-foreground leading-[1.15] animate-fade-in-up">
               Buy Data{" "}
               <span className="text-gradient-gold">Instantly</span>
             </h1>
@@ -158,7 +151,7 @@ export default function BuyDataPage() {
         </div>
 
         {/* Trust strip */}
-        <div className="border-t border-border/10">
+        <div className="border-t border-border/40">
           <div className="container py-2.5">
             <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
@@ -167,7 +160,7 @@ export default function BuyDataPage() {
                 { icon: Clock, label: "24/7" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-1.5">
-                  <item.icon className="h-3 w-3 text-primary/50" />
+                  <item.icon className="h-3 w-3 text-primary/60" />
                   <span className="text-[10px] text-muted-foreground">{item.label}</span>
                 </div>
               ))}
@@ -212,7 +205,7 @@ export default function BuyDataPage() {
             </section>
           )}
 
-          {/* Sticky bottom summary when plan selected */}
+          {/* Sticky bottom summary */}
           {plan && !checkoutOpen && (
             <div className="sticky bottom-4 z-30 animate-slide-up">
               <button
@@ -223,11 +216,11 @@ export default function BuyDataPage() {
                   <p className="text-[10px] text-muted-foreground truncate">
                     {plan.volume} · {network}
                   </p>
-                  <p className="text-base font-medium text-primary mt-0.5">
+                  <p className="text-base font-semibold text-primary mt-0.5">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
-                <div className="shrink-0 h-10 px-5 rounded-xl bg-gradient-to-b from-primary via-primary to-[hsl(38_80%_46%)] text-primary-foreground text-xs font-medium flex items-center gap-1.5 shadow-[inset_0_1px_0_0_hsl(42_90%_72%/0.35),0_4px_16px_-4px_hsl(42_88%_56%/0.35)]">
+                <div className="shrink-0 h-10 px-5 rounded-xl bg-gradient-to-b from-[hsl(40_90%_52%)] via-primary to-[hsl(36_78%_42%)] text-primary-foreground text-xs font-medium flex items-center gap-1.5 shadow-[inset_0_1px_0_0_hsl(42_90%_68%/0.5),0_4px_14px_-4px_hsl(40_85%_48%/0.3)]">
                   Continue
                   <ArrowRight className="h-3.5 w-3.5" />
                 </div>
@@ -237,7 +230,7 @@ export default function BuyDataPage() {
 
           {/* Quick links */}
           <div className="flex items-center justify-center gap-3 pt-2">
-            <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/60 h-8">
+            <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/50 h-8">
               <Link to="/track">
                 <Search className="h-3 w-3 mr-1" />
                 Track Order
