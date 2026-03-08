@@ -134,6 +134,50 @@ export type Database = {
         }
         Relationships: []
       }
+      order_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json | null
+          new_status: string
+          note: string | null
+          old_status: string | null
+          order_id: string
+          source: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+          order_id: string
+          source?: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+          order_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           actor_id: string | null
@@ -392,6 +436,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_request_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          is_success: boolean | null
+          normalized_result: string | null
+          order_id: string
+          request_payload: Json | null
+          request_started_at: string
+          response_payload: Json | null
+          response_received_at: string | null
+          supplier_id: string | null
+          supplier_reference: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_success?: boolean | null
+          normalized_result?: string | null
+          order_id: string
+          request_payload?: Json | null
+          request_started_at?: string
+          response_payload?: Json | null
+          response_received_at?: string | null
+          supplier_id?: string | null
+          supplier_reference?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_success?: boolean | null
+          normalized_result?: string | null
+          order_id?: string
+          request_payload?: Json | null
+          request_started_at?: string
+          response_payload?: Json | null
+          response_received_at?: string | null
+          supplier_id?: string | null
+          supplier_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_request_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_request_logs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          api_base_url: string | null
+          auth_config: Json | null
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          name: string
+          priority: number
+          provider_code: string
+          request_timeout_ms: number
+          supported_networks: Json
+          updated_at: string
+        }
+        Insert: {
+          api_base_url?: string | null
+          auth_config?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name: string
+          priority?: number
+          provider_code: string
+          request_timeout_ms?: number
+          supported_networks?: Json
+          updated_at?: string
+        }
+        Update: {
+          api_base_url?: string | null
+          auth_config?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name?: string
+          priority?: number
+          provider_code?: string
+          request_timeout_ms?: number
+          supported_networks?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {
