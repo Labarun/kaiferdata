@@ -277,4 +277,68 @@
     @apply text-[10.5px] uppercase tracking-[0.15em] font-semibold;
     color: hsl(224 12% 46% / 0.55);
   }
+
+  /* ── Interaction animations ── */
+  .animate-summary-enter {
+    animation: summary-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-summary-exit {
+    animation: summary-exit 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .animate-plans-enter {
+    animation: plans-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* ── Keyframes ── */
+@keyframes light-sweep {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -50% 0; }
+}
+
+@keyframes summary-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes summary-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+}
+
+@keyframes plans-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(38 82% 44% / 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsl(38 82% 44% / 0);
+  }
 }
