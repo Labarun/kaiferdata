@@ -14,16 +14,330 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      notices: {
+        Row: {
+          audience: Database["public"]["Enums"]["notice_audience"]
+          body: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          notice_type: Database["public"]["Enums"]["notice_type"]
+          starts_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["notice_audience"]
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          notice_type?: Database["public"]["Enums"]["notice_type"]
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["notice_audience"]
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          notice_type?: Database["public"]["Enums"]["notice_type"]
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_login_at: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          last_login_at?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          last_login_at?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_group: string | null
+          setting_key: string
+          setting_value: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_group?: string | null
+          setting_key: string
+          setting_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_group?: string | null
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          country: string | null
+          created_at: string
+          default_network_preference: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          default_network_preference?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          default_network_preference?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          closing_balance: number
+          created_at: string
+          created_by: string | null
+          direction: Database["public"]["Enums"]["transaction_direction"]
+          id: string
+          linked_record_id: string | null
+          linked_record_type: string | null
+          narration: string | null
+          opening_balance: number
+          reference: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          closing_balance?: number
+          created_at?: string
+          created_by?: string | null
+          direction: Database["public"]["Enums"]["transaction_direction"]
+          id?: string
+          linked_record_id?: string | null
+          linked_record_type?: string | null
+          narration?: string | null
+          opening_balance?: number
+          reference?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          closing_balance?: number
+          created_at?: string
+          created_by?: string | null
+          direction?: Database["public"]["Enums"]["transaction_direction"]
+          id?: string
+          linked_record_id?: string | null
+          linked_record_type?: string | null
+          narration?: string | null
+          opening_balance?: number
+          reference?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          created_at: string
+          current_balance: number
+          id: string
+          locked_balance: number
+          status: Database["public"]["Enums"]["wallet_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_balance?: number
+          id?: string
+          locked_balance?: number
+          status?: Database["public"]["Enums"]["wallet_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_balance?: number
+          id?: string
+          locked_balance?: number
+          status?: Database["public"]["Enums"]["wallet_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_account_status: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["account_status"]
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_status: "active" | "suspended" | "pending" | "disabled"
+      app_role: "user" | "agent" | "staff" | "admin"
+      notice_audience:
+        | "public"
+        | "users"
+        | "agents"
+        | "staff"
+        | "admins"
+        | "all"
+      notice_type:
+        | "service_notice"
+        | "maintenance_notice"
+        | "info_notice"
+        | "warning_notice"
+      transaction_direction: "inflow" | "outflow"
+      transaction_status: "pending" | "completed" | "failed" | "reversed"
+      transaction_type: "credit" | "debit" | "reversal" | "adjustment"
+      wallet_status: "active" | "frozen" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +464,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ["active", "suspended", "pending", "disabled"],
+      app_role: ["user", "agent", "staff", "admin"],
+      notice_audience: ["public", "users", "agents", "staff", "admins", "all"],
+      notice_type: [
+        "service_notice",
+        "maintenance_notice",
+        "info_notice",
+        "warning_notice",
+      ],
+      transaction_direction: ["inflow", "outflow"],
+      transaction_status: ["pending", "completed", "failed", "reversed"],
+      transaction_type: ["credit", "debit", "reversal", "adjustment"],
+      wallet_status: ["active", "frozen", "closed"],
+    },
   },
 } as const
