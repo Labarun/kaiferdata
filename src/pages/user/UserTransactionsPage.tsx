@@ -1,11 +1,10 @@
 /**
- * User Transactions Page — Financial activity history
+ * User Transactions Page — Premium liquid-glass financial history
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Loader2, ArrowRightLeft, Clock } from "lucide-react";
+import { Loader2, ArrowRightLeft, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
 export default function UserTransactionsPage() {
   const { user } = useAuth();
@@ -15,7 +14,6 @@ export default function UserTransactionsPage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      // First get user's wallet
       const { data: wallet } = await supabase
         .from("wallets")
         .select("id")
@@ -37,46 +35,56 @@ export default function UserTransactionsPage() {
   }, [user]);
 
   return (
-    <div className="animate-fade-in space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Transaction History</h1>
+    <div className="space-y-5">
+      <div className="animate-fade-in">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Transactions</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Your financial activity</p>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center py-14"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : transactions.length === 0 ? (
-        <Card>
-          <div className="py-12 text-center">
-            <ArrowRightLeft className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">No transactions yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Your wallet activity will appear here</p>
-          </div>
-        </Card>
+        <div className="glass-card rounded-xl py-14 text-center animate-fade-in">
+          <ArrowRightLeft className="h-10 w-10 text-muted-foreground/15 mx-auto mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No transactions yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Your wallet activity will appear here</p>
+        </div>
       ) : (
-        <div className="space-y-2">
-          {transactions.map((t) => (
-            <Card key={t.id as string}>
-              <div className="flex items-center justify-between p-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">{t.narration as string || t.transaction_type as string}</p>
-                  {t.reference && <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{t.reference as string}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(t.created_at as string).toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold ${t.direction === "inflow" ? "text-primary" : "text-foreground"}`}>
-                    {t.direction === "inflow" ? "+" : "−"}GH₵{Number(t.amount).toLocaleString()}
-                  </p>
-                  <p className={`text-[10px] mt-0.5 ${
-                    t.status === "completed" ? "text-primary" : t.status === "failed" ? "text-destructive" : "text-muted-foreground"
-                  }`}>{t.status as string}</p>
+        <div className="space-y-2 animate-fade-in animate-stagger-1">
+          {transactions.map((t) => {
+            const isInflow = t.direction === "inflow";
+            return (
+              <div key={t.id as string} className="glass-card rounded-xl">
+                <div className="flex items-center gap-3.5 p-4">
+                  {/* Direction icon */}
+                  <div className={`p-2 rounded-xl ${isInflow ? "bg-primary/10" : "bg-muted"}`}>
+                    {isInflow
+                      ? <ArrowDownLeft className="h-4 w-4 text-primary" />
+                      : <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    }
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{(t.narration as string) || (t.transaction_type as string)}</p>
+                    {t.reference && <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">{t.reference as string}</p>}
+                    <p className="text-[10px] text-muted-foreground/50 mt-0.5 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(t.created_at as string).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-bold ${isInflow ? "text-primary" : "text-foreground"}`}>
+                      {isInflow ? "+" : "−"}GH₵{Number(t.amount).toLocaleString()}
+                    </p>
+                    <p className={`text-[10px] font-medium mt-0.5 ${
+                      t.status === "completed" ? "text-primary/70" : t.status === "failed" ? "text-destructive" : "text-muted-foreground"
+                    }`}>{t.status as string}</p>
+                  </div>
                 </div>
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
