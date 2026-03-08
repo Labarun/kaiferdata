@@ -300,9 +300,51 @@ Deno.serve(async (req) => {
       },
     });
 
+    // ═══════════════════════════════════════════════════
+    // 11. LOG INITIAL STATUS HISTORY
+    // ═══════════════════════════════════════════════════
+    await supabase.from("order_status_history").insert({
+      order_id: order.id,
+      old_status: null,
+      new_status: "paid",
+      source: "verify_payment",
+      note: "Order created from verified Paystack payment",
+      metadata: { paystack_reference: reference },
+    });
+
+    // ═══════════════════════════════════════════════════
+    // 12. TRIGGER FULFILLMENT (fire-and-forget via edge function)
+    // ═══════════════════════════════════════════════════
+    let fulfillmentResult = null;
+    try {
+      const fulfillRes = await fetch(
+        `${supabaseUrl}/functions/v1/fulfill-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ order_id: order.id }),
+        }
+      );
+      fulfillmentResult = await fulfillRes.json();
+    } catch (fulfillErr) {
+      console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
+      // Non-blocking — order is still created, fulfillment can be retried
+    }
+
+    // Refetch order to get latest status after fulfillment
+    const { data: updatedOrder } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", order.id)
+      .single();
+
     return json({
       success: true,
-      order,
+      order: updatedOrder || order,
+      fulfillment: fulfillmentResult,
     });
   } catch (err) {
     console.error("verify-payment error:", err);
