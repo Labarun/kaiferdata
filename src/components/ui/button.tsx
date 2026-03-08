@@ -5,24 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-primary via-primary to-[hsl(38_80%_46%)] text-primary-foreground shadow-[inset_0_1px_0_0_hsl(42_90%_72%/0.35),inset_0_-1px_0_0_hsl(38_80%_40%/0.3),0_2px_8px_-2px_hsl(42_88%_56%/0.4),0_6px_20px_-6px_hsl(42_88%_44%/0.3)] hover:shadow-[inset_0_1px_0_0_hsl(42_90%_72%/0.4),inset_0_-1px_0_0_hsl(38_80%_40%/0.35),0_4px_16px_-2px_hsl(42_88%_56%/0.45),0_8px_28px_-6px_hsl(42_88%_44%/0.35)] hover:brightness-[1.04] active:brightness-[0.96] active:shadow-[inset_0_2px_4px_-1px_hsl(38_80%_30%/0.4),0_1px_4px_-1px_hsl(42_88%_56%/0.2)] active:scale-[0.98]",
+          "bg-gradient-to-b from-[hsl(40_90%_52%)] via-primary to-[hsl(36_78%_42%)] text-primary-foreground shadow-[inset_0_1px_0_0_hsl(42_90%_68%/0.5),inset_0_-1px_0_0_hsl(36_80%_36%/0.3),0_2px_8px_-2px_hsl(40_85%_48%/0.3),0_4px_16px_-4px_hsl(40_85%_40%/0.2)] hover:shadow-[inset_0_1px_0_0_hsl(42_90%_68%/0.55),inset_0_-1px_0_0_hsl(36_80%_36%/0.35),0_4px_14px_-2px_hsl(40_85%_48%/0.35),0_6px_24px_-4px_hsl(40_85%_40%/0.25)] hover:brightness-[1.03] active:brightness-[0.95] active:shadow-[inset_0_2px_4px_-1px_hsl(36_80%_30%/0.35),0_1px_3px_-1px_hsl(40_85%_48%/0.15)] active:scale-[0.98]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-border/50 bg-transparent hover:bg-accent/30 hover:border-muted-foreground/15 text-foreground",
+          "border border-border bg-transparent hover:bg-accent/50 hover:border-muted-foreground/20 text-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/70",
         ghost:
-          "hover:bg-accent/30 hover:text-accent-foreground",
+          "hover:bg-accent/50 hover:text-accent-foreground",
         link:
           "text-primary underline-offset-4 hover:underline",
         glass:
-          "glass-card text-foreground/75 hover:text-foreground hover:border-[hsl(220_30%_55%/0.12)] active:scale-[0.98] active:shadow-[inset_0_1px_3px_-1px_hsl(226_30%_4%/0.3)]",
+          "glass-card text-foreground/70 hover:text-foreground hover:border-[hsl(220_20%_78%/0.6)] active:scale-[0.98] active:shadow-[inset_0_1px_3px_-1px_hsl(220_16%_70%/0.15)]",
       },
       size: {
         default: "h-10 px-5 py-2",
