@@ -69,7 +69,7 @@ export default function StaffIssueQueuePage() {
 
   const escalateItem = async (item: Record<string, unknown>, type: string) => {
     if (!user) return;
-    await supabase.from("audit_logs").insert({
+    await supabase.from("audit_logs").insert([{
       action: "staff_escalation",
       actor_id: user.id,
       actor_role: "staff",
@@ -80,7 +80,7 @@ export default function StaffIssueQueuePage() {
         status: item.status,
         reason: "Staff escalated from issue queue",
       },
-    });
+    }]);
     toast.success("Escalated to admin");
   };
 

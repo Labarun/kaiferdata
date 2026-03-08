@@ -39,7 +39,7 @@ export default function StaffTransactionDetailPage() {
   const escalate = async () => {
     if (!record || !user) return;
     setEscalating(true);
-    await supabase.from("audit_logs").insert({
+    await supabase.from("audit_logs").insert([{
       action: "staff_escalation",
       actor_id: user.id,
       actor_role: "staff",
@@ -51,7 +51,7 @@ export default function StaffTransactionDetailPage() {
         has_order: !!order,
         reason: "Staff flagged for admin review — possible missing order",
       },
-    });
+    }]);
     toast.success("Escalated to admin for review");
     setEscalating(false);
   };
