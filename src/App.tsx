@@ -17,6 +17,8 @@ import { StaffLayout } from "@/layouts/StaffLayout";
 
 // Public pages
 import LandingPage from "@/pages/public/LandingPage";
+import BuyDataPage from "@/pages/public/BuyDataPage";
+import TrackOrderPage from "@/pages/public/TrackOrderPage";
 
 // Auth pages
 import LoginPage from "@/pages/auth/LoginPage";
@@ -49,6 +51,8 @@ const App = () => (
             {/* ====== PUBLIC AREA ====== */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/buy" element={<BuyDataPage />} />
+              <Route path="/track" element={<TrackOrderPage />} />
               <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
               <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
