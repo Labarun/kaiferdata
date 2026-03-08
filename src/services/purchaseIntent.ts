@@ -46,7 +46,7 @@ export async function createPurchaseIntent(params: {
   customerName?: string;
 }): Promise<PurchaseIntent> {
   const intentRef = generateIntentRef();
-  
+
   // Create plan snapshot for immutability
   const planSnapshot = {
     id: params.plan.id,
@@ -72,13 +72,34 @@ export async function createPurchaseIntent(params: {
       amount_expected: Number(params.plan.amount),
       customer_email: params.customerEmail || null,
       customer_name: params.customerName || null,
-      // Intent expires in 30 minutes
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     })
     .select()
     .single();
 
   if (error) throw error;
+  return data;
+}
+
+/** Initialize Paystack payment for a purchase intent (server-side via edge function) */
+export async function initializePayment(intentId: string): Promise<{
+  authorization_url: string;
+  access_code: string;
+  reference: string;
+  intent_reference: string;
+}> {
+  const { data, error } = await supabase.functions.invoke("initialize-payment", {
+    body: { intent_id: intentId },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Payment initialization failed");
+  }
+
+  if (!data?.success) {
+    throw new Error(data?.error || "Payment initialization failed");
+  }
+
   return data;
 }
 
