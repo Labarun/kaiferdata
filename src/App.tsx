@@ -17,6 +17,8 @@ import { StaffLayout } from "@/layouts/StaffLayout";
 
 // Public pages
 import LandingPage from "@/pages/public/LandingPage";
+import BuyDataPage from "@/pages/public/BuyDataPage";
+import TrackOrderPage from "@/pages/public/TrackOrderPage";
 
 // Auth pages
 import LoginPage from "@/pages/auth/LoginPage";
