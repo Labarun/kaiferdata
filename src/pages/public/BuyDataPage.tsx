@@ -3,7 +3,7 @@
  */
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
@@ -97,7 +97,7 @@ export default function BuyDataPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <p className="text-xs text-muted-foreground">Loading plans…</p>
+          <p className="text-[11px] text-muted-foreground">Loading plans…</p>
         </div>
       </div>
     );
@@ -115,18 +115,22 @@ export default function BuyDataPage() {
 
   return (
     <div className="min-h-[70vh]">
-      {/* Header */}
-      <div className="bg-hero-gradient border-b border-border/20">
-        <div className="container py-6 sm:py-8">
+      {/* Page header */}
+      <div className="bg-hero-gradient relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-40%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-[hsl(228_28%_16%/0.5)] blur-[100px]" />
+        </div>
+        <div className="container relative py-7 sm:py-9">
           <div className="max-w-lg mx-auto text-center">
-            <h1 className="text-xl sm:text-2xl font-medium text-hero-foreground">
+            <h1 className="text-xl sm:text-2xl font-medium text-hero-foreground tracking-tight">
               Buy Data Bundle
             </h1>
-            <p className="text-xs text-hero-muted mt-1.5">
+            <p className="text-[11px] text-hero-muted mt-1.5">
               Select your network and plan to get started
             </p>
           </div>
         </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-border/20 to-transparent" />
       </div>
 
       <div className="container py-5 sm:py-7">
@@ -134,8 +138,8 @@ export default function BuyDataPage() {
           <NoticeBanner audience="public" />
 
           {/* Network selector */}
-          <section>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">
+          <section className="animate-fade-in">
+            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest mb-3 font-medium">
               Choose Network
             </p>
             <NetworkSelector
@@ -147,12 +151,12 @@ export default function BuyDataPage() {
 
           {/* Plan grid */}
           {network && (
-            <section className="animate-fade-in">
+            <section className="animate-fade-in-up">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-medium">
                   {network} Plans
                 </p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground/50">
                   {filteredPlans.length} available
                 </p>
               </div>
@@ -166,21 +170,22 @@ export default function BuyDataPage() {
 
           {/* Sticky bottom summary */}
           {plan && !checkoutOpen && (
-            <div className="sticky bottom-4 z-30 animate-fade-in">
+            <div className="sticky bottom-4 z-30 animate-slide-up">
               <button
                 onClick={() => setCheckoutOpen(true)}
-                className="w-full glass-strong rounded-2xl p-4 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
+                className="w-full glass-elevated rounded-2xl p-4 flex items-center justify-between gap-3 active:scale-[0.98] transition-all duration-200 hover:shadow-[0_0_32px_-8px_hsl(42_88%_56%/0.12)]"
               >
                 <div className="min-w-0 text-left">
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {plan.volume} · {network}
                   </p>
-                  <p className="text-base font-medium text-primary">
+                  <p className="text-base font-medium text-primary mt-0.5">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
-                <div className="shrink-0 h-9 px-5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 shadow-[0_2px_12px_-3px_hsl(42_88%_56%/0.35)]">
-                  Continue →
+                <div className="shrink-0 h-10 px-5 rounded-xl bg-gradient-to-b from-primary to-primary/90 text-primary-foreground text-xs font-medium flex items-center gap-1.5 shadow-[0_1px_0_0_hsl(42_88%_70%/0.3)_inset,0_4px_20px_-4px_hsl(42_88%_56%/0.4)]">
+                  Continue
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </div>
               </button>
             </div>
