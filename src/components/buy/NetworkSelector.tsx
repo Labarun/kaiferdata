@@ -1,5 +1,5 @@
 /**
- * NetworkSelector - Tinted glass network tiles with brand identity
+ * NetworkSelector - Premium branded liquid-glass network tiles
  */
 import { cn } from "@/lib/utils";
 
@@ -9,33 +9,47 @@ interface NetworkSelectorProps {
   onSelect: (network: string) => void;
 }
 
-const networkMeta: Record<string, { dot: string; activeBorder: string; glow: string }> = {
+const networkMeta: Record<string, {
+  dot: string;
+  gradient: string;
+  activeBorder: string;
+  activeGlow: string;
+  activeBg: string;
+}> = {
   MTN: {
     dot: "bg-network-mtn",
-    activeBorder: "border-network-mtn/40",
-    glow: "shadow-[0_0_20px_-6px_hsl(48_100%_50%/0.2)]",
+    gradient: "from-[hsl(48_100%_50%/0.1)] to-transparent",
+    activeBorder: "border-[hsl(48_100%_50%/0.25)]",
+    activeGlow: "shadow-[0_0_28px_-8px_hsl(48_100%_50%/0.2)]",
+    activeBg: "bg-[hsl(48_100%_50%/0.06)]",
   },
   Telecel: {
     dot: "bg-network-telecel",
-    activeBorder: "border-network-telecel/40",
-    glow: "shadow-[0_0_20px_-6px_hsl(0_72%_51%/0.15)]",
+    gradient: "from-[hsl(0_72%_51%/0.08)] to-transparent",
+    activeBorder: "border-[hsl(0_72%_51%/0.2)]",
+    activeGlow: "shadow-[0_0_28px_-8px_hsl(0_72%_51%/0.15)]",
+    activeBg: "bg-[hsl(0_72%_51%/0.04)]",
   },
   AirtelTigo: {
     dot: "bg-network-airteltigo",
-    activeBorder: "border-network-airteltigo/40",
-    glow: "shadow-[0_0_20px_-6px_hsl(210_80%_52%/0.15)]",
+    gradient: "from-[hsl(210_80%_52%/0.08)] to-transparent",
+    activeBorder: "border-[hsl(210_80%_52%/0.2)]",
+    activeGlow: "shadow-[0_0_28px_-8px_hsl(210_80%_52%/0.15)]",
+    activeBg: "bg-[hsl(210_80%_52%/0.04)]",
   },
 };
 
 const defaultMeta = {
   dot: "bg-primary",
-  activeBorder: "border-primary/40",
-  glow: "",
+  gradient: "from-primary/8 to-transparent",
+  activeBorder: "border-primary/25",
+  activeGlow: "",
+  activeBg: "bg-primary/5",
 };
 
 export function NetworkSelector({ networks, selected, onSelect }: NetworkSelectorProps) {
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-2">
       {networks.map((net) => {
         const isActive = selected === net;
         const m = networkMeta[net] || defaultMeta;
@@ -46,21 +60,29 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
             type="button"
             onClick={() => onSelect(net)}
             className={cn(
-              "relative flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl transition-all duration-250",
+              "relative flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl transition-all duration-300",
               isActive
-                ? `glass-strong ${m.activeBorder} ${m.glow}`
-                : "glass-subtle border-transparent hover:bg-accent/30 active:scale-[0.97]"
+                ? `glass-elevated bg-gradient-to-b ${m.gradient} ${m.activeBorder} ${m.activeGlow}`
+                : "glass-card hover:border-muted-foreground/10 active:scale-[0.97]"
             )}
           >
+            {/* Top accent line */}
+            <div
+              className={cn(
+                "absolute top-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-300",
+                isActive ? `w-8 ${m.dot}` : "w-0"
+              )}
+            />
+
             <span
               className={cn(
-                "h-2.5 w-2.5 rounded-full transition-all duration-200",
-                isActive ? `${m.dot} scale-110` : "bg-muted-foreground/30"
+                "h-3 w-3 rounded-full transition-all duration-300",
+                isActive ? `${m.dot} scale-110 shadow-sm` : "bg-muted-foreground/25"
               )}
             />
             <span
               className={cn(
-                "text-sm transition-colors duration-200",
+                "text-[13px] transition-all duration-200",
                 isActive ? "text-foreground font-medium" : "text-muted-foreground"
               )}
             >

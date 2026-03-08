@@ -1,5 +1,5 @@
 /**
- * CheckoutSheet - Liquid-glass bottom-sheet checkout
+ * CheckoutSheet - Premium liquid-glass bottom-sheet checkout
  */
 import { useState } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -14,6 +14,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { Loader2, ShieldCheck, ArrowRight, Phone, User, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -75,45 +76,52 @@ export function CheckoutSheet({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[92vh] bg-background/95 backdrop-blur-xl border-t border-border/30">
-        <div className="overflow-y-auto px-5 pb-6 pt-2">
+      <DrawerContent className="max-h-[92vh] bg-[hsl(228_24%_7%/0.97)] backdrop-blur-2xl border-t border-[hsl(220_30%_50%/0.1)]">
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-muted-foreground/20" />
+        </div>
+
+        <div className="overflow-y-auto px-5 pb-7 pt-1">
           <DrawerHeader className="p-0 mb-5">
-            <DrawerTitle className="text-base font-medium text-foreground text-center">
+            <DrawerTitle className="text-base font-medium text-foreground text-center tracking-tight">
               {step === "details" ? "Complete Your Order" : "Review & Confirm"}
             </DrawerTitle>
-            <DrawerDescription className="text-xs text-muted-foreground text-center">
+            <DrawerDescription className="text-[11px] text-muted-foreground text-center mt-0.5">
               {step === "details"
                 ? "Enter the recipient details below"
                 : "Verify everything looks correct"}
             </DrawerDescription>
           </DrawerHeader>
 
-          {/* Plan summary */}
-          <div className="flex items-center justify-between rounded-xl glass-subtle px-4 py-3.5 mb-5">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary shrink-0" />
-                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">
-                  {network}
-                </span>
+          {/* Plan summary card */}
+          <div className="glass-card rounded-2xl px-4 py-3.5 mb-5">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_hsl(42_88%_56%/0.3)]" />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                    {network}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-foreground/90 mt-1 truncate">
+                  {plan.volume}
+                  <span className="text-[11px] text-muted-foreground ml-1.5 font-normal">
+                    {plan.plan_name}
+                  </span>
+                </p>
               </div>
-              <p className="text-sm font-medium text-foreground mt-0.5 truncate">
-                {plan.volume}
-                <span className="text-xs text-muted-foreground ml-1.5">
-                  {plan.plan_name}
-                </span>
+              <p className="text-lg font-medium text-primary shrink-0">
+                GH₵{Number(plan.amount).toLocaleString()}
               </p>
             </div>
-            <p className="text-lg font-medium text-primary shrink-0">
-              GH₵{Number(plan.amount).toLocaleString()}
-            </p>
           </div>
 
           {step === "details" && (
             <div className="space-y-4 animate-fade-in">
               {/* Phone */}
               <div className="space-y-2">
-                <Label htmlFor="checkout-phone" className="text-xs text-foreground/80 flex items-center gap-1.5">
+                <Label htmlFor="checkout-phone" className="text-[11px] text-foreground/60 flex items-center gap-1.5">
                   <Phone className="h-3 w-3 text-muted-foreground" />
                   Recipient Phone <span className="text-destructive">*</span>
                 </Label>
@@ -124,20 +132,21 @@ export function CheckoutSheet({
                   placeholder="0XX XXX XXXX"
                   value={phoneNumber}
                   onChange={(e) => handlePhoneInput(e.target.value)}
-                  className={`h-12 text-base rounded-xl tracking-wide bg-accent/30 border-border/40 ${
-                    phoneError ? "border-destructive focus-visible:ring-destructive" : ""
-                  }`}
+                  className={cn(
+                    "h-12 text-base rounded-xl tracking-wide bg-accent/30 border-border/30 focus:border-primary/30 focus:shadow-[0_0_0_3px_hsl(42_88%_56%/0.08)]",
+                    phoneError && "border-destructive focus-visible:ring-destructive"
+                  )}
                   maxLength={11}
                 />
                 {phoneError && (
-                  <p className="text-[11px] text-destructive">{phoneError}</p>
+                  <p className="text-[10px] text-destructive">{phoneError}</p>
                 )}
               </div>
 
               {/* Optional fields */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-2">
-                  <Label htmlFor="checkout-name" className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Label htmlFor="checkout-name" className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <User className="h-3 w-3" /> Name
                   </Label>
                   <Input
@@ -145,12 +154,12 @@ export function CheckoutSheet({
                     placeholder="Optional"
                     value={customerName}
                     onChange={(e) => onCustomerNameChange(e.target.value)}
-                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/40"
+                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/30 focus:border-primary/30"
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="checkout-email" className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Label htmlFor="checkout-email" className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <Mail className="h-3 w-3" /> Email
                   </Label>
                   <Input
@@ -159,7 +168,7 @@ export function CheckoutSheet({
                     placeholder="Optional"
                     value={customerEmail}
                     onChange={(e) => onCustomerEmailChange(e.target.value)}
-                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/40"
+                    className="h-10 rounded-xl text-sm bg-accent/30 border-border/30 focus:border-primary/30"
                     maxLength={255}
                   />
                 </div>
@@ -167,7 +176,7 @@ export function CheckoutSheet({
 
               <Button
                 onClick={handleContinueToReview}
-                className="w-full h-12 rounded-xl text-sm"
+                className="w-full h-12 rounded-xl text-[13px]"
                 disabled={!canReview}
               >
                 Review Order
@@ -178,22 +187,22 @@ export function CheckoutSheet({
 
           {step === "review" && (
             <div className="space-y-4 animate-fade-in">
-              <div className="rounded-xl glass-subtle divide-y divide-border/20">
+              <div className="rounded-2xl glass-card divide-y divide-border/10 overflow-hidden">
                 <ReviewRow label="Network" value={network} />
                 <ReviewRow label="Plan" value={`${plan.volume} — ${plan.plan_name}`} />
                 <ReviewRow label="Phone" value={phoneNumber} mono />
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-xs text-muted-foreground">Total</span>
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <span className="text-[11px] text-muted-foreground">Total</span>
                   <span className="text-lg font-medium text-primary">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-0.5 text-success" />
+              <div className="flex items-start gap-2 text-[10px] text-muted-foreground/70 px-1">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-0.5 text-success/70" />
                 <span>
                   Your order is secured. You'll get a tracking reference after confirmation.
                 </span>
@@ -201,16 +210,16 @@ export function CheckoutSheet({
 
               <div className="flex gap-2.5">
                 <Button
-                  variant="outline"
+                  variant="glass"
                   onClick={() => setStep("details")}
-                  className="flex-1 h-11"
+                  className="flex-1 h-12 rounded-xl text-[13px]"
                   disabled={loading}
                 >
                   Edit
                 </Button>
                 <Button
                   onClick={onConfirm}
-                  className="flex-[2] h-11"
+                  className="flex-[2] h-12 rounded-xl text-[13px]"
                   disabled={loading}
                 >
                   {loading ? (
@@ -238,11 +247,12 @@ function ReviewRow({
 }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
       <span
-        className={`text-sm text-foreground text-right ${
-          mono ? "font-mono tracking-wide" : ""
-        }`}
+        className={cn(
+          "text-[13px] text-foreground/90 text-right",
+          mono && "font-mono tracking-wide"
+        )}
       >
         {value}
       </span>
