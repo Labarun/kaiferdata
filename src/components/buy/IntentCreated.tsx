@@ -1,5 +1,5 @@
 /**
- * IntentCreated — Light liquid-glass success state
+ * IntentCreated — Premium light glass success state
  */
 import type { PurchaseIntent } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
@@ -24,73 +24,69 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
 
   return (
     <div className="space-y-5 animate-fade-in-up">
-      {/* Success header */}
-      <div className="text-center py-5">
-        <div className="h-12 w-12 rounded-2xl bg-success/12 flex items-center justify-center mx-auto mb-3 animate-scale-in">
-          <CheckCircle2 className="h-6 w-6 text-success" />
+      <div className="text-center py-6">
+        <div className="h-14 w-14 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 animate-scale-in glow-soft">
+          <CheckCircle2 className="h-7 w-7 text-success" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground">Order Initialized</h3>
+        <h3 className="text-lg font-bold text-foreground">Order Initialized</h3>
         <p className="text-xs text-muted-foreground mt-1">
           Save your reference to track this order
         </p>
       </div>
 
-      {/* Reference card */}
-      <div className="glass-elevated rounded-xl p-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+      <div className="glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 glow-gold shimmer-edge overflow-hidden">
+        <div className="min-w-0 relative z-10">
+          <p className="text-[10px] text-muted-foreground/55 uppercase tracking-wider font-semibold">
             Reference
           </p>
-          <p className="font-mono text-sm text-foreground mt-0.5 truncate">
+          <p className="font-mono text-sm font-bold text-foreground mt-0.5 truncate">
             {intent.intent_reference}
           </p>
         </div>
         <button
           onClick={copyRef}
-          className="shrink-0 h-9 w-9 rounded-lg bg-accent hover:bg-accent/70 flex items-center justify-center transition-colors active:scale-95"
+          className="relative z-10 shrink-0 h-10 w-10 rounded-xl glass-card hover:glass-elevated flex items-center justify-center transition-all active:scale-95"
         >
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
       {copied && (
-        <p className="text-[11px] text-success text-center -mt-3 animate-fade-in">
+        <p className="text-[11px] text-success text-center -mt-3 font-medium animate-fade-in">
           Copied!
         </p>
       )}
 
-      {/* Details */}
-      <div className="rounded-xl glass-card divide-y divide-border/40">
+      <div className="rounded-2xl glass-card divide-y divide-border/30">
         <Row label="Network" value={intent.network} />
         <Row
           label="Plan"
           value={`${String(snapshot.volume || "")} — ${String(snapshot.plan_name || "")}`}
         />
         <Row label="Phone" value={intent.phone_number} mono />
-        <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-xs text-muted-foreground">Amount</span>
-          <span className="text-base font-bold text-primary">
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <span className="text-xs text-muted-foreground font-medium">Amount</span>
+          <span className="text-lg font-bold text-primary">
             GH₵{Number(intent.amount_expected).toLocaleString()}
           </span>
         </div>
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-xs text-muted-foreground">Status</span>
-          <span className="text-[11px] text-primary font-medium capitalize px-2.5 py-0.5 rounded-full bg-primary/10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="text-xs text-muted-foreground font-medium">Status</span>
+          <span className="text-[11px] text-primary font-semibold capitalize px-3 py-1 rounded-full bg-primary/8 border border-primary/15">
             {intent.status.replace("_", " ")}
           </span>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2.5">
+      <div className="flex gap-3">
         <Button
           variant="outline"
           onClick={onNewOrder}
-          className="flex-1 h-11"
+          className="flex-1 h-12"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           New Order
         </Button>
-        <Button asChild className="flex-[2] h-11">
+        <Button asChild className="flex-[2] h-12">
           <Link to={`/track?ref=${intent.intent_reference}`}>
             Track Order
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -98,7 +94,7 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         </Button>
       </div>
 
-      <p className="text-[11px] text-center text-muted-foreground">
+      <p className="text-[11px] text-center text-muted-foreground/50">
         Payment integration coming soon. Your reference is saved.
       </p>
     </div>
@@ -107,9 +103,9 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`text-sm text-foreground/80 ${mono ? "font-mono" : ""}`}>
+    <div className="flex items-center justify-between px-4 py-3">
+      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+      <span className={`text-sm text-foreground/75 font-medium ${mono ? "font-mono" : ""}`}>
         {value}
       </span>
     </div>
