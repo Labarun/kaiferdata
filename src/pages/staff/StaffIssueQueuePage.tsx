@@ -76,8 +76,8 @@ export default function StaffIssueQueuePage() {
       target_id: item.id as string,
       target_type: type,
       metadata: {
-        label: type === "order" ? item.public_order_id : type === "payment" ? item.internal_reference : item.intent_reference,
-        status: item.status,
+        label: (type === "order" ? item.public_order_id : type === "payment" ? item.internal_reference : item.intent_reference) as string,
+        status: item.status as string,
         reason: "Staff escalated from issue queue",
       },
     }]);

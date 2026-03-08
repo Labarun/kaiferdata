@@ -46,8 +46,8 @@ export default function StaffTransactionDetailPage() {
       target_id: transactionId,
       target_type: "payment_record",
       metadata: {
-        internal_reference: record.internal_reference,
-        payment_status: record.status,
+        internal_reference: record.internal_reference as string,
+        payment_status: record.status as string,
         has_order: !!order,
         reason: "Staff flagged for admin review — possible missing order",
       },
