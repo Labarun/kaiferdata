@@ -4,7 +4,7 @@
 import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   LayoutDashboard, ShoppingCart, ArrowRightLeft, Scale, ArrowDownToLine,
-  Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield,
+  Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield, FileText,
 } from "lucide-react";
 import type { AdminNavItem } from "@/layouts/AdminLayout";
 
