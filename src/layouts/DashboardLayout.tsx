@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, ChevronDown } from "lucide-react";
+import { User, LogOut, ChevronDown, UserCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavItem {
@@ -26,11 +26,12 @@ export interface NavItem {
 
 interface DashboardLayoutProps {
   navItems: NavItem[];
+  desktopExtraNav?: NavItem[];
   title: string;
   audienceFilter?: string;
 }
 
-export function DashboardLayout({ navItems, title, audienceFilter }: DashboardLayoutProps) {
+export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilter }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,6 +42,8 @@ export function DashboardLayout({ navItems, title, audienceFilter }: DashboardLa
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const allDesktopNav = [...navItems, ...(desktopExtraNav || [])];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -69,6 +72,11 @@ export function DashboardLayout({ navItems, title, audienceFilter }: DashboardLa
                 <div className="mt-1"><RoleBadge role={user?.role || "user"} /></div>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
+                <UserCircle className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
@@ -82,7 +90,7 @@ export function DashboardLayout({ navItems, title, audienceFilter }: DashboardLa
       <div className="flex-1 flex">
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-56 shrink-0 flex-col border-r bg-card p-4 space-y-1">
-          {navItems.map((item) => (
+          {allDesktopNav.map((item) => (
             <Link
               key={item.path}
               to={item.path}
