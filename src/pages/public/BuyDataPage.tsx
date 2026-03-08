@@ -98,10 +98,17 @@ export default function BuyDataPage() {
     setCheckoutOpen(true);
   }, []);
 
+  const [processingLabel, setProcessingLabel] = useState("");
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
   const handleConfirm = async () => {
     if (!network || !plan) return;
     setSubmitting(true);
+    setPaymentError(null);
+
     try {
+      // Step 1: Create purchase intent
+      setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
         network,
@@ -109,18 +116,23 @@ export default function BuyDataPage() {
         customerEmail: customerEmail || undefined,
         customerName: customerName || undefined,
       });
-      setIntent(result);
-      setCheckoutOpen(false);
-      setSummaryVisible(false);
+
+      // Step 2: Initialize Paystack payment
+      setProcessingLabel("Initializing payment…");
+      const payment = await initializePayment(result.id);
+
+      // Step 3: Redirect to Paystack
+      setProcessingLabel("Redirecting to Paystack…");
+      window.location.href = payment.authorization_url;
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err?.message || "Failed to create order",
-        variant: "destructive",
-      });
-    } finally {
       setSubmitting(false);
+      setPaymentError(err?.message || "Something went wrong. Please try again.");
     }
+  };
+
+  const handleClearError = () => {
+    setPaymentError(null);
+    setSubmitting(false);
   };
 
   const resetFlow = () => {
