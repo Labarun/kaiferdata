@@ -35,6 +35,13 @@ import StaffDashboardHome from "@/pages/staff/StaffDashboardHome";
 // Admin functional pages
 import SystemControlsPage from "@/pages/admin/SystemControlsPage";
 import AdminNoticesPage from "@/pages/admin/AdminNoticesPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
+import AdminTransactionsPage from "@/pages/admin/AdminTransactionsPage";
+import AdminTransactionDetailPage from "@/pages/admin/AdminTransactionDetailPage";
+import AdminReconciliationPage from "@/pages/admin/AdminReconciliationPage";
+import AdminIntentsPage from "@/pages/admin/AdminIntentsPage";
+import AdminIntentDetailPage from "@/pages/admin/AdminIntentDetailPage";
 
 import NotFound from "@/pages/NotFound";
 
