@@ -28,6 +28,12 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
 // Dashboard pages
 import UserDashboardHome from "@/pages/user/UserDashboardHome";
+import UserWalletPage from "@/pages/user/UserWalletPage";
+import UserOrdersPage from "@/pages/user/UserOrdersPage";
+import UserOrderDetailPage from "@/pages/user/UserOrderDetailPage";
+import UserTransactionsPage from "@/pages/user/UserTransactionsPage";
+import UserProfilePage from "@/pages/user/UserProfilePage";
+import UserBuyDataPage from "@/pages/user/UserBuyDataPage";
 import AgentDashboardHome from "@/pages/agent/AgentDashboardHome";
 import AdminDashboardHome from "@/pages/admin/AdminDashboardHome";
 import StaffDashboardHome from "@/pages/staff/StaffDashboardHome";
@@ -77,10 +83,12 @@ const App = () => (
             {/* ====== USER DASHBOARD ====== */}
             <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><UserLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<UserDashboardHome />} />
-              <Route path="/dashboard/wallet" element={<ScaffoldPage title="Wallet" description="Wallet management coming in Phase 2" />} />
-              <Route path="/dashboard/orders" element={<ScaffoldPage title="Orders" description="Order history coming in Phase 2" />} />
-              <Route path="/dashboard/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management coming in Phase 2" />} />
-              <Route path="/dashboard/notices" element={<ScaffoldPage title="Notices" description="Your notifications" />} />
+              <Route path="/dashboard/buy" element={<UserBuyDataPage />} />
+              <Route path="/dashboard/wallet" element={<UserWalletPage />} />
+              <Route path="/dashboard/orders" element={<UserOrdersPage />} />
+              <Route path="/dashboard/orders/:orderId" element={<UserOrderDetailPage />} />
+              <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
+              <Route path="/dashboard/profile" element={<UserProfilePage />} />
             </Route>
 
             {/* ====== AGENT DASHBOARD ====== */}
