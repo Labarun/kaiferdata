@@ -1,5 +1,5 @@
 /**
- * PlanSelector - Compact premium data plan cards
+ * PlanSelector - Compact premium bundle cards with strong price/volume hierarchy
  */
 import { cn } from "@/lib/utils";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -21,7 +21,7 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-2">
       {plans.map((plan, i) => {
         const isActive = selected?.id === plan.id;
         return (
@@ -30,32 +30,55 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
             type="button"
             onClick={() => onSelect(plan)}
             className={cn(
-              "relative flex flex-col p-3.5 rounded-xl border-2 transition-all duration-200 text-left",
-              "animate-fade-in",
+              "group relative flex flex-col rounded-xl border transition-all duration-200 text-left overflow-hidden",
+              "animate-fade-in active:scale-[0.97]",
               isActive
-                ? "bg-primary/8 border-primary shadow-sm scale-[1.01]"
-                : "bg-card border-border/60 hover:border-border hover:shadow-sm"
+                ? "bg-primary/8 border-primary/40 ring-2 ring-primary/15 shadow-sm"
+                : "bg-card border-border/50 hover:border-border hover:shadow-sm"
             )}
-            style={{ animationDelay: `${i * 30}ms` }}
+            style={{ animationDelay: `${i * 25}ms` }}
           >
-            {isActive && (
-              <div className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                <Check className="h-3 w-3 text-primary-foreground" />
+            {/* Top accent bar */}
+            <div
+              className={cn(
+                "h-0.5 w-full transition-all duration-200",
+                isActive ? "bg-primary" : "bg-transparent"
+              )}
+            />
+
+            <div className="p-3 flex flex-col gap-1.5">
+              {/* Volume + check */}
+              <div className="flex items-start justify-between">
+                <span
+                  className={cn(
+                    "text-base font-extrabold leading-tight",
+                    isActive ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  {plan.volume}
+                </span>
+                {isActive && (
+                  <span className="h-4.5 w-4.5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                    <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                  </span>
+                )}
               </div>
-            )}
-            <span className={cn(
-              "text-lg font-extrabold leading-none",
-              isActive ? "text-primary" : "text-foreground"
-            )}>
-              {plan.volume}
-            </span>
-            <span className="text-[11px] text-muted-foreground mt-1 leading-snug">{plan.plan_name}</span>
-            <span className={cn(
-              "text-sm font-extrabold mt-2.5",
-              isActive ? "text-primary" : "text-foreground"
-            )}>
-              GH₵{Number(plan.amount).toLocaleString()}
-            </span>
+
+              {/* Plan name */}
+              <span className="text-[10px] text-muted-foreground leading-snug line-clamp-1">
+                {plan.plan_name}
+              </span>
+
+              {/* Price */}
+              <span
+                className={cn(
+                  "text-sm font-extrabold mt-0.5",
+                  isActive ? "text-primary" : "text-foreground"
+                )}
+              >
+                GH₵{Number(plan.amount).toLocaleString()}
+              </span>
+            </div>
           </button>
         );
       })}
