@@ -344,6 +344,9 @@ export default function BuyDataPage() {
         onCustomerEmailChange={setCustomerEmail}
         onConfirm={handleConfirm}
         loading={submitting}
+        processingLabel={processingLabel}
+        paymentError={paymentError}
+        onClearError={handleClearError}
       />
     </div>
   );
