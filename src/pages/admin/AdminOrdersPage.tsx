@@ -30,7 +30,7 @@ export default function AdminOrdersPage() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as "paid" | "queued" | "processing" | "delivered" | "failed" | "cancelled" | "refunded");
     if (networkFilter !== "all") query = query.eq("network", networkFilter);
     if (search.trim()) {
       query = query.or(

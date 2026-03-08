@@ -28,7 +28,7 @@ export default function AdminTransactionsPage() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as "pending" | "verified" | "failed" | "reversed");
     if (search.trim()) {
       query = query.or(
         `provider_reference.ilike.%${search.trim()}%,internal_reference.ilike.%${search.trim()}%`
