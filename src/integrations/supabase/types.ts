@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      data_plans: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          network: string
+          plan_code: string
+          plan_name: string
+          sort_order: number
+          updated_at: string
+          volume: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          network: string
+          plan_code: string
+          plan_name: string
+          sort_order?: number
+          updated_at?: string
+          volume: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          network?: string
+          plan_code?: string
+          plan_name?: string
+          sort_order?: number
+          updated_at?: string
+          volume?: string
+        }
+        Relationships: []
+      }
       notices: {
         Row: {
           audience: Database["public"]["Enums"]["notice_audience"]
@@ -124,6 +169,80 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      purchase_intents: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          amount_expected: number
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          expires_at: string | null
+          id: string
+          intent_reference: string
+          intent_type: string
+          network: string
+          order_context: Json | null
+          payment_method: string | null
+          phone_number: string
+          plan_id: string | null
+          plan_snapshot: Json
+          source_channel: string
+          status: Database["public"]["Enums"]["intent_status"]
+          updated_at: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          amount_expected: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          expires_at?: string | null
+          id?: string
+          intent_reference: string
+          intent_type?: string
+          network: string
+          order_context?: Json | null
+          payment_method?: string | null
+          phone_number: string
+          plan_id?: string | null
+          plan_snapshot?: Json
+          source_channel?: string
+          status?: Database["public"]["Enums"]["intent_status"]
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          amount_expected?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          expires_at?: string | null
+          id?: string
+          intent_reference?: string
+          intent_type?: string
+          network?: string
+          order_context?: Json | null
+          payment_method?: string | null
+          phone_number?: string
+          plan_id?: string | null
+          plan_snapshot?: Json
+          source_channel?: string
+          status?: Database["public"]["Enums"]["intent_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_intents_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "data_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
@@ -322,6 +441,16 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "pending" | "disabled"
       app_role: "user" | "agent" | "staff" | "admin"
+      intent_status:
+        | "created"
+        | "pending_payment"
+        | "payment_processing"
+        | "payment_confirmed"
+        | "fulfilling"
+        | "completed"
+        | "failed"
+        | "expired"
+        | "cancelled"
       notice_audience:
         | "public"
         | "users"
@@ -467,6 +596,17 @@ export const Constants = {
     Enums: {
       account_status: ["active", "suspended", "pending", "disabled"],
       app_role: ["user", "agent", "staff", "admin"],
+      intent_status: [
+        "created",
+        "pending_payment",
+        "payment_processing",
+        "payment_confirmed",
+        "fulfilling",
+        "completed",
+        "failed",
+        "expired",
+        "cancelled",
+      ],
       notice_audience: ["public", "users", "agents", "staff", "admins", "all"],
       notice_type: [
         "service_notice",
