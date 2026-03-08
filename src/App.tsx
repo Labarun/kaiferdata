@@ -88,9 +88,13 @@ const App = () => (
             {/* ====== ADMIN PANEL ====== */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]}><FullAdminLayout /></ProtectedRoute>}>
               <Route path="/admin" element={<AdminDashboardHome />} />
-              <Route path="/admin/orders" element={<ScaffoldPage title="Orders" description="Order management" />} />
-              <Route path="/admin/transactions" element={<ScaffoldPage title="Transactions" description="Transaction management" />} />
-              <Route path="/admin/reconciliation" element={<ScaffoldPage title="Reconciliation" description="Reconciliation tools" />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
+              <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+              <Route path="/admin/transactions/:transactionId" element={<AdminTransactionDetailPage />} />
+              <Route path="/admin/reconciliation" element={<AdminReconciliationPage />} />
+              <Route path="/admin/intents" element={<AdminIntentsPage />} />
+              <Route path="/admin/intents/:intentId" element={<AdminIntentDetailPage />} />
               <Route path="/admin/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
               <Route path="/admin/users" element={<ScaffoldPage title="Users" description="User management" />} />
               <Route path="/admin/agents" element={<ScaffoldPage title="Agents" description="Agent management" />} />
