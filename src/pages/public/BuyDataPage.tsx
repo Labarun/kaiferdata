@@ -3,7 +3,7 @@
  */
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, ArrowRight, Zap, Shield, Clock, Search, Wifi } from "lucide-react";
+import { Loader2, ArrowRight, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
@@ -109,10 +109,10 @@ export default function BuyDataPage() {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 rounded-2xl glass-elevated flex items-center justify-center animate-pulse-soft">
-            <Wifi className="h-4 w-4 text-primary" />
+          <div className="h-11 w-11 rounded-2xl glass-elevated flex items-center justify-center animate-pulse-soft">
+            <Wifi className="h-4.5 w-4.5 text-primary" />
           </div>
-          <p className="text-xs text-muted-foreground">Loading plans…</p>
+          <p className="text-xs text-muted-foreground/60">Loading plans…</p>
         </div>
       </div>
     );
@@ -129,70 +129,79 @@ export default function BuyDataPage() {
   }
 
   return (
-    <div className="min-h-[70vh] pb-8">
+    <div className="min-h-[70vh] pb-10">
       {/* ─── Premium hero intro ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
-        {/* Ambient light orbs */}
+        {/* Layered ambient light */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-[hsl(38_50%_85%/0.35)] blur-[100px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[250px] h-[250px] rounded-full bg-[hsl(212_40%_88%/0.25)] blur-[80px]" />
-          <div className="absolute bottom-[10%] left-[-8%] w-[200px] h-[200px] rounded-full bg-[hsl(38_45%_86%/0.2)] blur-[70px]" />
+          <div className="absolute -top-[35%] left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-[hsl(38_45%_85%/0.4)] blur-[120px]" />
+          <div className="absolute bottom-[-25%] right-[-12%] w-[280px] h-[280px] rounded-full bg-[hsl(212_35%_86%/0.28)] blur-[90px]" />
+          <div className="absolute top-[40%] left-[-10%] w-[220px] h-[220px] rounded-full bg-[hsl(38_40%_84%/0.22)] blur-[80px]" />
         </div>
 
-        <div className="container relative pt-10 pb-7 sm:pt-14 sm:pb-9">
+        <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
-            {/* Status pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] text-muted-foreground mb-5 animate-fade-in shimmer-edge overflow-hidden">
-              <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_6px_hsl(152_52%_36%/0.4)] animate-pulse-soft" />
-              <span className="font-medium text-foreground/60">Service Online</span>
-              <span className="h-3.5 w-px bg-border/50" />
-              <Zap className="h-3 w-3 text-primary/50" />
-              <span className="text-foreground/50">Instant Delivery</span>
+            {/* Status pill — signature component */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in shimmer-edge overflow-hidden">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(152_52%_36%/0.45)]" />
+              </span>
+              <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
+              <span className="h-3 w-px bg-border/40 mx-0.5" />
+              <Zap className="h-3 w-3 text-primary/55" />
+              <span className="text-foreground/50 font-medium">Instant Delivery</span>
             </div>
 
-            <h1 className="text-[1.625rem] sm:text-[2rem] font-bold tracking-[-0.03em] text-foreground/90 leading-[1.12] animate-fade-in-up">
+            {/* Headline */}
+            <h1 className="text-[1.75rem] sm:text-[2.125rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.1] animate-fade-in-up">
               Buy Data{" "}
               <span className="text-gradient-gold">Instantly</span>
             </h1>
-            <p className="mt-3 text-[13px] text-muted-foreground leading-relaxed max-w-[280px] mx-auto animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
-              No account needed. Pick a network, choose a bundle, receive data in seconds.
+            <p
+              className="mt-3.5 text-[13.5px] text-muted-foreground/75 leading-[1.65] max-w-[300px] mx-auto animate-fade-in-up"
+              style={{ animationDelay: "0.08s" }}
+            >
+              Pick a network, choose your bundle, receive data in seconds.
             </p>
           </div>
         </div>
 
-        {/* Trust strip */}
+        {/* Trust strip — elegant horizontal */}
         <div className="relative">
-          <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-          <div className="container py-3">
-            <div className="flex items-center justify-center gap-6 sm:gap-9">
+          <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+          <div className="container py-3.5">
+            <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
-                { icon: Zap, label: "Instant", accent: "text-primary/55" },
-                { icon: Shield, label: "Secure", accent: "text-success/55" },
-                { icon: Clock, label: "24/7", accent: "text-info/55" },
-              ].map((item) => (
+                { icon: Zap, label: "Instant", accent: "text-primary/60" },
+                { icon: Shield, label: "Secure", accent: "text-success/60" },
+                { icon: Clock, label: "24/7", accent: "text-info/60" },
+                { icon: Globe, label: "Ghana Only", accent: "text-muted-foreground/45" },
+              ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
-                  <item.icon className={`h-3.5 w-3.5 ${item.accent}`} />
-                  <span className="text-[11px] text-muted-foreground/70 font-medium">{item.label}</span>
+                  {i > 0 && <span className="h-3 w-px bg-border/30 -ml-2.5 mr-0.5 sm:-ml-4 sm:mr-0" />}
+                  <div className="h-5 w-5 rounded-md bg-[hsl(0_0%_100%/0.5)] border border-[hsl(228_18%_86%/0.5)] flex items-center justify-center">
+                    <item.icon className={`h-3 w-3 ${item.accent}`} />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground/65 font-medium">{item.label}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-border/25 to-transparent" />
         </div>
       </section>
 
       {/* ─── Main buy flow ─── */}
-      <div className="container pt-6 sm:pt-8">
-        <div className="max-w-lg mx-auto space-y-6">
+      <div className="container pt-7 sm:pt-9">
+        <div className="max-w-lg mx-auto">
           <NoticeBanner audience="public" />
 
           {/* Network selector */}
-          <section className="animate-fade-in">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-1 w-1 rounded-full bg-primary/40" />
-              <p className="text-[11px] text-muted-foreground/55 uppercase tracking-[0.14em] font-semibold">
-                Choose Network
-              </p>
+          <section className="animate-fade-in mb-7">
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="h-1 w-1 rounded-full bg-primary/50" />
+              <p className="section-label">Choose Network</p>
             </div>
             <NetworkSelector
               networks={networks.length > 0 ? networks : GHANA_NETWORKS}
@@ -203,15 +212,13 @@ export default function BuyDataPage() {
 
           {/* Plans */}
           {network && (
-            <section className="animate-fade-in-up">
-              <div className="flex items-center justify-between mb-3">
+            <section className="animate-fade-in-up mb-7">
+              <div className="flex items-center justify-between mb-3.5">
                 <div className="flex items-center gap-2">
-                  <div className="h-1 w-1 rounded-full bg-primary/40" />
-                  <p className="text-[11px] text-muted-foreground/55 uppercase tracking-[0.14em] font-semibold">
-                    {network} Bundles
-                  </p>
+                  <div className="h-1 w-1 rounded-full bg-primary/50" />
+                  <p className="section-label">{network} Bundles</p>
                 </div>
-                <span className="text-[10px] text-muted-foreground/35 font-medium">
+                <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
                   {filteredPlans.length} available
                 </span>
               </div>
@@ -228,17 +235,17 @@ export default function BuyDataPage() {
             <div className="sticky bottom-5 z-30 animate-slide-up">
               <button
                 onClick={() => setCheckoutOpen(true)}
-                className="w-full glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 active:scale-[0.98] transition-all duration-200 glow-gold shimmer-edge overflow-hidden"
+                className="w-full glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 active:scale-[0.98] transition-all duration-200 glow-gold-strong shimmer-edge overflow-hidden"
               >
                 <div className="min-w-0 text-left relative z-10">
-                  <p className="text-[10px] text-muted-foreground/60 truncate font-medium">
+                  <p className="text-[10.5px] text-muted-foreground/60 truncate font-medium tracking-wide">
                     {plan.volume} · {network}
                   </p>
-                  <p className="text-lg font-bold text-primary mt-0.5">
+                  <p className="text-lg font-bold text-primary mt-0.5 tracking-tight">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
-                <div className="shrink-0 relative z-10 h-11 px-6 rounded-xl bg-gradient-to-b from-[hsl(38_88%_50%)] via-primary to-[hsl(34_75%_38%)] text-primary-foreground text-[13px] font-semibold flex items-center gap-2 shadow-[inset_0_1.5px_0_0_hsl(42_92%_65%/0.55),0_4px_14px_-4px_hsl(38_82%_44%/0.3)]">
+                <div className="shrink-0 relative z-10 h-11 px-6 rounded-xl bg-gradient-to-b from-[hsl(38_88%_50%)] via-primary to-[hsl(34_75%_38%)] text-primary-foreground text-[13px] font-semibold flex items-center gap-2 shadow-[inset_0_1.5px_0_0_hsl(42_92%_65%/0.55),0_2px_8px_-2px_hsl(38_82%_44%/0.25),0_8px_24px_-8px_hsl(38_82%_44%/0.2)]">
                   Continue
                   <ArrowRight className="h-4 w-4" />
                 </div>
@@ -247,10 +254,10 @@ export default function BuyDataPage() {
           )}
 
           {/* Quick links */}
-          <div className="flex items-center justify-center gap-3 pt-1">
+          <div className="flex items-center justify-center pt-2 pb-2">
             <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/45 h-8 font-medium">
               <Link to="/track">
-                <Search className="h-3 w-3 mr-1" />
+                <Search className="h-3 w-3 mr-1.5" />
                 Track Order
               </Link>
             </Button>
