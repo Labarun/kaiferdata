@@ -36,7 +36,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
         {loading ? (
           <div className="h-5 w-20 bg-muted animate-pulse rounded" />
         ) : (
-          <span className="text-sm font-semibold text-foreground">GH₵{balance.toLocaleString()}</span>
+          <span className="text-sm font-semibold text-foreground">GH₵{balance.toFixed(2)}</span>
         )}
       </div>
     );
