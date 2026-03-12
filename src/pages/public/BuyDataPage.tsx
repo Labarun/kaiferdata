@@ -145,12 +145,11 @@ export default function BuyDataPage() {
       {/* ─── Premium hero atmosphere ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
         {/* Layered ambient orbs — deeper, richer */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[650px] h-[380px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[140px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[100px]" />
-          <div className="absolute top-[45%] left-[-8%] w-[240px] h-[240px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[90px]" />
-          {/* Subtle refraction streak */}
-          <div className="absolute top-[20%] right-[15%] w-[180px] h-[2px] rounded-full bg-[hsl(192_72%_80%/0.15)] blur-[3px] rotate-[-15deg]" />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[650px] h-[380px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[80px] will-change-transform" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[60px] will-change-transform" />
+          <div className="absolute top-[45%] left-[-8%] w-[240px] h-[240px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[50px] will-change-transform" />
+        </div>
         </div>
 
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
