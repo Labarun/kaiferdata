@@ -1,7 +1,7 @@
 /**
  * BuyDataPage — Flagship premium buy-data landing with liquid-glass atmosphere
  */
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Loader2, ArrowRight, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
