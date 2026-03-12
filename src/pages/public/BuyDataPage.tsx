@@ -22,7 +22,7 @@ import { getNetworkBrand } from "@/config/networkBrands";
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
 const NETWORK_TINT: Record<string, string> = {
-  MTN: "from-[hsl(46_80%_52%/0.06)] to-transparent",
+  MTN: "from-[hsl(44_60%_46%/0.05)] to-transparent",
   Telecel: "from-[hsl(0_60%_52%/0.04)] to-transparent",
   AirtelTigo: "from-[hsl(212_70%_52%/0.04)] to-transparent",
 };
