@@ -270,9 +270,11 @@ export default function BuyDataPage() {
                   Continue
                   <ArrowRight className="h-4 w-4 ml-1.5" />
                 </Button>
-              </div>
             </div>
+              );
+            })()}
           </div>
+        </div>
         </div>
       )}
 
