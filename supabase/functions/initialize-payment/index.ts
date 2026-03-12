@@ -1,7 +1,7 @@
 /**
  * Edge Function: initialize-payment
- * Creates/validates a purchase intent, then initializes Paystack payment.
- * Returns the Paystack authorization_url for redirect.
+ * Supports both purchase intents (bundle buy) and deposit intents (wallet top-up).
+ * Validates intent, initializes Paystack, returns authorization_url.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -11,6 +11,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,12 +24,7 @@ Deno.serve(async (req) => {
 
   try {
     const PAYSTACK_SECRET = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET) {
-      return new Response(
-        JSON.stringify({ error: "Payment provider not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (!PAYSTACK_SECRET) return json({ error: "Payment provider not configured" }, 500);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -32,36 +33,22 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { intent_id } = body;
 
-    if (!intent_id) {
-      return new Response(
-        JSON.stringify({ error: "Missing intent_id" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (!intent_id) return json({ error: "Missing intent_id" }, 400);
 
-    // ── 1. Fetch and validate the purchase intent ──
+    // ── 1. Fetch and validate the intent ──
     const { data: intent, error: intentError } = await supabase
       .from("purchase_intents")
       .select("*")
       .eq("id", intent_id)
       .single();
 
-    if (intentError || !intent) {
-      return new Response(
-        JSON.stringify({ error: "Purchase intent not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (intentError || !intent) return json({ error: "Intent not found" }, 404);
 
-    // Validate intent is in correct state
     if (intent.status !== "created") {
-      return new Response(
-        JSON.stringify({
-          error: `Intent is already in '${intent.status}' state`,
-          intent_reference: intent.intent_reference,
-        }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({
+        error: `This request is already in '${intent.status}' state`,
+        intent_reference: intent.intent_reference,
+      }, 409);
     }
 
     // Check expiry
@@ -70,73 +57,72 @@ Deno.serve(async (req) => {
         .from("purchase_intents")
         .update({ status: "expired" })
         .eq("id", intent_id);
-
-      return new Response(
-        JSON.stringify({ error: "This purchase intent has expired. Please start a new order." }),
-        { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "This request has expired. Please start again." }, 410);
     }
 
-    // ── 2. Validate plan still exists and amount matches ──
-    if (intent.plan_id) {
-      const { data: plan } = await supabase
-        .from("data_plans")
-        .select("id, amount, is_active")
-        .eq("id", intent.plan_id)
+    // ── 2. Validate package if this is a bundle purchase ──
+    const isDeposit = intent.intent_type === "wallet_deposit";
+    const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
+
+    if (!isDeposit && snapshot.id) {
+      // Validate against data_packages (not data_plans)
+      const { data: pkg } = await supabase
+        .from("data_packages")
+        .select("id, selling_price, is_active")
+        .eq("id", snapshot.id as string)
         .single();
 
-      if (!plan || !plan.is_active) {
-        return new Response(
-          JSON.stringify({ error: "The selected plan is no longer available" }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!pkg || !pkg.is_active) {
+        return json({ error: "The selected package is no longer available" }, 422);
       }
 
-      if (Number(plan.amount) !== Number(intent.amount_expected)) {
-        return new Response(
-          JSON.stringify({ error: "Plan price has changed. Please start a new order." }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (Math.abs(Number(pkg.selling_price) - Number(intent.amount_expected)) > 0.01) {
+        return json({ error: "Package price has changed. Please start a new order." }, 422);
       }
     }
 
     // ── 3. Build Paystack reference ──
-    const paystackReference = `${intent.intent_reference}`;
+    const paystackReference = intent.intent_reference;
 
     // Determine callback URL
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "";
     const callbackUrl = `${origin}/payment/callback?ref=${encodeURIComponent(intent.intent_reference)}`;
 
-    // Customer email — use provided or generate a fallback
     const customerEmail =
       intent.customer_email || `guest+${intent.intent_reference.toLowerCase()}@kaiferdata.com`;
 
-    // Plan snapshot for metadata
-    const snapshot = intent.plan_snapshot as Record<string, unknown>;
+    // ── 4. Build Paystack metadata ──
+    const customFields = [
+      { display_name: "Reference", variable_name: "intent_reference", value: intent.intent_reference },
+      { display_name: "Type", variable_name: "intent_type", value: intent.intent_type },
+    ];
 
-    // ── 4. Initialize Paystack transaction ──
+    if (!isDeposit) {
+      customFields.push(
+        { display_name: "Network", variable_name: "network", value: intent.network },
+        { display_name: "Bundle", variable_name: "bundle", value: String(snapshot.volume || snapshot.plan_name || "") },
+        { display_name: "Recipient Phone", variable_name: "recipient_phone", value: intent.phone_number },
+      );
+    }
+
     const paystackPayload = {
       email: customerEmail,
-      amount: Math.round(Number(intent.amount_expected) * 100), // Paystack uses pesewas
+      amount: Math.round(Number(intent.amount_expected) * 100), // pesewas
       currency: "GHS",
       reference: paystackReference,
       callback_url: callbackUrl,
       channels: ["mobile_money", "card"],
       metadata: {
-        custom_fields: [
-          { display_name: "Intent Reference", variable_name: "intent_reference", value: intent.intent_reference },
-          { display_name: "Network", variable_name: "network", value: intent.network },
-          { display_name: "Bundle", variable_name: "bundle", value: String(snapshot.volume || "") },
-          { display_name: "Recipient Phone", variable_name: "recipient_phone", value: intent.phone_number },
-          { display_name: "Source", variable_name: "source_channel", value: intent.source_channel },
-        ],
+        custom_fields: customFields,
         intent_id: intent.id,
         intent_reference: intent.intent_reference,
+        intent_type: intent.intent_type,
         network: intent.network,
         phone_number: intent.phone_number,
       },
     };
 
+    // ── 5. Initialize Paystack transaction ──
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -150,13 +136,10 @@ Deno.serve(async (req) => {
 
     if (!paystackRes.ok || !paystackData.status) {
       console.error("Paystack init failed:", paystackData);
-      return new Response(
-        JSON.stringify({ error: "Payment initialization failed. Please try again." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Payment initialization failed. Please try again." }, 502);
     }
 
-    // ── 5. Update intent with Paystack reference and status ──
+    // ── 6. Update intent status ──
     await supabase
       .from("purchase_intents")
       .update({
@@ -171,22 +154,16 @@ Deno.serve(async (req) => {
       })
       .eq("id", intent_id);
 
-    // ── 6. Return authorization URL ──
-    return new Response(
-      JSON.stringify({
-        success: true,
-        authorization_url: paystackData.data.authorization_url,
-        access_code: paystackData.data.access_code,
-        reference: paystackReference,
-        intent_reference: intent.intent_reference,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // ── 7. Return authorization URL ──
+    return json({
+      success: true,
+      authorization_url: paystackData.data.authorization_url,
+      access_code: paystackData.data.access_code,
+      reference: paystackReference,
+      intent_reference: intent.intent_reference,
+    });
   } catch (err) {
     console.error("initialize-payment error:", err);
-    return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: "An unexpected error occurred" }, 500);
   }
 });

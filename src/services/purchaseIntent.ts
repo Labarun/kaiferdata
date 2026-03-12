@@ -1,6 +1,9 @@
 /**
  * Purchase Intent Service
- * Creates and manages purchase intents + payment verification for guest buy flows.
+ * Creates and manages purchase intents + payment flows for:
+ * - Guest buy (public)
+ * - Logged-in buy (direct Paystack)
+ * - Wallet deposits
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -9,10 +12,10 @@ export type DataPlan = Database["public"]["Tables"]["data_plans"]["Row"];
 export type PurchaseIntent = Database["public"]["Tables"]["purchase_intents"]["Row"];
 
 /** Generate a unique intent reference */
-function generateIntentRef(): string {
+function generateIntentRef(prefix = "KD"): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `KD-${ts}-${rand}`;
+  return `${prefix}-${ts}-${rand}`;
 }
 
 /** Fetch all active data plans, grouped by network */
@@ -37,15 +40,19 @@ export function filterPlansByNetwork(plans: DataPlan[], network: string): DataPl
   return plans.filter((p) => p.network === network);
 }
 
-/** Create a guest purchase intent */
+/** Create a guest/user purchase intent using DataPackage-bridged plan */
 export async function createPurchaseIntent(params: {
   phoneNumber: string;
   network: string;
   plan: DataPlan;
   customerEmail?: string;
   customerName?: string;
+  actorType?: string;
+  actorId?: string;
+  sourceChannel?: string;
+  intentType?: string;
 }): Promise<PurchaseIntent> {
-  const intentRef = generateIntentRef();
+  const intentRef = generateIntentRef("KD");
 
   const planSnapshot = {
     id: params.plan.id,
@@ -61,12 +68,13 @@ export async function createPurchaseIntent(params: {
     .from("purchase_intents")
     .insert({
       intent_reference: intentRef,
-      intent_type: "guest_buy",
-      actor_type: "guest",
-      source_channel: "public_guest_checkout",
+      intent_type: params.intentType || "guest_buy",
+      actor_type: params.actorType || "guest",
+      actor_id: params.actorId || null,
+      source_channel: params.sourceChannel || "public_guest_checkout",
       phone_number: params.phoneNumber,
       network: params.network,
-      plan_id: params.plan.id,
+      plan_id: null, // FK removed — we rely on plan_snapshot
       plan_snapshot: planSnapshot,
       amount_expected: Number(params.plan.amount),
       customer_email: params.customerEmail || null,
@@ -76,11 +84,53 @@ export async function createPurchaseIntent(params: {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("createPurchaseIntent error:", error);
+    throw new Error("Failed to create order. Please try again.");
+  }
   return data;
 }
 
-/** Initialize Paystack payment for a purchase intent (server-side via edge function) */
+/** Create a wallet deposit intent */
+export async function createDepositIntent(params: {
+  amount: number;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+}): Promise<PurchaseIntent> {
+  const intentRef = generateIntentRef("DEP");
+
+  const { data, error } = await supabase
+    .from("purchase_intents")
+    .insert({
+      intent_reference: intentRef,
+      intent_type: "wallet_deposit",
+      actor_type: "user",
+      actor_id: params.userId,
+      source_channel: "user_dashboard",
+      phone_number: "0000000000", // not applicable for deposits
+      network: "DEPOSIT",
+      plan_id: null,
+      plan_snapshot: {
+        type: "wallet_deposit",
+        amount: params.amount,
+      },
+      amount_expected: params.amount,
+      customer_email: params.userEmail || null,
+      customer_name: params.userName || null,
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("createDepositIntent error:", error);
+    throw new Error("Failed to create deposit request. Please try again.");
+  }
+  return data;
+}
+
+/** Initialize Paystack payment for a purchase/deposit intent */
 export async function initializePayment(intentId: string): Promise<{
   authorization_url: string;
   access_code: string;
@@ -96,14 +146,16 @@ export async function initializePayment(intentId: string): Promise<{
   return data;
 }
 
-/** Verify a Paystack payment and create order (server-side via edge function) */
+/** Verify a Paystack payment (works for both purchases and deposits) */
 export async function verifyPayment(reference: string): Promise<{
   success: boolean;
   order?: Record<string, unknown>;
+  deposit?: Record<string, unknown>;
   already_processed?: boolean;
   error?: string;
   status?: string;
   intent_reference?: string;
+  intent_type?: string;
 }> {
   const { data, error } = await supabase.functions.invoke("verify-payment", {
     body: { reference },
@@ -129,7 +181,6 @@ export async function lookupIntent(reference: string): Promise<PurchaseIntent | 
 export async function lookupOrder(ref: string): Promise<Record<string, unknown> | null> {
   const trimmed = ref.trim().toUpperCase();
 
-  // Try public_order_id first
   const { data: byOrderId } = await supabase
     .from("orders")
     .select("*")
@@ -138,7 +189,6 @@ export async function lookupOrder(ref: string): Promise<Record<string, unknown> 
 
   if (byOrderId) return byOrderId;
 
-  // Try via intent reference
   const intent = await lookupIntent(trimmed);
   if (intent) {
     const { data: byIntent } = await supabase
