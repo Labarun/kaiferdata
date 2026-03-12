@@ -44,7 +44,6 @@ export default function BuyDataPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [plansKey, setPlansKey] = useState(0);
-  const [summaryVisible, setSummaryVisible] = useState(false);
 
   useEffect(() => {
     fetchDataPlans()
