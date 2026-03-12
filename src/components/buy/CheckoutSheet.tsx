@@ -241,7 +241,6 @@ export function CheckoutSheet({
                 </Label>
                 <div className="relative">
                   <Input
-                    ref={phoneRef}
                     id="checkout-phone"
                     type="tel"
                     inputMode="numeric"
