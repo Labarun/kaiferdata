@@ -63,6 +63,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* Brand extended scale — use via brand-deep, brand-blue, etc. */
+        brand: {
+          deep: "hsl(var(--brand-deep))",
+          blue: "hsl(var(--brand-blue))",
+          "blue-mid": "hsl(var(--brand-blue-mid))",
+          cyan: "hsl(var(--brand-cyan))",
+          aqua: "hsl(var(--brand-aqua))",
+          light: "hsl(var(--brand-light))",
+          tint: "hsl(var(--brand-tint))",
+        },
         network: {
           mtn: "hsl(var(--network-mtn))",
           telecel: "hsl(var(--network-telecel))",
