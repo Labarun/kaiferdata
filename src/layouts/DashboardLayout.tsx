@@ -1,6 +1,5 @@
 /**
  * DashboardLayout — Premium liquid-glass customer dashboard shell
- * Mobile-first with floating glass dock navigation.
  */
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,7 +42,6 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
   };
 
   const isActive = (path: string) => location.pathname === path;
-
   const allDesktopNav = [...navItems, ...(desktopExtraNav || [])];
 
   return (
@@ -65,14 +63,14 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2 rounded-xl">
-                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shadow-[0_0_8px_-3px_hsl(213_73%_40%/0.12)]">
                   <User className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <span className="hidden sm:inline text-sm font-medium">{user?.fullName?.split(" ")[0] || "Account"}</span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl">
+            <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl border-border/30">
               <div className="px-3 py-2">
                 <p className="text-sm font-semibold text-foreground">{user?.fullName}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
@@ -95,7 +93,6 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
 
       {/* ── Desktop sidebar + content ── */}
       <div className="flex-1 flex">
-        {/* Desktop glass sidebar */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col p-4 space-y-1 glass-subtle border-r-0">
           <div className="space-y-0.5 mt-2">
             {allDesktopNav.map((item) => (
@@ -105,7 +102,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                   isActive(item.path)
                     ? "glass-nav-active text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
                 }`}
               >
                 <item.icon className={`h-[18px] w-[18px] ${isActive(item.path) ? "text-primary" : ""}`} />
@@ -115,7 +112,6 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
           </div>
         </aside>
 
-        {/* Main content area */}
         <main className="flex-1 pb-24 md:pb-6">
           <div className="container py-5 sm:py-6 max-w-2xl">
             <NoticeBanner audience={audienceFilter} />

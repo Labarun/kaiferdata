@@ -10,11 +10,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-[hsl(213_75%_55%)] via-primary to-[hsl(213_73%_34%)] text-primary-foreground shadow-[inset_0_1.5px_0_0_hsl(213_75%_65%/0.55),inset_0_-1px_0_0_hsl(213_73%_28%/0.35),0_1px_2px_0_hsl(213_65%_30%/0.12),0_4px_12px_-2px_hsl(213_73%_40%/0.25),0_8px_28px_-6px_hsl(213_73%_40%/0.18)] hover:shadow-[inset_0_1.5px_0_0_hsl(213_75%_65%/0.6),inset_0_-1px_0_0_hsl(213_73%_28%/0.4),0_2px_6px_-1px_hsl(213_65%_30%/0.15),0_6px_18px_-2px_hsl(213_73%_40%/0.3),0_12px_36px_-6px_hsl(213_73%_40%/0.2)] hover:brightness-[1.04] active:brightness-[0.94] active:shadow-[inset_0_2px_6px_-1px_hsl(213_73%_26%/0.4),0_1px_3px_-1px_hsl(213_73%_40%/0.12)] active:scale-[0.97]",
+          "bg-gradient-to-b from-[hsl(213_75%_52%)] via-primary to-[hsl(213_73%_32%)] text-primary-foreground shadow-[inset_0_1.5px_0_0_hsl(213_75%_64%/0.6),inset_0_-1px_0_0_hsl(213_73%_26%/0.35),inset_0_0_12px_0_hsl(192_72%_70%/0.06),0_1px_2px_0_hsl(213_65%_28%/0.12),0_4px_12px_-2px_hsl(213_73%_40%/0.28),0_8px_28px_-6px_hsl(213_73%_40%/0.2)] hover:shadow-[inset_0_1.5px_0_0_hsl(213_75%_66%/0.65),inset_0_-1px_0_0_hsl(213_73%_26%/0.4),inset_0_0_16px_0_hsl(192_72%_70%/0.08),0_2px_6px_-1px_hsl(213_65%_28%/0.15),0_6px_18px_-2px_hsl(213_73%_40%/0.32),0_12px_36px_-6px_hsl(213_73%_40%/0.22)] hover:brightness-[1.04] active:brightness-[0.92] active:shadow-[inset_0_2px_8px_-1px_hsl(213_73%_24%/0.45),0_1px_3px_-1px_hsl(213_73%_40%/0.12)] active:scale-[0.97]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-border bg-transparent hover:bg-accent/10 hover:border-muted-foreground/20 text-foreground",
+          "border border-border bg-transparent hover:bg-primary/5 hover:border-primary/20 text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/70",
         ghost:
@@ -22,7 +22,7 @@ const buttonVariants = cva(
         link:
           "text-primary underline-offset-4 hover:underline",
         glass:
-          "glass-card hover:border-[hsl(213_25%_75%/0.55)] text-foreground/65 hover:text-foreground active:scale-[0.97] active:shadow-[inset_0_1px_4px_-1px_hsl(213_20%_68%/0.15)]",
+          "glass-card hover:border-[hsl(213_30%_75%/0.5)] text-foreground/65 hover:text-foreground active:scale-[0.97] active:shadow-[inset_0_1px_4px_-1px_hsl(213_25%_68%/0.15)]",
       },
       size: {
         default: "h-11 px-5 py-2",
