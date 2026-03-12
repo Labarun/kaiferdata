@@ -251,42 +251,42 @@
   /* ── Hero backgrounds ── */
   .bg-hero-gradient {
     background:
-      radial-gradient(ellipse 70% 50% at 50% -8%, hsl(215 40% 90% / 0.55) 0%, transparent 55%),
-      radial-gradient(ellipse 45% 35% at 88% 85%, hsl(170 40% 88% / 0.35) 0%, transparent 45%),
-      radial-gradient(ellipse 35% 25% at 8% 50%, hsl(215 40% 86% / 0.3) 0%, transparent 40%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, hsl(215 20% 94% / 0.5) 0%, transparent 50%),
-      linear-gradient(178deg, hsl(215 20% 97%) 0%, hsl(215 20% 95%) 100%);
+      radial-gradient(ellipse 70% 50% at 50% -8%, hsl(213 45% 90% / 0.55) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 35% at 88% 85%, hsl(192 45% 88% / 0.35) 0%, transparent 45%),
+      radial-gradient(ellipse 35% 25% at 8% 50%, hsl(213 45% 86% / 0.3) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, hsl(214 25% 94% / 0.5) 0%, transparent 50%),
+      linear-gradient(178deg, hsl(214 30% 97%) 0%, hsl(214 25% 95%) 100%);
   }
 
   /* ── Ambient glow system ── */
   .glow-brand {
     box-shadow:
-      0 0 0 1px hsl(215 60% 72% / 0.14),
-      0 2px 8px -2px hsl(215 72% 42% / 0.12),
-      0 8px 28px -8px hsl(215 72% 42% / 0.1);
+      0 0 0 1px hsl(213 65% 70% / 0.14),
+      0 2px 8px -2px hsl(213 73% 40% / 0.12),
+      0 8px 28px -8px hsl(213 73% 40% / 0.1);
   }
 
   .glow-brand-strong {
     box-shadow:
-      0 0 0 1px hsl(215 60% 68% / 0.2),
-      0 2px 8px -1px hsl(215 72% 42% / 0.18),
-      0 8px 28px -6px hsl(215 72% 42% / 0.15),
-      0 20px 56px -16px hsl(215 72% 42% / 0.1);
+      0 0 0 1px hsl(213 65% 66% / 0.2),
+      0 2px 8px -1px hsl(213 73% 40% / 0.18),
+      0 8px 28px -6px hsl(213 73% 40% / 0.15),
+      0 20px 56px -16px hsl(213 73% 40% / 0.1);
   }
 
   /* Aliases for backward compat */
-  .glow-gold { box-shadow: 0 0 0 1px hsl(215 60% 72% / 0.14), 0 2px 8px -2px hsl(215 72% 42% / 0.12), 0 8px 28px -8px hsl(215 72% 42% / 0.1); }
-  .glow-gold-strong { box-shadow: 0 0 0 1px hsl(215 60% 68% / 0.2), 0 2px 8px -1px hsl(215 72% 42% / 0.18), 0 8px 28px -6px hsl(215 72% 42% / 0.15), 0 20px 56px -16px hsl(215 72% 42% / 0.1); }
+  .glow-gold { box-shadow: 0 0 0 1px hsl(213 65% 70% / 0.14), 0 2px 8px -2px hsl(213 73% 40% / 0.12), 0 8px 28px -8px hsl(213 73% 40% / 0.1); }
+  .glow-gold-strong { box-shadow: 0 0 0 1px hsl(213 65% 66% / 0.2), 0 2px 8px -1px hsl(213 73% 40% / 0.18), 0 8px 28px -6px hsl(213 73% 40% / 0.15), 0 20px 56px -16px hsl(213 73% 40% / 0.1); }
 
   .glow-soft {
-    box-shadow: 0 0 40px -12px hsl(215 22% 55% / 0.1);
+    box-shadow: 0 0 40px -12px hsl(213 28% 55% / 0.1);
   }
 
   .glow-cyan {
     box-shadow:
-      0 0 0 1px hsl(170 50% 55% / 0.15),
-      0 2px 8px -2px hsl(170 55% 45% / 0.12),
-      0 8px 28px -8px hsl(170 55% 45% / 0.1);
+      0 0 0 1px hsl(192 70% 55% / 0.15),
+      0 2px 8px -2px hsl(192 100% 42% / 0.12),
+      0 8px 28px -8px hsl(192 100% 42% / 0.1);
   }
 
   /* ── Network glows ── */
