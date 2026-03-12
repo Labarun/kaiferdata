@@ -25,12 +25,12 @@ export interface NetworkBrand {
 export const NETWORK_BRANDS: Record<string, NetworkBrand> = {
   MTN: {
     logo: logoMtn,
-    hsl: "48 96% 48%",          // proper MTN yellow
-    activeRing: "ring-[hsl(48_96%_55%/0.35)]",
-    activeIconBg: "bg-[hsl(48_96%_50%/0.14)]",
-    activeTint: "from-[hsl(48_96%_50%/0.08)] via-transparent to-[hsl(48_80%_60%/0.03)]",
+    hsl: "44 72% 42%",           // refined MTN gold — richer, less raw
+    activeRing: "ring-[hsl(44_65%_48%/0.28)]",
+    activeIconBg: "bg-[hsl(44_60%_46%/0.12)]",
+    activeTint: "from-[hsl(44_60%_46%/0.07)] via-transparent to-[hsl(42_50%_52%/0.025)]",
     glowClass: "glow-mtn",
-    activeBorderColor: "border-[hsl(48_80%_58%/0.35)]",
+    activeBorderColor: "border-[hsl(44_55%_52%/0.3)]",
   },
   Telecel: {
     logo: logoTelecel,
