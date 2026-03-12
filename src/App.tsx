@@ -55,6 +55,7 @@ import AdminTransactionDetailPage from "@/pages/admin/AdminTransactionDetailPage
 import AdminReconciliationPage from "@/pages/admin/AdminReconciliationPage";
 import AdminIntentsPage from "@/pages/admin/AdminIntentsPage";
 import AdminIntentDetailPage from "@/pages/admin/AdminIntentDetailPage";
+import AdminPackagesPage from "@/pages/admin/AdminPackagesPage";
 
 import NotFound from "@/pages/NotFound";
 
