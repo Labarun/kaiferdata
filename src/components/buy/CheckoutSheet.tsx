@@ -75,7 +75,21 @@ export function CheckoutSheet({
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile keyboard via visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const heightDiff = window.innerHeight - vv.height;
+      setKeyboardOpen(heightDiff > 120);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Auto-focus phone input when sheet opens
   useEffect(() => {
@@ -84,6 +98,14 @@ export function CheckoutSheet({
       return () => clearTimeout(t);
     }
   }, [open, step]);
+
+  // Scroll focused input into view when keyboard opens
+  const scrollToFocused = useCallback(() => {
+    setTimeout(() => {
+      const active = document.activeElement as HTMLElement | null;
+      active?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, 150);
+  }, []);
 
   // Sync processing/error states from parent
   useEffect(() => {
