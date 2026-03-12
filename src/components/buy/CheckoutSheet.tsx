@@ -2,7 +2,7 @@
  * CheckoutSheet — Premium liquid-glass checkout entry surface
  * Now with multi-step payment flow states & keyboard-safe mobile layout
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,37 +75,6 @@ export function CheckoutSheet({
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // Detect mobile keyboard via visualViewport
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => {
-      const heightDiff = window.innerHeight - vv.height;
-      setKeyboardOpen(heightDiff > 120);
-    };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
-  }, []);
-
-  // Auto-focus phone input when sheet opens
-  useEffect(() => {
-    if (open && step === "details") {
-      const t = setTimeout(() => phoneRef.current?.focus(), 350);
-      return () => clearTimeout(t);
-    }
-  }, [open, step]);
-
-  // Scroll focused input into view when keyboard opens
-  const scrollToFocused = useCallback(() => {
-    setTimeout(() => {
-      const active = document.activeElement as HTMLElement | null;
-      active?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-    }, 150);
-  }, []);
 
   // Sync processing/error states from parent
   useEffect(() => {
@@ -170,12 +139,10 @@ export function CheckoutSheet({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         className={cn(
-          "border-0 rounded-t-[28px] overflow-hidden",
+          "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
           "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
           "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
-          keyboardOpen ? "max-h-[100dvh]" : "max-h-[94vh]"
         )}
-        style={{ maxHeight: keyboardOpen ? '100dvh' : undefined }}
       >
         {/* ── Premium handle ── */}
         <div className="flex justify-center pt-3.5 pb-2 shrink-0">
@@ -191,10 +158,8 @@ export function CheckoutSheet({
         />
 
         <div
-          ref={contentRef}
           className="overflow-y-auto overscroll-contain px-5 pb-8 pt-3 flex-1"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-          onFocus={scrollToFocused}
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
           {/* ── Header ── */}
           {step !== "processing" && step !== "error" && (
@@ -276,7 +241,6 @@ export function CheckoutSheet({
                 </Label>
                 <div className="relative">
                   <Input
-                    ref={phoneRef}
                     id="checkout-phone"
                     type="tel"
                     inputMode="numeric"

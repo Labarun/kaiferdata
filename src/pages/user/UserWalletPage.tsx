@@ -181,19 +181,19 @@ export default function UserWalletPage() {
 
       {/* ── Deposit Bottom Sheet ── */}
       <Drawer open={depositOpen} onOpenChange={(v) => { if (!depositing) setDepositOpen(v); }}>
-        <DrawerContent
-          className={cn(
-            "border-0 rounded-t-[28px] overflow-hidden",
-            "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
-            "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
-          )}
-        >
-          <div className="flex justify-center pt-3.5 pb-2 shrink-0">
-            <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
-          </div>
+          <DrawerContent
+            className={cn(
+              "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
+              "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
+              "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+            )}
+          >
+            <div className="flex justify-center pt-3.5 pb-2 shrink-0">
+              <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
+            </div>
 
-          <div className="px-5 pb-8 pt-2 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-            {depositing ? (
+            <div className="px-5 pb-8 pt-2 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
+              {depositing ? (
               <div className="py-10 text-center space-y-5 animate-fade-in">
                 <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto">
                   <Loader2 className="h-7 w-7 text-primary animate-spin" />
