@@ -3,7 +3,7 @@
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, ArrowRight, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
+import { Loader2, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
@@ -18,11 +18,11 @@ import {
   initializePayment,
   type DataPlan,
 } from "@/services/purchaseIntent";
-import { getNetworkBrand } from "@/config/networkBrands";
+
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
 const NETWORK_TINT: Record<string, string> = {
-  MTN: "from-[hsl(46_80%_52%/0.06)] to-transparent",
+  MTN: "from-[hsl(44_60%_46%/0.05)] to-transparent",
   Telecel: "from-[hsl(0_60%_52%/0.04)] to-transparent",
   AirtelTigo: "from-[hsl(212_70%_52%/0.04)] to-transparent",
 };
@@ -44,7 +44,6 @@ export default function BuyDataPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [plansKey, setPlansKey] = useState(0);
-  const [summaryVisible, setSummaryVisible] = useState(false);
 
   useEffect(() => {
     fetchDataPlans()
@@ -72,16 +71,14 @@ export default function BuyDataPage() {
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
     setPlan(null);
-    setSummaryVisible(false);
     setPlansKey((k) => k + 1);
   }, []);
 
   const handlePlanSelect = useCallback((p: DataPlan) => {
     setPlan(p);
-    setSummaryVisible(true);
+    setCheckoutOpen(true);
   }, []);
 
-  const handleDismissSummary = useCallback(() => setSummaryVisible(false), []);
   const handleOpenCheckout = useCallback(() => setCheckoutOpen(true), []);
 
   const [processingLabel, setProcessingLabel] = useState("");
@@ -231,52 +228,6 @@ export default function BuyDataPage() {
         </div>
       </div>
 
-      {/* ─── Floating selected plan summary — premium dock ─── */}
-      {plan && summaryVisible && !checkoutOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-5 pt-2 pointer-events-none">
-          <div className="max-w-lg mx-auto pointer-events-auto">
-            {(() => {
-              const nb = getNetworkBrand(network || "");
-              return (
-              <div
-                className="animate-summary-enter glass-premium rounded-2xl overflow-hidden shimmer-edge refraction-rim"
-                style={{ boxShadow: `0 0 24px -4px hsl(${nb.hsl} / 0.18), 0 8px 20px -8px hsl(${nb.hsl} / 0.12)` }}
-              >
-                <div
-                  className="h-[2px]"
-                  style={{ background: `linear-gradient(90deg, transparent, hsl(${nb.hsl} / 0.55), transparent)` }}
-                />
-
-              <div className="p-4 flex items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                      {network}
-                    </span>
-                    <span className="h-1 w-1 rounded-full bg-border/50" />
-                    <span className="text-[10px] text-muted-foreground/40 font-medium truncate">
-                      {plan.plan_name}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-foreground/85 tracking-tight">{plan.volume}</span>
-                    <span className="text-[15px] font-bold text-gradient-brand">
-                      GH₵{Number(plan.amount).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                <Button onClick={handleOpenCheckout} className="shrink-0 h-12 px-6 rounded-xl text-[13px] font-semibold">
-                  Continue
-                  <ArrowRight className="h-4 w-4 ml-1.5" />
-                </Button>
-              </div>
-            </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
 
       <CheckoutSheet
         open={checkoutOpen}

@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 /* ── Network brand tints ── */
 const NET_DOT: Record<string, string> = {
-  MTN: "46 100% 46%",
+  MTN: "44 72% 42%",
   Telecel: "0 68% 48%",
   AirtelTigo: "212 78% 48%",
 };
