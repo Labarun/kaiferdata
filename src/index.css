@@ -6,44 +6,78 @@
 
 @layer base {
   :root {
-    --background: 215 18% 96%;
-    --foreground: 215 28% 11%;
+    /*
+     * ═══════════════════════════════════════════════
+     *  KAIFERDATA BRAND COLOR SYSTEM
+     *  Extracted from official logo
+     * ═══════════════════════════════════════════════
+     *
+     *  PALETTE (HEX → HSL):
+     *
+     *  Deep Navy       #0D2744  hsl(213 68% 16%)   — deepest contrast / sidebar bg
+     *  Brand Blue      #1A5FB4  hsl(213 73% 40%)   — PRIMARY: buttons, key highlights
+     *  Medium Blue     #3584E4  hsl(213 75% 55%)   — hover states, gradients mid
+     *  Accent Cyan     #00B4D8  hsl(192 100% 42%)  — ACCENT: glows, focus, progress
+     *  Highlight Aqua  #48CAE4  hsl(192 72% 59%)   — soft accents, glass edge glows
+     *  Light Blue      #99C1F1  hsl(213 78% 78%)   — muted highlights, borders
+     *  Glass Tint      #E8F0FE  hsl(216 86% 95%)   — surface tint on glass cards
+     *  Background      #F2F6FB  hsl(214 42% 96%)   — page background
+     *
+     *  STATUS COLORS (harmonized):
+     *  Success         #2D8F5E  hsl(150 52% 37%)
+     *  Warning         #D4820A  hsl(38 90% 44%)
+     *  Error           #D64545  hsl(0 60% 55%)
+     *  Info            #3584E4  hsl(213 75% 55%)    — matches brand blue
+     * ═══════════════════════════════════════════════
+     */
+
+    --background: 214 42% 96%;
+    --foreground: 213 40% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 11%;
+    --card-foreground: 213 40% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 11%;
+    --popover-foreground: 213 40% 12%;
 
-    /* Brand blue from logo */
-    --primary: 215 72% 42%;
+    /* ── Brand Primary: Deep logo blue ── */
+    --primary: 213 73% 40%;
     --primary-foreground: 0 0% 100%;
 
-    /* Cyan/teal accent from logo */
-    --accent: 170 55% 45%;
+    /* ── Brand Accent: Logo cyan/aqua ── */
+    --accent: 192 100% 42%;
     --accent-foreground: 0 0% 100%;
 
-    --secondary: 215 18% 92%;
-    --secondary-foreground: 215 18% 28%;
+    /* ── Brand extended scale ── */
+    --brand-deep: 213 68% 16%;
+    --brand-blue: 213 73% 40%;
+    --brand-blue-mid: 213 75% 55%;
+    --brand-cyan: 192 100% 42%;
+    --brand-aqua: 192 72% 59%;
+    --brand-light: 213 78% 78%;
+    --brand-tint: 216 86% 95%;
 
-    --muted: 215 14% 93%;
-    --muted-foreground: 215 12% 46%;
+    --secondary: 214 25% 92%;
+    --secondary-foreground: 213 25% 28%;
 
-    --destructive: 0 62% 50%;
+    --muted: 214 18% 93%;
+    --muted-foreground: 213 14% 46%;
+
+    --destructive: 0 60% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 52% 36%;
+    --success: 150 52% 37%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 88% 52%;
+    --warning: 38 90% 44%;
     --warning-foreground: 0 0% 100%;
 
-    --info: 215 72% 52%;
+    --info: 213 75% 55%;
     --info-foreground: 0 0% 100%;
 
-    --border: 215 18% 87%;
-    --input: 215 18% 87%;
-    --ring: 215 72% 42%;
+    --border: 214 25% 87%;
+    --input: 214 25% 87%;
+    --ring: 213 73% 40%;
 
     --radius: 0.875rem;
 
@@ -52,31 +86,36 @@
     --network-telecel: 0 68% 48%;
     --network-airteltigo: 212 78% 48%;
 
-    /* Glass tokens — cool blue-tinted for depth */
-    --glass-bg: 0 0% 100% / 0.58;
-    --glass-bg-rich: 0 0% 100% / 0.68;
-    --glass-border: 215 20% 82% / 0.5;
-    --glass-border-light: 215 18% 86% / 0.6;
+    /* ── Glass tokens: blue-tinted liquid glass ── */
+    --glass-bg: 216 60% 99% / 0.58;
+    --glass-bg-rich: 216 50% 99% / 0.68;
+    --glass-border: 213 28% 82% / 0.5;
+    --glass-border-light: 214 22% 86% / 0.6;
     --glass-highlight: 0 0% 100% / 0.82;
-    --glass-highlight-soft: 0 0% 100% / 0.45;
-    --glass-shadow-xs: 215 30% 60% / 0.04;
-    --glass-shadow-sm: 215 30% 55% / 0.07;
-    --glass-shadow-md: 215 30% 48% / 0.1;
-    --glass-shadow-lg: 215 30% 40% / 0.14;
-    --glass-shadow-xl: 215 30% 35% / 0.18;
-    --glass-edge-brand: 215 55% 72% / 0.2;
-    --glass-edge-cool: 215 30% 78% / 0.14;
-    --glass-inner-glow: 170 40% 80% / 0.12;
+    --glass-highlight-soft: 216 80% 98% / 0.5;
+    --glass-shadow-xs: 213 35% 55% / 0.04;
+    --glass-shadow-sm: 213 35% 50% / 0.07;
+    --glass-shadow-md: 213 40% 44% / 0.1;
+    --glass-shadow-lg: 213 40% 36% / 0.14;
+    --glass-shadow-xl: 213 40% 30% / 0.18;
+    --glass-edge-brand: 213 65% 70% / 0.22;
+    --glass-edge-cool: 213 35% 76% / 0.14;
+    --glass-inner-glow: 192 55% 78% / 0.14;
+
+    /* ── Brand gradients (referenced in utilities) ── */
+    --gradient-brand: linear-gradient(140deg, hsl(213 73% 44%), hsl(200 80% 46%), hsl(192 100% 42%));
+    --gradient-brand-subtle: linear-gradient(140deg, hsl(213 73% 40% / 0.08), hsl(192 100% 42% / 0.06));
+    --gradient-glass-glow: linear-gradient(135deg, transparent, hsl(192 72% 59% / 0.08), transparent);
 
     /* Sidebar (admin) */
-    --sidebar-background: 215 28% 6%;
-    --sidebar-foreground: 215 12% 65%;
-    --sidebar-primary: 215 72% 42%;
+    --sidebar-background: 213 68% 8%;
+    --sidebar-foreground: 213 14% 65%;
+    --sidebar-primary: 213 73% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 18% 11%;
-    --sidebar-accent-foreground: 215 12% 82%;
-    --sidebar-border: 215 14% 13%;
-    --sidebar-ring: 170 55% 45%;
+    --sidebar-accent: 213 40% 13%;
+    --sidebar-accent-foreground: 213 14% 82%;
+    --sidebar-border: 213 30% 15%;
+    --sidebar-ring: 192 100% 42%;
 
     --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
