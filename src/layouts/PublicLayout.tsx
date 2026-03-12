@@ -3,6 +3,7 @@
  */
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { getDashboardPath } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Menu, X, MapPin, MessageCircle } from "lucide-react";
@@ -31,10 +32,12 @@ export function PublicLayout() {
         }`}
       >
         <div className="container flex h-14 items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-primary/8 border border-primary/15 flex items-center justify-center transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-[0_0_18px_-4px_hsl(38_82%_44%/0.25)]">
-              <span className="text-xs font-bold text-primary">K</span>
-            </div>
+          <Link to="/" className="flex items-center gap-2 shrink-0 group">
+            <img
+              src={kaiferLogo}
+              alt="Kaiferdata logo"
+              className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
+            />
             <span className="text-[15px] font-semibold text-foreground/80 tracking-tight">
               Kaiferdata
             </span>
