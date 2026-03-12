@@ -325,7 +325,7 @@ export function CheckoutSheet({
                       placeholder="Optional"
                       value={customerName}
                       onChange={(e) => onCustomerNameChange(e.target.value)}
-                      className="h-11 rounded-xl text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
                       maxLength={100}
                     />
                   </div>
@@ -342,7 +342,7 @@ export function CheckoutSheet({
                       placeholder="For receipt"
                       value={customerEmail}
                       onChange={(e) => onCustomerEmailChange(e.target.value)}
-                      className="h-11 rounded-xl text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
                       maxLength={255}
                     />
                   </div>

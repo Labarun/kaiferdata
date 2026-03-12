@@ -474,3 +474,31 @@
     box-shadow: 0 0 0 6px hsl(213 73% 40% / 0);
   }
 }
+
+/* ═══════════════════════════════════════════════
+ *  MOBILE INPUT ZOOM PREVENTION
+ *  iOS Safari zooms on inputs < 16px font-size.
+ *  Force 16px on mobile for ALL form controls.
+ * ═══════════════════════════════════════════════ */
+@media screen and (max-width: 767px) {
+  input,
+  select,
+  textarea,
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  [contenteditable] {
+    font-size: 16px !important;
+  }
+}
+
+/* Ensure touch targets are not blocked by decorative layers */
+input, select, textarea, button {
+  position: relative;
+  z-index: 1;
+  touch-action: manipulation;
+}
