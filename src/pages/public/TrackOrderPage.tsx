@@ -116,7 +116,7 @@ export default function TrackOrderPage() {
                 placeholder="KD-ORD-XXXXXXXX or KD-XXXXXXXX"
                 value={reference}
                 onChange={(e) => setReference(e.target.value.toUpperCase())}
-                className="h-12 font-mono text-sm rounded-xl text-center bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)] focus:border-primary/25"
+                className="h-12 font-mono text-base md:text-sm rounded-xl text-center bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)] focus:border-primary/25"
                 maxLength={30}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
