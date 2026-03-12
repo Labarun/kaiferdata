@@ -377,7 +377,7 @@
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.88),
       0 -4px 24px -8px hsl(213 40% 50% / 0.08),
       0 -1px 4px 0 hsl(213 35% 55% / 0.04);
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* ── Wallet hero — signature surface ── */
