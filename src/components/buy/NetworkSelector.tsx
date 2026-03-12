@@ -1,7 +1,8 @@
 /**
- * NetworkSelector — Signature premium glass network tiles
+ * NetworkSelector — Premium glass tiles with real telecom logos
  */
 import { cn } from "@/lib/utils";
+import { getNetworkBrand } from "@/config/networkBrands";
 
 interface NetworkSelectorProps {
   networks: string[];
@@ -9,65 +10,12 @@ interface NetworkSelectorProps {
   onSelect: (network: string) => void;
 }
 
-const BRAND: Record<string, {
-  letter: string;
-  color: string;
-  activeRing: string;
-  activeIconBg: string;
-  activeTint: string;
-  glowClass: string;
-  dotHsl: string;
-  activeBorderColor: string;
-}> = {
-  MTN: {
-    letter: "M",
-    color: "text-[hsl(46_90%_38%)]",
-    activeRing: "ring-[hsl(46_90%_55%/0.35)]",
-    activeIconBg: "bg-[hsl(46_100%_50%/0.16)]",
-    activeTint: "from-[hsl(46_100%_50%/0.08)] via-transparent to-[hsl(46_80%_60%/0.03)]",
-    glowClass: "glow-mtn",
-    dotHsl: "46 100% 46%",
-    activeBorderColor: "border-[hsl(46_80%_60%/0.35)]",
-  },
-  Telecel: {
-    letter: "T",
-    color: "text-[hsl(0_60%_42%)]",
-    activeRing: "ring-[hsl(0_60%_55%/0.3)]",
-    activeIconBg: "bg-[hsl(0_68%_50%/0.12)]",
-    activeTint: "from-[hsl(0_68%_50%/0.06)] via-transparent to-[hsl(0_50%_55%/0.02)]",
-    glowClass: "glow-telecel",
-    dotHsl: "0 68% 48%",
-    activeBorderColor: "border-[hsl(0_55%_60%/0.3)]",
-  },
-  AirtelTigo: {
-    letter: "A",
-    color: "text-[hsl(212_65%_42%)]",
-    activeRing: "ring-[hsl(212_65%_55%/0.3)]",
-    activeIconBg: "bg-[hsl(212_78%_50%/0.12)]",
-    activeTint: "from-[hsl(212_78%_50%/0.06)] via-transparent to-[hsl(212_60%_55%/0.02)]",
-    glowClass: "glow-airteltigo",
-    dotHsl: "212 78% 48%",
-    activeBorderColor: "border-[hsl(212_60%_60%/0.3)]",
-  },
-};
-
-const fallback = {
-  letter: "?",
-  color: "text-primary",
-  activeRing: "ring-primary/20",
-  activeIconBg: "bg-primary/8",
-  activeTint: "from-primary/5 via-transparent to-transparent",
-  glowClass: "glow-brand",
-  dotHsl: "213 73% 40%",
-  activeBorderColor: "border-primary/25",
-};
-
 export function NetworkSelector({ networks, selected, onSelect }: NetworkSelectorProps) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {networks.map((net, i) => {
         const isActive = selected === net;
-        const b = BRAND[net] || fallback;
+        const b = getNetworkBrand(net);
 
         return (
           <button
@@ -83,16 +31,20 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
             )}
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            {/* Brand icon circle */}
+            {/* Network logo */}
             <div
               className={cn(
-                "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 text-[15px] font-bold tracking-tight",
+                "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden",
                 isActive
-                  ? `${b.activeIconBg} ${b.color} ring-2 ${b.activeRing} shadow-[0_2px_16px_-2px_hsl(${b.dotHsl}/0.25)]`
-                  : "bg-secondary/60 text-muted-foreground/45 border border-border/30"
+                  ? `${b.activeIconBg} ring-2 ${b.activeRing} shadow-[0_2px_16px_-2px_hsl(${b.hsl}/0.25)]`
+                  : "bg-secondary/60 border border-border/30"
               )}
             >
-              {b.letter}
+              {b.logo ? (
+                <img src={b.logo} alt={`${net} logo`} className="h-8 w-8 object-contain" />
+              ) : (
+                <span className="text-[15px] font-bold text-muted-foreground/45">{net[0]}</span>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-0.5">
@@ -107,8 +59,9 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               <span
                 className={cn(
                   "text-[9px] font-medium tracking-widest uppercase transition-all duration-300",
-                  isActive ? "text-primary/60 opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
                 )}
+                style={isActive ? { color: `hsl(${b.hsl})` } : undefined}
               >
                 Selected
               </span>
@@ -121,8 +74,8 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
                 isActive ? "w-10" : "w-0"
               )}
               style={isActive ? {
-                background: `hsl(${b.dotHsl})`,
-                boxShadow: `0 0 14px 2px hsl(${b.dotHsl} / 0.35)`,
+                background: `hsl(${b.hsl})`,
+                boxShadow: `0 0 14px 2px hsl(${b.hsl} / 0.35)`,
               } : undefined}
             />
 
@@ -131,7 +84,7 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               <div
                 className="absolute top-0 left-1/2 -translate-x-1/2 h-[1px] w-3/4 rounded-full"
                 style={{
-                  background: `linear-gradient(90deg, transparent, hsl(${b.dotHsl} / 0.2), transparent)`,
+                  background: `linear-gradient(90deg, transparent, hsl(${b.hsl} / 0.2), transparent)`,
                 }}
               />
             )}
