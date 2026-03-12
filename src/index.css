@@ -322,7 +322,7 @@
       transparent 65%
     );
     background-size: 250% 100%;
-    animation: light-sweep 5s ease-in-out infinite;
+    animation: light-sweep 5s ease-in-out 1;
     pointer-events: none;
   }
 
