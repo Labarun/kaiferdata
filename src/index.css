@@ -208,18 +208,16 @@
   .glass-premium {
     background:
       linear-gradient(168deg, hsl(216 65% 99% / 0.78), hsl(216 50% 98% / 0.56) 55%, hsl(216 55% 97% / 0.5));
-    backdrop-filter: blur(36px) saturate(1.8);
-    -webkit-backdrop-filter: blur(36px) saturate(1.8);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
     border: 1px solid hsl(213 30% 82% / 0.42);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.92),
       inset 0 0 0 0.5px hsl(213 55% 78% / 0.2),
-      inset 0 -0.5px 0 0 hsl(213 30% 76% / 0.12),
-      inset 0 0 16px 0 hsl(var(--glass-refraction)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 14px -3px hsl(var(--glass-shadow-sm)),
-      0 12px 36px -8px hsl(var(--glass-shadow-md)),
-      0 28px 64px -18px hsl(var(--glass-shadow-lg));
+      0 12px 36px -8px hsl(var(--glass-shadow-md));
+    contain: layout style paint;
   }
 
   /* Layer 5 — Signature/hero glass */
