@@ -65,7 +65,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
       ) : (
         <div className="relative z-[1]">
           <p className="text-4xl font-bold text-foreground tracking-tight leading-none">
-            GH₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+            <span className="text-2xl">GH₵</span>{balance.toFixed(2)}
           </p>
           {locked > 0 && (
             <div className="flex items-center gap-1.5 mt-2.5">
