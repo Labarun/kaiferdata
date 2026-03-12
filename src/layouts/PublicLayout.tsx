@@ -153,6 +153,20 @@ export function PublicLayout() {
         <span className="hidden sm:inline text-[11px] font-medium">Support</span>
       </a>
 
+      {/* Developer credit */}
+      <div className="py-5 text-center">
+        <p className="text-[10px] text-muted-foreground/40 tracking-wide">
+          Developed by{" "}
+          <a
+            href="https://jjsolutionsdigital.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/55 hover:text-primary transition-colors duration-200"
+          >
+            JJ Solutions
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
