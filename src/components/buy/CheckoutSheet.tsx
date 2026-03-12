@@ -391,7 +391,7 @@ export function CheckoutSheet({
           {/* ── STEP: Processing ── */}
           {step === "processing" && (
             <div className="py-10 space-y-6 animate-fade-in text-center">
-              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-gold-strong">
+              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-brand-strong">
                 <Loader2 className="h-7 w-7 text-primary animate-spin" />
               </div>
               <div>
