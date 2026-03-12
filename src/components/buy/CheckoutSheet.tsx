@@ -412,7 +412,7 @@ export function CheckoutSheet({
                       {i > 0 && <div className="h-px w-4 bg-border/30" />}
                       <div className={cn(
                         "h-2 w-2 rounded-full transition-all duration-300",
-                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(38_82%_44%/0.4)]" : "bg-border/40"
+                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
                       )} />
                     </div>
                   );
