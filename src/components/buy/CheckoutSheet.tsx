@@ -256,7 +256,7 @@ export function CheckoutSheet({
                       "h-14 text-[18px] font-semibold tracking-widest rounded-2xl pl-4 pr-12",
                       "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
                       "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
-                      "focus:shadow-[0_0_0_4px_hsl(38_82%_44%/0.06),0_0_0_1px_hsl(38_82%_44%/0.12),0_4px_16px_-4px_hsl(228_30%_48%/0.08)]",
+                      "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)]",
                       "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-[16px]",
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
