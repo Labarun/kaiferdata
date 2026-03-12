@@ -355,7 +355,7 @@ export function CheckoutSheet({
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
-                  <span className="text-[22px] font-bold text-gradient-gold tracking-tight">
+                  <span className="text-[22px] font-bold text-gradient-brand tracking-tight">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </span>
                 </div>
