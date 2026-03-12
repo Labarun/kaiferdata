@@ -51,10 +51,13 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
       {/* ── Premium glass top bar ── */}
       <header className="sticky top-0 z-50 glass-topbar">
         <div className="container flex h-14 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-lg font-bold tracking-tight">
-              <span className="text-gradient-gold">Kaifer</span>
-              <span className="text-foreground">data</span>
+          <div className="flex items-center gap-2.5">
+            <Link to="/" className="flex items-center gap-2 group">
+              <img src={kaiferLogo} alt="Kaiferdata logo" className="h-8 w-8 object-contain shrink-0" />
+              <span className="text-lg font-bold tracking-tight">
+                <span className="text-gradient-gold">Kaifer</span>
+                <span className="text-foreground">data</span>
+              </span>
             </Link>
             <span className="hidden sm:inline text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{title}</span>
           </div>
