@@ -121,7 +121,7 @@
       radial-gradient(ellipse 40% 35% at 3% 65%, hsl(213 50% 86% / 0.2) 0%, transparent 45%),
       radial-gradient(ellipse 80% 50% at 50% 105%, hsl(213 35% 92% / 0.4) 0%, transparent 55%),
       radial-gradient(ellipse 35% 25% at 50% 50%, hsl(214 30% 96% / 0.5) 0%, transparent 50%);
-    background-attachment: fixed;
+    /* background-attachment: fixed removed — causes full repaint on every scroll on mobile */
   }
 }
 
@@ -136,101 +136,97 @@
   .glass {
     background:
       linear-gradient(180deg, hsl(216 70% 99% / 0.6) 0%, hsl(216 50% 98% / 0.45) 100%);
-    backdrop-filter: blur(24px) saturate(1.8);
-    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
     border: 1px solid hsl(var(--glass-border));
     box-shadow:
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
-      inset 0 -0.5px 0 0 hsl(var(--glass-edge-cool)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 16px -4px hsl(var(--glass-shadow-sm));
+    contain: layout style paint;
   }
 
   /* Layer 0.5 — Very light glass */
   .glass-subtle {
     background:
       linear-gradient(180deg, hsl(216 60% 99% / 0.42) 0%, hsl(216 40% 98% / 0.32) 100%);
-    backdrop-filter: blur(16px) saturate(1.55);
-    -webkit-backdrop-filter: blur(16px) saturate(1.55);
+    backdrop-filter: blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
     border: 1px solid hsl(213 25% 84% / 0.38);
     box-shadow:
       inset 0 1px 0 0 hsl(0 0% 100% / 0.65),
       0 1px 3px -1px hsl(var(--glass-shadow-xs));
+    contain: layout style paint;
   }
 
   /* Layer 1 — Opaque glass panel */
   .glass-strong {
     background:
       linear-gradient(175deg, hsl(216 60% 99% / 0.82) 0%, hsl(216 40% 98% / 0.72) 100%);
-    backdrop-filter: blur(40px) saturate(1.85);
-    -webkit-backdrop-filter: blur(40px) saturate(1.85);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
     border: 1px solid hsl(213 30% 82% / 0.45);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.92),
-      inset 0 -0.5px 0 0 hsl(213 20% 74% / 0.1),
-      inset 0 0 0 0.5px hsl(var(--glass-refraction)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 16px -4px hsl(var(--glass-shadow-sm)),
       0 12px 40px -12px hsl(var(--glass-shadow-md));
+    contain: layout style paint;
   }
 
   /* Layer 2 — Interactive card surface */
   .glass-card {
     background:
       linear-gradient(178deg, hsl(216 70% 99% / 0.64) 0%, hsl(216 45% 98% / 0.48) 100%);
-    backdrop-filter: blur(22px) saturate(1.65);
-    -webkit-backdrop-filter: blur(22px) saturate(1.65);
+    backdrop-filter: blur(14px) saturate(1.5);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
     border: 1px solid hsl(213 28% 84% / 0.4);
     box-shadow:
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
-      inset 0 0 0 0.5px hsl(var(--glass-edge-brand)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
-      0 2px 8px -2px hsl(var(--glass-shadow-sm)),
-      0 8px 24px -8px hsl(var(--glass-shadow-md));
+      0 2px 8px -2px hsl(var(--glass-shadow-sm));
+    contain: layout style paint;
   }
 
   /* Layer 3 — Elevated interactive surface */
   .glass-elevated {
     background:
       linear-gradient(172deg, hsl(216 65% 99% / 0.74) 0%, hsl(216 45% 98% / 0.56) 100%);
-    backdrop-filter: blur(32px) saturate(1.8);
-    -webkit-backdrop-filter: blur(32px) saturate(1.8);
+    backdrop-filter: blur(20px) saturate(1.65);
+    -webkit-backdrop-filter: blur(20px) saturate(1.65);
     border: 1px solid hsl(213 30% 82% / 0.45);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.88),
       inset 0 0 0 0.5px hsl(var(--glass-edge-brand)),
-      inset 0 -0.5px 0 0 hsl(var(--glass-edge-cool)),
-      inset 0 0 12px 0 hsl(var(--glass-refraction)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 12px -2px hsl(var(--glass-shadow-sm)),
-      0 12px 36px -8px hsl(var(--glass-shadow-md)),
-      0 24px 60px -16px hsl(var(--glass-shadow-lg));
+      0 12px 36px -8px hsl(var(--glass-shadow-md));
+    contain: layout style paint;
   }
 
   /* Layer 4 — Premium hero surface */
   .glass-premium {
     background:
       linear-gradient(168deg, hsl(216 65% 99% / 0.78), hsl(216 50% 98% / 0.56) 55%, hsl(216 55% 97% / 0.5));
-    backdrop-filter: blur(36px) saturate(1.8);
-    -webkit-backdrop-filter: blur(36px) saturate(1.8);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
     border: 1px solid hsl(213 30% 82% / 0.42);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.92),
       inset 0 0 0 0.5px hsl(213 55% 78% / 0.2),
-      inset 0 -0.5px 0 0 hsl(213 30% 76% / 0.12),
-      inset 0 0 16px 0 hsl(var(--glass-refraction)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 14px -3px hsl(var(--glass-shadow-sm)),
-      0 12px 36px -8px hsl(var(--glass-shadow-md)),
-      0 28px 64px -18px hsl(var(--glass-shadow-lg));
+      0 12px 36px -8px hsl(var(--glass-shadow-md));
+    contain: layout style paint;
   }
 
   /* Layer 5 — Signature/hero glass */
   .glass-hero {
     background:
       linear-gradient(175deg, hsl(216 60% 99% / 0.52) 0%, hsl(216 40% 98% / 0.22) 100%);
-    backdrop-filter: blur(44px) saturate(1.9);
-    -webkit-backdrop-filter: blur(44px) saturate(1.9);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
+    contain: layout style paint;
   }
 
   /* ═══ TEXT GRADIENTS ═══ */
@@ -326,7 +322,7 @@
       transparent 65%
     );
     background-size: 250% 100%;
-    animation: light-sweep 5s ease-in-out infinite;
+    animation: light-sweep 5s ease-in-out 1;
     pointer-events: none;
   }
 
@@ -361,29 +357,27 @@
   .glass-topbar {
     background:
       linear-gradient(180deg, hsl(216 60% 99% / 0.72) 0%, hsl(216 45% 98% / 0.62) 100%);
-    backdrop-filter: blur(36px) saturate(1.85);
-    -webkit-backdrop-filter: blur(36px) saturate(1.85);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
     border-bottom: 1px solid hsl(213 28% 86% / 0.38);
     box-shadow:
-      inset 0 -0.5px 0 0 hsl(213 22% 80% / 0.18),
       inset 0 1px 0 0 hsl(0 0% 100% / 0.7),
-      0 2px 12px -4px hsl(213 40% 50% / 0.06),
-      0 8px 32px -12px hsl(213 40% 45% / 0.04);
+      0 2px 12px -4px hsl(213 40% 50% / 0.06);
+    contain: layout style paint;
   }
 
   /* Mobile dock */
   .glass-dock {
     background:
       linear-gradient(180deg, hsl(216 55% 99% / 0.78) 0%, hsl(216 40% 98% / 0.68) 100%);
-    backdrop-filter: blur(40px) saturate(1.9);
-    -webkit-backdrop-filter: blur(40px) saturate(1.9);
+    backdrop-filter: blur(20px) saturate(1.7);
+    -webkit-backdrop-filter: blur(20px) saturate(1.7);
     border: 1px solid hsl(213 28% 86% / 0.42);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.88),
-      inset 0 0 0 0.5px hsl(var(--glass-refraction)),
       0 -4px 24px -8px hsl(213 40% 50% / 0.08),
-      0 -1px 4px 0 hsl(213 35% 55% / 0.04),
-      0 -12px 40px -16px hsl(213 35% 45% / 0.05);
+      0 -1px 4px 0 hsl(213 35% 55% / 0.04);
+    contain: layout style paint;
   }
 
   /* ── Wallet hero — signature surface ── */
@@ -395,16 +389,14 @@
         hsl(192 35% 96% / 0.65) 70%,
         hsl(213 45% 94% / 0.6) 100%
       );
-    backdrop-filter: blur(40px) saturate(1.9);
-    -webkit-backdrop-filter: blur(40px) saturate(1.9);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
     border: 1px solid hsl(213 45% 80% / 0.3);
     box-shadow:
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.92),
-      inset 0 0 0 0.5px hsl(213 60% 78% / 0.24),
-      inset 0 0 20px 0 hsl(192 55% 85% / 0.08),
       0 2px 8px -2px hsl(213 55% 50% / 0.08),
-      0 8px 28px -8px hsl(213 55% 44% / 0.1),
-      0 24px 56px -16px hsl(213 35% 40% / 0.08);
+      0 8px 28px -8px hsl(213 55% 44% / 0.1);
+    contain: layout style paint;
   }
 
   /* Glass nav active */
