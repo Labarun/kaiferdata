@@ -154,27 +154,21 @@ export default function BuyDataPage() {
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
             {/* Status pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in refraction-rim overflow-hidden">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
-              </span>
-              <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
-              <span className="h-3 w-px bg-border/40 mx-0.5" />
-              <Zap className="h-3 w-3 text-primary/55" />
-              <span className="text-foreground/50 font-medium">Instant Delivery</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in refraction-rim overflow-hidden">
+              <Zap className="h-3 w-3 text-warning" />
+              <span className="font-semibold text-foreground/65 tracking-wide">Fast Delivery</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-[1.75rem] sm:text-[2.125rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.1] animate-fade-in">
               Buy Data{" "}
-              <span className="text-gradient-brand">Instantly</span>
+              <span className="text-gradient-brand">Fast</span>
             </h1>
             <p
-              className="mt-3.5 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[300px] mx-auto animate-fade-in"
+              className="mt-3.5 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[320px] mx-auto animate-fade-in"
               style={{ animationDelay: "0.08s" }}
             >
-              Pick a network, choose your bundle, receive data in seconds.
+              Pick a network, choose your bundle, receive data in minutes.
             </p>
           </div>
         </div>
