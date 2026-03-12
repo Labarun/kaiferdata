@@ -153,45 +153,6 @@ export function PublicLayout() {
         <span className="hidden sm:inline text-[11px] font-medium">Support</span>
       </a>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 glass-subtle">
-        <div className="container py-8">
-          <div className="grid gap-6 sm:grid-cols-3">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-6 w-6 rounded-lg bg-primary/12 border border-primary/10 flex items-center justify-center">
-                  <span className="text-[9px] font-bold text-primary">K</span>
-                </div>
-                <span className="text-xs font-semibold text-foreground/65">Kaiferdata</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                Ghana's premium data bundle platform.
-              </p>
-              <div className="flex items-center gap-1.5 mt-3 text-[11px] text-muted-foreground/55">
-                <MapPin className="h-3 w-3" />
-                <span>Accra, Ghana</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground/45 mb-3 uppercase tracking-[0.14em]">Links</p>
-              <div className="space-y-2">
-                <Link to="/" className="block text-[11px] text-muted-foreground/65 hover:text-foreground transition-colors">Buy Data</Link>
-                <Link to="/track" className="block text-[11px] text-muted-foreground/65 hover:text-foreground transition-colors">Track Order</Link>
-                <Link to="/login" className="block text-[11px] text-muted-foreground/65 hover:text-foreground transition-colors">Sign In</Link>
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground/45 mb-3 uppercase tracking-[0.14em]">Support</p>
-              <p className="text-[11px] text-muted-foreground/65 leading-relaxed">
-                Reach us on WhatsApp for instant help with orders and bundles.
-              </p>
-            </div>
-          </div>
-          <div className="mt-7 pt-4 border-t border-border/20 text-center text-[10px] text-muted-foreground/40">
-            &copy; {new Date().getFullYear()} Kaiferdata. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
