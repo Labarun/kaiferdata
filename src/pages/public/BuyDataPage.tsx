@@ -122,7 +122,7 @@ export default function BuyDataPage() {
   const networkTint = network ? NETWORK_TINT[network] || "" : "";
 
   return (
-    <div className="min-h-[70vh] pb-28">
+    <div className="min-h-[70vh] pb-6">
       {/* ─── Premium hero atmosphere ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
         {/* Layered ambient orbs — deeper, richer */}
