@@ -1,13 +1,13 @@
 /**
  * CheckoutSheet — Premium liquid-glass checkout entry surface
- * Now with multi-step payment flow states
+ * Now with multi-step payment flow states & keyboard-safe mobile layout
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
+import { ScrollArea } from "@/components/ui/scroll-area";
   Drawer,
   DrawerContent,
 } from "@/components/ui/drawer";
