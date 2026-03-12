@@ -3,6 +3,7 @@
  */
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { getDashboardPath } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Menu, X, MapPin, MessageCircle } from "lucide-react";
