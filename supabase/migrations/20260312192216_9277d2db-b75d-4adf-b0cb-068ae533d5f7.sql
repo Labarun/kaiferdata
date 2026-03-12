@@ -1,0 +1,1 @@
+ALTER TABLE public.data_packages ADD CONSTRAINT data_packages_package_code_unique UNIQUE (package_code);
