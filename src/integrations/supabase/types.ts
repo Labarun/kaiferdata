@@ -47,6 +47,75 @@ export type Database = {
         }
         Relationships: []
       }
+      data_packages: {
+        Row: {
+          created_at: string
+          currency: string
+          display_order: number
+          id: string
+          is_active: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type: string
+          package_volume_value: string | null
+          selling_price: number
+          source_metadata: Json | null
+          source_type: string
+          supplier_price: number
+          supplier_source_id: string | null
+          updated_at: string
+          validity_label: string | null
+          visible_for_logged_in: boolean
+          visible_on_public: boolean
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type?: string
+          package_volume_value?: string | null
+          selling_price?: number
+          source_metadata?: Json | null
+          source_type?: string
+          supplier_price?: number
+          supplier_source_id?: string | null
+          updated_at?: string
+          validity_label?: string | null
+          visible_for_logged_in?: boolean
+          visible_on_public?: boolean
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          network?: string
+          package_code?: string
+          package_name?: string
+          package_size_label?: string
+          package_type?: string
+          package_volume_value?: string | null
+          selling_price?: number
+          source_metadata?: Json | null
+          source_type?: string
+          supplier_price?: number
+          supplier_source_id?: string | null
+          updated_at?: string
+          validity_label?: string | null
+          visible_for_logged_in?: boolean
+          visible_on_public?: boolean
+        }
+        Relationships: []
+      }
       data_plans: {
         Row: {
           amount: number

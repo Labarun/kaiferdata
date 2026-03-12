@@ -55,6 +55,7 @@ import AdminTransactionDetailPage from "@/pages/admin/AdminTransactionDetailPage
 import AdminReconciliationPage from "@/pages/admin/AdminReconciliationPage";
 import AdminIntentsPage from "@/pages/admin/AdminIntentsPage";
 import AdminIntentDetailPage from "@/pages/admin/AdminIntentDetailPage";
+import AdminPackagesPage from "@/pages/admin/AdminPackagesPage";
 
 import NotFound from "@/pages/NotFound";
 
@@ -103,6 +104,7 @@ const App = () => (
             {/* ====== ADMIN PANEL ====== */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]}><FullAdminLayout /></ProtectedRoute>}>
               <Route path="/admin" element={<AdminDashboardHome />} />
+              <Route path="/admin/packages" element={<AdminPackagesPage />} />
               <Route path="/admin/orders" element={<AdminOrdersPage />} />
               <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
               <Route path="/admin/transactions" element={<AdminTransactionsPage />} />

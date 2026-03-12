@@ -1,5 +1,6 @@
 /**
  * BuyDataPage — Flagship premium buy-data landing with liquid-glass atmosphere
+ * Now powered by real package catalog (data_packages table)
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -11,9 +12,12 @@ import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import {
-  fetchDataPlans,
-  getNetworks,
-  filterPlansByNetwork,
+  fetchPublicPackages,
+  getPackageNetworks,
+  filterPackagesByNetwork,
+  type DataPackage,
+} from "@/services/packageCatalog";
+import {
   createPurchaseIntent,
   initializePayment,
   type DataPlan,
@@ -27,11 +31,29 @@ const NETWORK_TINT: Record<string, string> = {
   AirtelTigo: "from-[hsl(212_70%_52%/0.04)] to-transparent",
 };
 
+/** Bridge DataPackage → DataPlan for PlanSelector/CheckoutSheet compatibility */
+function packageToPlan(pkg: DataPackage): DataPlan {
+  return {
+    id: pkg.id,
+    network: pkg.network,
+    plan_code: pkg.package_code,
+    plan_name: pkg.package_name,
+    volume: pkg.package_size_label,
+    amount: pkg.selling_price,
+    description: pkg.validity_label,
+    is_active: pkg.is_active,
+    sort_order: pkg.display_order,
+    metadata: null,
+    created_at: pkg.created_at,
+    updated_at: pkg.updated_at,
+  };
+}
+
 export default function BuyDataPage() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
-  const [plans, setPlans] = useState<DataPlan[]>([]);
+  const [packages, setPackages] = useState<DataPackage[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(searchParams.get("network"));
@@ -46,16 +68,16 @@ export default function BuyDataPage() {
   const [plansKey, setPlansKey] = useState(0);
 
   useEffect(() => {
-    fetchDataPlans()
-      .then(setPlans)
+    fetchPublicPackages()
+      .then(setPackages)
       .catch(() => toast({ title: "Error", description: "Failed to load plans", variant: "destructive" }))
       .finally(() => setLoading(false));
   }, []);
 
   const networks = useMemo(() => {
-    const available = getNetworks(plans);
+    const available = getPackageNetworks(packages);
     return GHANA_NETWORKS.filter((n) => available.includes(n));
-  }, [plans]);
+  }, [packages]);
 
   useEffect(() => {
     if (!network && networks.length > 0 && !loading) {
@@ -64,8 +86,8 @@ export default function BuyDataPage() {
   }, [networks, loading]);
 
   const filteredPlans = useMemo(
-    () => (network ? filterPlansByNetwork(plans, network) : []),
-    [plans, network]
+    () => (network ? filterPackagesByNetwork(packages, network).map(packageToPlan) : []),
+    [packages, network]
   );
 
   const handleNetworkSelect = useCallback((n: string) => {
