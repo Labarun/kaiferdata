@@ -499,15 +499,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["intent_status"]
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_intents_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "data_plans"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       supplier_request_logs: {
         Row: {
