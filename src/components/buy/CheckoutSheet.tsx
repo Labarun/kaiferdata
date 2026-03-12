@@ -292,7 +292,7 @@ export function CheckoutSheet({
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
                     )}
-                    style={{ fontSize: '16px' }}
+                    
                     maxLength={11}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
