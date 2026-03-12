@@ -343,7 +343,7 @@
       hsl(213 65% 75% / 0.1) 100%
     );
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
 
   .section-label {
