@@ -70,8 +70,8 @@ const PlanCard = memo(function PlanCard({
         <div className="flex items-start justify-between relative z-[1]">
           <span
             className={cn(
-              "text-[21px] font-bold leading-none tracking-tight transition-colors duration-200",
-              isActive ? "text-foreground/90" : "text-foreground/80"
+              "text-[22px] font-bold leading-none tracking-tight transition-colors duration-200",
+              isActive ? "text-foreground/90" : "text-foreground/75"
             )}
             style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
           >

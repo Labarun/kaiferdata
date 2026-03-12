@@ -71,7 +71,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
             <div className="flex items-center gap-1.5 mt-2.5">
               <Lock className="h-3 w-3 text-muted-foreground/60" />
               <p className="text-xs text-muted-foreground">
-                Locked: GH₵{locked.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+                Locked: GH₵{locked.toFixed(2)}
               </p>
             </div>
           )}
