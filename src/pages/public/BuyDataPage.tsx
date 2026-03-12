@@ -216,7 +216,7 @@ export default function BuyDataPage() {
                   {filteredPlans.length} available
                 </span>
               </div>
-              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} />
+              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
             </section>
           )}
 
