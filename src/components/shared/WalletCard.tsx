@@ -1,5 +1,5 @@
 /**
- * WalletCard — Premium liquid-glass wallet hero surface (GH₵)
+ * WalletCard — Signature premium liquid-glass wallet hero (GH₵)
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,12 +43,13 @@ export function WalletCard({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <div className="glass-wallet-hero rounded-2xl shimmer-edge overflow-hidden p-6 relative">
-      {/* Ambient glow dot */}
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+    <div className="glass-wallet-hero rounded-2xl shimmer-edge refraction-rim overflow-hidden p-6 relative">
+      {/* Ambient glow orbs */}
+      <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-8 -left-6 w-28 h-28 rounded-full bg-accent/4 blur-2xl pointer-events-none" />
 
-      <div className="flex items-center gap-3 mb-5">
-        <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/10">
+      <div className="flex items-center gap-3 mb-5 relative z-[1]">
+        <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/10 shadow-[0_0_12px_-4px_hsl(213_73%_40%/0.15)]">
           <Wallet className="h-5 w-5 text-primary" />
         </div>
         <div>
@@ -62,7 +63,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
       {loading ? (
         <div className="h-10 w-40 bg-muted/40 animate-pulse rounded-xl" />
       ) : (
-        <>
+        <div className="relative z-[1]">
           <p className="text-4xl font-bold text-foreground tracking-tight leading-none">
             GH₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
           </p>
@@ -74,7 +75,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
               </p>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

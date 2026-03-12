@@ -1,5 +1,5 @@
 /**
- * BuyDataPage — Premium art-directed Ghana buy-data landing with interaction layer
+ * BuyDataPage — Flagship premium buy-data landing with liquid-glass atmosphere
  */
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
-
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import {
   fetchDataPlans,
@@ -18,7 +17,6 @@ import {
   createPurchaseIntent,
   initializePayment,
   type DataPlan,
-  type PurchaseIntent,
 } from "@/services/purchaseIntent";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
@@ -47,7 +45,6 @@ export default function BuyDataPage() {
 
   const [plansKey, setPlansKey] = useState(0);
   const [summaryVisible, setSummaryVisible] = useState(false);
-  const summaryTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     fetchDataPlans()
@@ -84,13 +81,8 @@ export default function BuyDataPage() {
     setSummaryVisible(true);
   }, []);
 
-  const handleDismissSummary = useCallback(() => {
-    setSummaryVisible(false);
-  }, []);
-
-  const handleOpenCheckout = useCallback(() => {
-    setCheckoutOpen(true);
-  }, []);
+  const handleDismissSummary = useCallback(() => setSummaryVisible(false), []);
+  const handleOpenCheckout = useCallback(() => setCheckoutOpen(true), []);
 
   const [processingLabel, setProcessingLabel] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -99,20 +91,11 @@ export default function BuyDataPage() {
     if (!network || !plan) return;
     setSubmitting(true);
     setPaymentError(null);
-
     try {
       setProcessingLabel("Creating order…");
-      const result = await createPurchaseIntent({
-        phoneNumber,
-        network,
-        plan,
-        customerEmail: customerEmail || undefined,
-        customerName: customerName || undefined,
-      });
-
+      const result = await createPurchaseIntent({ phoneNumber, network, plan, customerEmail: customerEmail || undefined, customerName: customerName || undefined });
       setProcessingLabel("Initializing payment…");
       const payment = await initializePayment(result.id);
-
       setProcessingLabel("Redirecting to Paystack…");
       window.location.href = payment.authorization_url;
     } catch (err: any) {
@@ -121,26 +104,14 @@ export default function BuyDataPage() {
     }
   };
 
-  const handleClearError = () => {
-    setPaymentError(null);
-    setSubmitting(false);
-  };
-
-  const resetFlow = () => {
-    setNetwork(networks[0] || null);
-    setPlan(null);
-    setPhoneNumber("");
-    setCustomerName("");
-    setCustomerEmail("");
-    setSummaryVisible(false);
-  };
+  const handleClearError = () => { setPaymentError(null); setSubmitting(false); };
 
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-11 w-11 rounded-2xl glass-elevated flex items-center justify-center animate-pulse">
-            <Wifi className="h-4.5 w-4.5 text-primary" />
+          <div className="h-12 w-12 rounded-2xl glass-elevated flex items-center justify-center shimmer-edge overflow-hidden">
+            <Wifi className="h-5 w-5 text-primary animate-pulse" />
           </div>
           <p className="text-xs text-muted-foreground/60">Loading plans…</p>
         </div>
@@ -152,22 +123,24 @@ export default function BuyDataPage() {
 
   return (
     <div className="min-h-[70vh] pb-28">
-      {/* ─── Premium hero intro ─── */}
+      {/* ─── Premium hero atmosphere ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
-        {/* Layered ambient light */}
+        {/* Layered ambient orbs — deeper, richer */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[35%] left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-[hsl(215_45%_85%/0.4)] blur-[120px]" />
-          <div className="absolute bottom-[-25%] right-[-12%] w-[280px] h-[280px] rounded-full bg-[hsl(170_35%_86%/0.28)] blur-[90px]" />
-          <div className="absolute top-[40%] left-[-10%] w-[220px] h-[220px] rounded-full bg-[hsl(215_40%_84%/0.22)] blur-[80px]" />
+          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[650px] h-[380px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[140px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[100px]" />
+          <div className="absolute top-[45%] left-[-8%] w-[240px] h-[240px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[90px]" />
+          {/* Subtle refraction streak */}
+          <div className="absolute top-[20%] right-[15%] w-[180px] h-[2px] rounded-full bg-[hsl(192_72%_80%/0.15)] blur-[3px] rotate-[-15deg]" />
         </div>
 
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
             {/* Status pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in shimmer-edge overflow-hidden">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in shimmer-edge refraction-rim overflow-hidden">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(152_52%_36%/0.45)]" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
               </span>
               <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
               <span className="h-3 w-px bg-border/40 mx-0.5" />
@@ -181,7 +154,7 @@ export default function BuyDataPage() {
               <span className="text-gradient-brand">Instantly</span>
             </h1>
             <p
-              className="mt-3.5 text-[13.5px] text-muted-foreground/75 leading-[1.65] max-w-[300px] mx-auto animate-fade-in"
+              className="mt-3.5 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[300px] mx-auto animate-fade-in"
               style={{ animationDelay: "0.08s" }}
             >
               Pick a network, choose your bundle, receive data in seconds.
@@ -202,10 +175,10 @@ export default function BuyDataPage() {
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
                   {i > 0 && <span className="h-3 w-px bg-border/30 -ml-2.5 mr-0.5 sm:-ml-4 sm:mr-0" />}
-                  <div className="h-5 w-5 rounded-md bg-[hsl(0_0%_100%/0.5)] border border-[hsl(215_18%_86%/0.5)] flex items-center justify-center">
+                  <div className="h-5 w-5 rounded-md glass-subtle flex items-center justify-center">
                     <item.icon className={`h-3 w-3 ${item.accent}`} />
                   </div>
-                  <span className="text-[11px] text-muted-foreground/65 font-medium">{item.label}</span>
+                  <span className="text-[11px] text-muted-foreground/60 font-medium">{item.label}</span>
                 </div>
               ))}
             </div>
@@ -219,7 +192,6 @@ export default function BuyDataPage() {
         <div className="max-w-lg mx-auto">
           <NoticeBanner audience="public" />
 
-          {/* Network selector */}
           <section className="mb-7">
             <div className="flex items-center gap-2 mb-3.5">
               <div className="h-1 w-1 rounded-full bg-primary/50" />
@@ -232,11 +204,9 @@ export default function BuyDataPage() {
             />
           </section>
 
-          {/* Plans */}
           {network && (
             <section key={plansKey} className="animate-plans-enter mb-7">
               <div className={`absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b ${networkTint} rounded-3xl opacity-60`} />
-
               <div className="flex items-center justify-between mb-3.5">
                 <div className="flex items-center gap-2">
                   <div className="h-1 w-1 rounded-full bg-primary/50" />
@@ -246,15 +216,10 @@ export default function BuyDataPage() {
                   {filteredPlans.length} available
                 </span>
               </div>
-              <PlanSelector
-                plans={filteredPlans}
-                selected={plan}
-                onSelect={handlePlanSelect}
-              />
+              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} />
             </section>
           )}
 
-          {/* Quick links */}
           <div className="flex items-center justify-center pt-2 pb-2">
             <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/45 h-8 font-medium">
               <Link to="/track">
@@ -266,12 +231,12 @@ export default function BuyDataPage() {
         </div>
       </div>
 
-      {/* ─── Floating selected plan summary ─── */}
+      {/* ─── Floating selected plan summary — premium dock ─── */}
       {plan && summaryVisible && !checkoutOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-5 pt-2 pointer-events-none">
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-brand-strong shimmer-edge">
-              <div className={`h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent`} />
+            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-brand-strong shimmer-edge refraction-rim">
+              <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
               <div className="p-4 flex items-center gap-4">
                 <div className="min-w-0 flex-1">
@@ -285,23 +250,17 @@ export default function BuyDataPage() {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-foreground/85 tracking-tight">
-                      {plan.volume}
-                    </span>
+                    <span className="text-lg font-bold text-foreground/85 tracking-tight">{plan.volume}</span>
                     <span className="text-[15px] font-bold text-gradient-brand">
                       GH₵{Number(plan.amount).toLocaleString()}
                     </span>
                   </div>
                 </div>
 
-                {/* CTA */}
-                <button
-                  onClick={handleOpenCheckout}
-                  className="shrink-0 h-12 px-6 rounded-xl bg-gradient-to-b from-[hsl(215_72%_50%)] via-primary to-[hsl(215_72%_36%)] text-primary-foreground text-[13px] font-semibold flex items-center gap-2 shadow-[inset_0_1.5px_0_0_hsl(215_72%_62%/0.55),0_2px_8px_-2px_hsl(215_72%_42%/0.25),0_8px_24px_-8px_hsl(215_72%_42%/0.2)] active:scale-[0.96] active:brightness-[0.94] transition-all duration-150"
-                >
+                <Button onClick={handleOpenCheckout} className="shrink-0 h-12 px-6 rounded-xl text-[13px] font-semibold">
                   Continue
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                  <ArrowRight className="h-4 w-4 ml-1.5" />
+                </Button>
               </div>
             </div>
           </div>

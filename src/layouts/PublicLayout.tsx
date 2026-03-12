@@ -1,5 +1,5 @@
 /**
- * PublicLayout — Premium light liquid-glass shell
+ * PublicLayout — Premium floating liquid-glass shell
  */
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +25,7 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Sticky glass header */}
+      {/* Floating glass header */}
       <header
         className={`sticky top-0 z-50 transition-all duration-500 ${
           scrolled ? "glass-strong" : "bg-transparent"
@@ -38,8 +38,9 @@ export function PublicLayout() {
               alt="Kaiferdata logo"
               className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
             />
-            <span className="text-[15px] font-semibold text-foreground/80 tracking-tight">
-              Kaiferdata
+            <span className="text-[15px] font-bold text-foreground/85 tracking-tight">
+              <span className="text-gradient-brand">Kaifer</span>
+              <span>data</span>
             </span>
           </Link>
 
@@ -54,7 +55,7 @@ export function PublicLayout() {
                 className={`px-4 py-1.5 rounded-xl text-[13px] transition-all duration-200 ${
                   location.pathname === link.path
                     ? "text-primary font-medium glass-subtle"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
                 }`}
               >
                 {link.label}
@@ -86,7 +87,7 @@ export function PublicLayout() {
               </Button>
             )}
             <button
-              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all"
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-all"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -153,7 +154,7 @@ export function PublicLayout() {
       </a>
 
       {/* Footer */}
-      <footer className="border-t border-border/35 bg-[hsl(228_20%_97%/0.6)] backdrop-blur-sm">
+      <footer className="border-t border-border/30 glass-subtle">
         <div className="container py-8">
           <div className="grid gap-6 sm:grid-cols-3">
             <div>
@@ -186,7 +187,7 @@ export function PublicLayout() {
               </p>
             </div>
           </div>
-          <div className="mt-7 pt-4 border-t border-border/25 text-center text-[10px] text-muted-foreground/40">
+          <div className="mt-7 pt-4 border-t border-border/20 text-center text-[10px] text-muted-foreground/40">
             &copy; {new Date().getFullYear()} Kaiferdata. All rights reserved.
           </div>
         </div>

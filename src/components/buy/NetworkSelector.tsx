@@ -1,5 +1,5 @@
 /**
- * NetworkSelector — Premium iconic Ghana network tiles with rich interaction
+ * NetworkSelector — Signature premium glass network tiles
  */
 import { cn } from "@/lib/utils";
 
@@ -58,7 +58,7 @@ const fallback = {
   activeIconBg: "bg-primary/8",
   activeTint: "from-primary/5 via-transparent to-transparent",
   glowClass: "glow-brand",
-  dotHsl: "215 72% 42%",
+  dotHsl: "213 73% 40%",
   activeBorderColor: "border-primary/25",
 };
 
@@ -76,9 +76,9 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
             onClick={() => onSelect(net)}
             className={cn(
               "relative flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl transition-all duration-300 ease-out",
-              "active:scale-[0.95] active:duration-100",
+              "active:scale-[0.94] active:duration-100",
               isActive
-                ? `glass-elevated bg-gradient-to-b ${b.activeTint} ${b.glowClass} ${b.activeBorderColor}`
+                ? `glass-elevated bg-gradient-to-b ${b.activeTint} ${b.glowClass} ${b.activeBorderColor} refraction-rim`
                 : "glass-card hover:glass-elevated"
             )}
             style={{ animationDelay: `${i * 60}ms` }}
@@ -88,8 +88,8 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               className={cn(
                 "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 text-[15px] font-bold tracking-tight",
                 isActive
-                  ? `${b.activeIconBg} ${b.color} ring-2 ${b.activeRing} shadow-[0_2px_12px_-2px_hsl(${b.dotHsl}/0.2)]`
-                  : "bg-[hsl(215_18%_94%/0.7)] text-muted-foreground/45 border border-[hsl(215_18%_88%/0.5)]"
+                  ? `${b.activeIconBg} ${b.color} ring-2 ${b.activeRing} shadow-[0_2px_16px_-2px_hsl(${b.dotHsl}/0.25)]`
+                  : "bg-secondary/60 text-muted-foreground/45 border border-border/30"
               )}
             >
               {b.letter}
@@ -114,7 +114,7 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               </span>
             </div>
 
-            {/* Active bottom accent line */}
+            {/* Active bottom accent */}
             <div
               className={cn(
                 "absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-400",
@@ -122,11 +122,11 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               )}
               style={isActive ? {
                 background: `hsl(${b.dotHsl})`,
-                boxShadow: `0 0 12px 2px hsl(${b.dotHsl} / 0.35)`,
+                boxShadow: `0 0 14px 2px hsl(${b.dotHsl} / 0.35)`,
               } : undefined}
             />
 
-            {/* Active top shimmer line */}
+            {/* Active top shimmer */}
             {isActive && (
               <div
                 className="absolute top-0 left-1/2 -translate-x-1/2 h-[1px] w-3/4 rounded-full"

@@ -1,5 +1,5 @@
 /**
- * PlanSelector — Premium desirable bundle product tiles with rich interaction
+ * PlanSelector — Premium product tiles with advanced glass material
  */
 import { cn } from "@/lib/utils";
 import type { DataPlan } from "@/services/purchaseIntent";
@@ -32,10 +32,10 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
             className={cn(
               "group relative flex flex-col rounded-2xl text-left overflow-hidden",
               "transition-all duration-300 ease-out",
-              "active:scale-[0.96] active:duration-100",
+              "active:scale-[0.95] active:duration-100",
               isActive
-                ? "glass-elevated glow-brand-strong"
-                : "glass-card hover:glass-elevated hover:shadow-[inset_0_1.5px_0_0_hsl(0_0%_100%/0.85),0_4px_16px_-4px_hsl(215_30%_48%/0.12),0_12px_36px_-8px_hsl(215_30%_48%/0.08)]"
+                ? "glass-elevated glow-brand-strong refraction-rim"
+                : "glass-card hover:glass-elevated"
             )}
             style={{ animationDelay: `${i * 50}ms` }}
           >
@@ -50,12 +50,12 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
             />
 
             <div className="p-4 pb-3.5 flex flex-col gap-2.5 relative">
-              {/* Subtle inner glow for active */}
+              {/* Active inner glow */}
               {isActive && (
-                <div className="absolute inset-0 rounded-b-2xl pointer-events-none bg-gradient-to-b from-[hsl(215_60%_85%/0.08)] to-transparent" />
+                <div className="absolute inset-0 rounded-b-2xl pointer-events-none bg-gradient-to-b from-[hsl(213_60%_85%/0.08)] via-transparent to-[hsl(192_50%_85%/0.04)]" />
               )}
 
-              {/* Volume — hero text */}
+              {/* Volume */}
               <div className="flex items-start justify-between relative z-[1]">
                 <span
                   className={cn(
@@ -70,8 +70,8 @@ export function PlanSelector({ plans, selected, onSelect }: PlanSelectorProps) {
                     "h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 mt-0.5",
                     "transition-all duration-300",
                     isActive
-                      ? "bg-primary shadow-[0_0_14px_-2px_hsl(215_72%_42%/0.4)] animate-pulse-ring"
-                      : "border border-border/40 bg-[hsl(0_0%_100%/0.5)] group-hover:border-border/60"
+                      ? "bg-primary shadow-[0_0_14px_-2px_hsl(213_73%_40%/0.4)] animate-pulse-ring"
+                      : "border border-border/40 bg-secondary/40 group-hover:border-border/60"
                   )}
                 >
                   {isActive && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
