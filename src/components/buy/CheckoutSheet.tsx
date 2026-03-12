@@ -387,8 +387,9 @@ export function CheckoutSheet({
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
-                  <span className="text-[22px] font-bold text-gradient-brand tracking-tight">
-                    GH₵{Number(plan.amount).toLocaleString()}
+                  <span className="font-bold text-gradient-brand tracking-tight">
+                    <span className="text-[16px]">GH₵</span>
+                    <span className="text-[24px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
                   </span>
                 </div>
               </div>
