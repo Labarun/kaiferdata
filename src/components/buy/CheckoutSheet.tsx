@@ -1,12 +1,13 @@
 /**
  * CheckoutSheet — Premium liquid-glass checkout entry surface
- * Now with multi-step payment flow states
+ * Now with multi-step payment flow states & keyboard-safe mobile layout
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Drawer,
   DrawerContent,
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 /* ── Network brand tints ── */
 const NET_DOT: Record<string, string> = {
-  MTN: "44 72% 42%",
+  MTN: "46 100% 50%",
   Telecel: "0 68% 48%",
   AirtelTigo: "212 78% 48%",
 };
@@ -74,7 +75,21 @@ export function CheckoutSheet({
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile keyboard via visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const heightDiff = window.innerHeight - vv.height;
+      setKeyboardOpen(heightDiff > 120);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Auto-focus phone input when sheet opens
   useEffect(() => {
@@ -83,6 +98,14 @@ export function CheckoutSheet({
       return () => clearTimeout(t);
     }
   }, [open, step]);
+
+  // Scroll focused input into view when keyboard opens
+  const scrollToFocused = useCallback(() => {
+    setTimeout(() => {
+      const active = document.activeElement as HTMLElement | null;
+      active?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, 150);
+  }, []);
 
   // Sync processing/error states from parent
   useEffect(() => {
@@ -147,25 +170,32 @@ export function CheckoutSheet({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         className={cn(
-          "max-h-[94vh] border-0 rounded-t-[28px] overflow-hidden",
+          "border-0 rounded-t-[28px] overflow-hidden",
           "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
-          "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]"
+          "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+          keyboardOpen ? "max-h-[100dvh]" : "max-h-[94vh]"
         )}
+        style={{ maxHeight: keyboardOpen ? '100dvh' : undefined }}
       >
         {/* ── Premium handle ── */}
-        <div className="flex justify-center pt-3.5 pb-2">
+        <div className="flex justify-center pt-3.5 pb-2 shrink-0">
           <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
         </div>
 
         {/* ── Top edge accent ── */}
         <div
-          className="h-[1px] mx-6"
+          className="h-[1px] mx-6 shrink-0"
           style={{
             background: `linear-gradient(90deg, transparent 10%, hsl(${dotHsl} / 0.2) 50%, transparent 90%)`,
           }}
         />
 
-        <div className="overflow-y-auto px-5 pb-8 pt-3">
+        <div
+          ref={contentRef}
+          className="overflow-y-auto overscroll-contain px-5 pb-8 pt-3 flex-1"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          onFocus={scrollToFocused}
+        >
           {/* ── Header ── */}
           {step !== "processing" && step !== "error" && (
             <div className="text-center mb-5">
@@ -253,14 +283,15 @@ export function CheckoutSheet({
                     value={phoneNumber}
                     onChange={(e) => handlePhoneInput(e.target.value)}
                     className={cn(
-                      "h-14 text-[18px] font-semibold tracking-widest rounded-2xl pl-4 pr-12",
+                      "h-14 text-base font-semibold tracking-widest rounded-2xl pl-4 pr-12",
                       "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
                       "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
                       "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)]",
-                      "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-[16px]",
+                      "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-base",
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
                     )}
+                    style={{ fontSize: '16px' }}
                     maxLength={11}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
