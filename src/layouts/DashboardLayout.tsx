@@ -4,6 +4,7 @@
  */
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { signOut } from "@/services/auth";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { Button } from "@/components/ui/button";
