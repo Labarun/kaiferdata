@@ -18,7 +18,7 @@ import {
   initializePayment,
   type DataPlan,
 } from "@/services/purchaseIntent";
-import { getNetworkBrand } from "@/config/networkBrands";
+
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
 const NETWORK_TINT: Record<string, string> = {
