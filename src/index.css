@@ -143,7 +143,7 @@
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 16px -4px hsl(var(--glass-shadow-sm));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 0.5 — Very light glass */
@@ -156,7 +156,7 @@
     box-shadow:
       inset 0 1px 0 0 hsl(0 0% 100% / 0.65),
       0 1px 3px -1px hsl(var(--glass-shadow-xs));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 1 — Opaque glass panel */
@@ -171,7 +171,7 @@
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 16px -4px hsl(var(--glass-shadow-sm)),
       0 12px 40px -12px hsl(var(--glass-shadow-md));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 2 — Interactive card surface */
@@ -185,7 +185,7 @@
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 2px 8px -2px hsl(var(--glass-shadow-sm));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 3 — Elevated interactive surface */
@@ -201,7 +201,7 @@
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 12px -2px hsl(var(--glass-shadow-sm)),
       0 12px 36px -8px hsl(var(--glass-shadow-md));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 4 — Premium hero surface */
@@ -217,7 +217,7 @@
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
       0 4px 14px -3px hsl(var(--glass-shadow-sm)),
       0 12px 36px -8px hsl(var(--glass-shadow-md));
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Layer 5 — Signature/hero glass */
@@ -226,7 +226,7 @@
       linear-gradient(175deg, hsl(216 60% 99% / 0.52) 0%, hsl(216 40% 98% / 0.22) 100%);
     backdrop-filter: blur(24px) saturate(1.7);
     -webkit-backdrop-filter: blur(24px) saturate(1.7);
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* ═══ TEXT GRADIENTS ═══ */
@@ -343,7 +343,7 @@
       hsl(213 65% 75% / 0.1) 100%
     );
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
 
   .section-label {
@@ -363,7 +363,7 @@
     box-shadow:
       inset 0 1px 0 0 hsl(0 0% 100% / 0.7),
       0 2px 12px -4px hsl(213 40% 50% / 0.06);
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Mobile dock */
@@ -377,7 +377,7 @@
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.88),
       0 -4px 24px -8px hsl(213 40% 50% / 0.08),
       0 -1px 4px 0 hsl(213 35% 55% / 0.04);
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* ── Wallet hero — signature surface ── */
@@ -396,7 +396,7 @@
       inset 0 1.5px 0 0 hsl(0 0% 100% / 0.92),
       0 2px 8px -2px hsl(213 55% 50% / 0.08),
       0 8px 28px -8px hsl(213 55% 44% / 0.1);
-    contain: layout style paint;
+    contain: layout style;
   }
 
   /* Glass nav active */
@@ -497,8 +497,10 @@
 }
 
 /* Ensure touch targets are not blocked by decorative layers */
-input, select, textarea, button {
+input, select, textarea {
   position: relative;
   z-index: 1;
+}
+input, select, textarea, button, a, [role="button"] {
   touch-action: manipulation;
 }
