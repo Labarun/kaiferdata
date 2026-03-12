@@ -182,7 +182,6 @@ export default function BuyDataPage() {
                 { icon: Zap, label: "Instant", accent: "text-primary/60" },
                 { icon: Shield, label: "Secure", accent: "text-success/60" },
                 { icon: Clock, label: "24/7", accent: "text-info/60" },
-                { icon: Globe, label: "Ghana Only", accent: "text-muted-foreground/45" },
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
                   {i > 0 && <span className="h-3 w-px bg-border/30 -ml-2.5 mr-0.5 sm:-ml-4 sm:mr-0" />}
