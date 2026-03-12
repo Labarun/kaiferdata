@@ -71,16 +71,14 @@ export default function BuyDataPage() {
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
     setPlan(null);
-    setSummaryVisible(false);
     setPlansKey((k) => k + 1);
   }, []);
 
   const handlePlanSelect = useCallback((p: DataPlan) => {
     setPlan(p);
-    setSummaryVisible(true);
+    setCheckoutOpen(true);
   }, []);
 
-  const handleDismissSummary = useCallback(() => setSummaryVisible(false), []);
   const handleOpenCheckout = useCallback(() => setCheckoutOpen(true), []);
 
   const [processingLabel, setProcessingLabel] = useState("");
