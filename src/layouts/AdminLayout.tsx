@@ -159,48 +159,76 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
   );
 }
 
-/** Mobile sidebar as a slide-over */
+/** Mobile sidebar as a slide-over drawer */
 function MobileSidebar({ navItems, title }: { navItems: AdminNavItem[]; title: string }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+
+  // Close on route change
+  const prevPath = location.pathname;
 
   return (
     <>
-      <button className="md:hidden p-1.5" onClick={() => setOpen(true)}>
+      <button className="md:hidden p-1.5 -ml-1" onClick={() => setOpen(true)} aria-label="Open menu">
         <PanelLeft className="h-5 w-5" />
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />
-          <div className="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border md:hidden">
-            <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border">
-              <span className="text-sm font-bold text-sidebar-primary-foreground">{title}</span>
-              <button onClick={() => setOpen(false)} className="p-1.5 text-sidebar-foreground">
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
+      {/* Overlay */}
+      <div
+        className={`fixed inset-0 z-[60] bg-black/50 backdrop-blur-[2px] md:hidden transition-opacity duration-300 ${
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* Drawer panel */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-[70] w-[82%] max-w-[300px] bg-sidebar border-r border-sidebar-border md:hidden
+          flex flex-col transition-transform duration-300 ease-out ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
+          <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">{title}</span>
+          <button onClick={() => setOpen(false)} className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent">
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Nav items — scrollable */}
+        <nav className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-0.5">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors active:opacity-70 ${
+                isActive(item.path)
+                  ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+              }`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Drawer footer */}
+        <div className="p-3 border-t border-sidebar-border shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+              <User className="h-4 w-4 text-sidebar-foreground" />
             </div>
-            <nav className="p-2 space-y-0.5">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                    isActive(item.path)
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-sidebar-foreground truncate">Admin</p>
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </aside>
     </>
   );
 }
