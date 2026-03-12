@@ -1,10 +1,11 @@
 /**
  * Edge Function: verify-payment
  * 
- * Verifies a Paystack transaction, updates purchase intent,
- * creates a payment record, and creates a real order.
+ * Verifies a Paystack transaction. Handles two flows:
+ * - Bundle purchase → creates payment record + order
+ * - Wallet deposit → creates payment record + credits wallet
  * 
- * Idempotent: re-calling with an already-verified reference returns the existing order.
+ * Idempotent: re-calling with an already-verified reference returns existing result.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -14,23 +15,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Generate a public order ID: KD-ORD-XXXXXXXX */
 function generateOrderId(): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
   return `KD-ORD-${ts}${rand}`;
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
 
   try {
     const PAYSTACK_SECRET = Deno.env.get("PAYSTACK_SECRET_KEY");
@@ -48,9 +48,7 @@ Deno.serve(async (req) => {
       return json({ error: "Missing payment reference" }, 400);
     }
 
-    // ═══════════════════════════════════════════════════
-    // 1. IDEMPOTENCY CHECK — already have an order for this reference?
-    // ═══════════════════════════════════════════════════
+    // ═══ 1. IDEMPOTENCY CHECK ═══
     const { data: existingPayment } = await supabase
       .from("payment_records")
       .select("id, status, intent_id")
@@ -59,7 +57,17 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingPayment?.status === "verified") {
-      // Already verified — find the order and return it
+      // Find intent to determine type
+      const { data: existingIntent } = await supabase
+        .from("purchase_intents")
+        .select("intent_type")
+        .eq("id", existingPayment.intent_id)
+        .maybeSingle();
+
+      if (existingIntent?.intent_type === "wallet_deposit") {
+        return json({ success: true, already_processed: true, intent_type: "wallet_deposit" });
+      }
+
       const { data: existingOrder } = await supabase
         .from("orders")
         .select("*")
@@ -67,22 +75,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingOrder) {
-        return json({
-          success: true,
-          already_processed: true,
-          order: existingOrder,
-        });
+        return json({ success: true, already_processed: true, order: existingOrder });
       }
     }
 
-    // ═══════════════════════════════════════════════════
-    // 2. VERIFY WITH PAYSTACK
-    // ═══════════════════════════════════════════════════
+    // ═══ 2. VERIFY WITH PAYSTACK ═══
     const verifyRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      {
-        headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
-      }
+      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } }
     );
     const verifyData = await verifyRes.json();
 
@@ -92,14 +92,11 @@ Deno.serve(async (req) => {
     }
 
     const txn = verifyData.data;
-    const paystackStatus = txn.status; // "success", "failed", "abandoned"
-    const amountPaidPesewas = txn.amount; // in pesewas
-    const amountPaidGhs = amountPaidPesewas / 100;
+    const paystackStatus = txn.status;
+    const amountPaidGhs = txn.amount / 100;
     const customerEmail = txn.customer?.email || null;
 
-    // ═══════════════════════════════════════════════════
-    // 3. FIND THE PURCHASE INTENT
-    // ═══════════════════════════════════════════════════
+    // ═══ 3. FIND THE INTENT ═══
     const { data: intent, error: intentErr } = await supabase
       .from("purchase_intents")
       .select("*")
@@ -107,35 +104,34 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (intentErr || !intent) {
-      return json({ error: "Purchase intent not found for this reference" }, 404);
+      return json({ error: "Intent not found for this reference" }, 404);
     }
 
-    // Already converted?
     if (intent.status === "completed") {
+      if (intent.intent_type === "wallet_deposit") {
+        return json({ success: true, already_processed: true, intent_type: "wallet_deposit" });
+      }
       const { data: existingOrder } = await supabase
         .from("orders")
         .select("*")
         .eq("intent_id", intent.id)
         .maybeSingle();
-
       if (existingOrder) {
         return json({ success: true, already_processed: true, order: existingOrder });
       }
     }
 
-    // ═══════════════════════════════════════════════════
-    // 4. HANDLE NON-SUCCESS
-    // ═══════════════════════════════════════════════════
+    const isDeposit = intent.intent_type === "wallet_deposit";
+
+    // ═══ 4. HANDLE NON-SUCCESS ═══
     if (paystackStatus !== "success") {
-      const failStatus =
-        paystackStatus === "abandoned" ? "expired" : "failed";
+      const failStatus = paystackStatus === "abandoned" ? "expired" : "failed";
 
       await supabase
         .from("purchase_intents")
         .update({ status: failStatus })
         .eq("id", intent.id);
 
-      // Create/update payment record as failed
       await supabase.from("payment_records").upsert(
         {
           provider: "paystack",
@@ -155,22 +151,18 @@ Deno.serve(async (req) => {
       return json({
         success: false,
         status: paystackStatus,
-        error:
-          paystackStatus === "abandoned"
-            ? "Payment was cancelled"
-            : "Payment failed. Please try again.",
+        intent_type: intent.intent_type,
+        error: paystackStatus === "abandoned"
+          ? "Payment was cancelled"
+          : "Payment failed. Please try again.",
         intent_reference: intent.intent_reference,
       });
     }
 
-    // ═══════════════════════════════════════════════════
-    // 5. VERIFY AMOUNT MATCHES
-    // ═══════════════════════════════════════════════════
+    // ═══ 5. VERIFY AMOUNT ═══
     const expectedAmount = Number(intent.amount_expected);
     if (Math.abs(amountPaidGhs - expectedAmount) > 0.01) {
-      console.error(
-        `Amount mismatch: expected ${expectedAmount}, got ${amountPaidGhs} for ${reference}`
-      );
+      console.error(`Amount mismatch: expected ${expectedAmount}, got ${amountPaidGhs} for ${reference}`);
 
       await supabase
         .from("purchase_intents")
@@ -185,15 +177,10 @@ Deno.serve(async (req) => {
         })
         .eq("id", intent.id);
 
-      return json(
-        { error: "Payment amount does not match expected amount. Contact support." },
-        422
-      );
+      return json({ error: "Payment amount does not match. Contact support." }, 422);
     }
 
-    // ═══════════════════════════════════════════════════
-    // 6. CREATE PAYMENT RECORD
-    // ═══════════════════════════════════════════════════
+    // ═══ 6. CREATE PAYMENT RECORD ═══
     const { data: paymentRecord, error: prErr } = await supabase
       .from("payment_records")
       .upsert(
@@ -220,136 +207,233 @@ Deno.serve(async (req) => {
       return json({ error: "Failed to record payment" }, 500);
     }
 
-    // ═══════════════════════════════════════════════════
-    // 7. UPDATE PURCHASE INTENT → payment_confirmed
-    // ═══════════════════════════════════════════════════
+    // ═══ 7. UPDATE INTENT → payment_confirmed ═══
     await supabase
       .from("purchase_intents")
       .update({ status: "payment_confirmed" })
       .eq("id", intent.id);
 
-    // ═══════════════════════════════════════════════════
-    // 8. CREATE ORDER (the reusable order-creation block)
-    // ═══════════════════════════════════════════════════
-    const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
-    const publicOrderId = generateOrderId();
-
-    const { data: order, error: orderErr } = await supabase
-      .from("orders")
-      .insert({
-        public_order_id: publicOrderId,
-        actor_type: intent.actor_type || "guest",
-        actor_id: intent.actor_id || null,
-        origin_type: intent.intent_type || "guest_buy",
-        source_channel: intent.source_channel || "public_guest_checkout",
-        beneficiary_number: intent.phone_number,
-        network: intent.network,
-        bundle_name: String(snapshot.plan_name || ""),
-        bundle_code: String(snapshot.plan_code || ""),
-        bundle_snapshot: intent.plan_snapshot,
-        amount_charged: amountPaidGhs,
-        currency: "GHS",
-        intent_id: intent.id,
-        payment_record_id: paymentRecord.id,
-        status: "paid",
-        metadata: {
-          customer_name: intent.customer_name,
-          customer_email: intent.customer_email,
-          paystack_reference: reference,
-        },
-      })
-      .select()
-      .single();
-
-    if (orderErr) {
-      console.error("Failed to create order:", orderErr);
-      return json({ error: "Payment verified but order creation failed. Contact support.", payment_verified: true }, 500);
+    // ═══ BRANCH: DEPOSIT vs PURCHASE ═══
+    if (isDeposit) {
+      return await handleDeposit(supabase, intent, paymentRecord, amountPaidGhs, reference);
+    } else {
+      return await handlePurchase(supabase, intent, paymentRecord, amountPaidGhs, reference);
     }
-
-    // ═══════════════════════════════════════════════════
-    // 9. UPDATE INTENT → completed
-    // ═══════════════════════════════════════════════════
-    await supabase
-      .from("purchase_intents")
-      .update({
-        status: "completed",
-        order_context: {
-          ...((intent.order_context as Record<string, unknown>) || {}),
-          order_id: order.id,
-          public_order_id: publicOrderId,
-          completed_at: new Date().toISOString(),
-        },
-      })
-      .eq("id", intent.id);
-
-    // ═══════════════════════════════════════════════════
-    // 10. LOG AUDIT EVENT
-    // ═══════════════════════════════════════════════════
-    await supabase.from("audit_logs").insert({
-      action: "order_created_from_payment",
-      actor_role: "system",
-      target_type: "order",
-      target_id: order.id,
-      metadata: {
-        public_order_id: publicOrderId,
-        intent_reference: intent.intent_reference,
-        paystack_reference: reference,
-        amount: amountPaidGhs,
-        network: intent.network,
-        phone: intent.phone_number,
-      },
-    });
-
-    // ═══════════════════════════════════════════════════
-    // 11. LOG INITIAL STATUS HISTORY
-    // ═══════════════════════════════════════════════════
-    await supabase.from("order_status_history").insert({
-      order_id: order.id,
-      old_status: null,
-      new_status: "paid",
-      source: "verify_payment",
-      note: "Order created from verified Paystack payment",
-      metadata: { paystack_reference: reference },
-    });
-
-    // ═══════════════════════════════════════════════════
-    // 12. TRIGGER FULFILLMENT (fire-and-forget via edge function)
-    // ═══════════════════════════════════════════════════
-    let fulfillmentResult = null;
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const fulfillRes = await fetch(
-        `${supabaseUrl}/functions/v1/fulfill-order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseServiceKey}`,
-          },
-          body: JSON.stringify({ order_id: order.id }),
-        }
-      );
-      fulfillmentResult = await fulfillRes.json();
-    } catch (fulfillErr) {
-      console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
-      // Non-blocking — order is still created, fulfillment can be retried
-    }
-
-    // Refetch order to get latest status after fulfillment
-    const { data: updatedOrder } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", order.id)
-      .single();
-
-    return json({
-      success: true,
-      order: updatedOrder || order,
-      fulfillment: fulfillmentResult,
-    });
   } catch (err) {
     console.error("verify-payment error:", err);
     return json({ error: "An unexpected error occurred" }, 500);
   }
 });
+
+/** Handle wallet deposit: credit wallet, create transaction */
+async function handleDeposit(
+  supabase: ReturnType<typeof createClient>,
+  intent: Record<string, unknown>,
+  paymentRecord: Record<string, unknown>,
+  amount: number,
+  reference: string,
+) {
+  const userId = intent.actor_id as string;
+
+  // Get wallet
+  const { data: wallet, error: walletErr } = await supabase
+    .from("wallets")
+    .select("id, current_balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (walletErr || !wallet) {
+    console.error("Wallet not found for deposit:", walletErr);
+    return json({ error: "Wallet not found. Contact support.", payment_verified: true }, 500);
+  }
+
+  const openingBalance = Number(wallet.current_balance);
+  const closingBalance = openingBalance + amount;
+
+  // Credit wallet
+  const { error: updateErr } = await supabase
+    .from("wallets")
+    .update({ current_balance: closingBalance })
+    .eq("id", wallet.id);
+
+  if (updateErr) {
+    console.error("Failed to credit wallet:", updateErr);
+    return json({ error: "Payment verified but wallet credit failed. Contact support.", payment_verified: true }, 500);
+  }
+
+  // Create wallet transaction
+  await supabase.from("wallet_transactions").insert({
+    wallet_id: wallet.id,
+    transaction_type: "credit",
+    direction: "inflow",
+    amount: amount,
+    opening_balance: openingBalance,
+    closing_balance: closingBalance,
+    status: "completed",
+    narration: `Wallet deposit via Paystack — ${reference}`,
+    reference: reference,
+    linked_record_id: paymentRecord.id as string,
+    linked_record_type: "payment_record",
+    created_by: userId,
+  });
+
+  // Update intent → completed
+  await supabase
+    .from("purchase_intents")
+    .update({
+      status: "completed",
+      order_context: {
+        ...((intent.order_context as Record<string, unknown>) || {}),
+        wallet_credited: true,
+        credited_amount: amount,
+        new_balance: closingBalance,
+        completed_at: new Date().toISOString(),
+      },
+    })
+    .eq("id", intent.id);
+
+  // Audit log
+  await supabase.from("audit_logs").insert({
+    action: "wallet_deposit_completed",
+    actor_id: userId,
+    actor_role: "user",
+    target_type: "wallet",
+    target_id: wallet.id,
+    metadata: {
+      amount,
+      reference,
+      opening_balance: openingBalance,
+      closing_balance: closingBalance,
+      payment_record_id: paymentRecord.id,
+    },
+  });
+
+  return json({
+    success: true,
+    intent_type: "wallet_deposit",
+    deposit: {
+      amount,
+      new_balance: closingBalance,
+      reference,
+    },
+  });
+}
+
+/** Handle bundle purchase: create order + trigger fulfillment */
+async function handlePurchase(
+  supabase: ReturnType<typeof createClient>,
+  intent: Record<string, unknown>,
+  paymentRecord: Record<string, unknown>,
+  amountPaidGhs: number,
+  reference: string,
+) {
+  const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
+  const publicOrderId = generateOrderId();
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .insert({
+      public_order_id: publicOrderId,
+      actor_type: (intent.actor_type as string) || "guest",
+      actor_id: (intent.actor_id as string) || null,
+      origin_type: (intent.intent_type as string) || "guest_buy",
+      source_channel: (intent.source_channel as string) || "public_guest_checkout",
+      beneficiary_number: intent.phone_number as string,
+      network: intent.network as string,
+      bundle_name: String(snapshot.plan_name || snapshot.package_name || ""),
+      bundle_code: String(snapshot.plan_code || snapshot.package_code || ""),
+      bundle_snapshot: intent.plan_snapshot,
+      amount_charged: amountPaidGhs,
+      currency: "GHS",
+      intent_id: intent.id as string,
+      payment_record_id: paymentRecord.id as string,
+      status: "paid",
+      metadata: {
+        customer_name: intent.customer_name,
+        customer_email: intent.customer_email,
+        paystack_reference: reference,
+      },
+    })
+    .select()
+    .single();
+
+  if (orderErr) {
+    console.error("Failed to create order:", orderErr);
+    return json({ error: "Payment verified but order creation failed. Contact support.", payment_verified: true }, 500);
+  }
+
+  // Update intent → completed
+  await supabase
+    .from("purchase_intents")
+    .update({
+      status: "completed",
+      order_context: {
+        ...((intent.order_context as Record<string, unknown>) || {}),
+        order_id: order.id,
+        public_order_id: publicOrderId,
+        completed_at: new Date().toISOString(),
+      },
+    })
+    .eq("id", intent.id);
+
+  // Audit log
+  await supabase.from("audit_logs").insert({
+    action: "order_created_from_payment",
+    actor_role: "system",
+    target_type: "order",
+    target_id: order.id,
+    metadata: {
+      public_order_id: publicOrderId,
+      intent_reference: intent.intent_reference,
+      paystack_reference: reference,
+      amount: amountPaidGhs,
+      network: intent.network,
+      phone: intent.phone_number,
+    },
+  });
+
+  // Status history
+  await supabase.from("order_status_history").insert({
+    order_id: order.id,
+    old_status: null,
+    new_status: "paid",
+    source: "verify_payment",
+    note: "Order created from verified Paystack payment",
+    metadata: { paystack_reference: reference },
+  });
+
+  // Trigger fulfillment (fire-and-forget)
+  let fulfillmentResult = null;
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const fulfillRes = await fetch(
+      `${supabaseUrl}/functions/v1/fulfill-order`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ order_id: order.id }),
+      }
+    );
+    fulfillmentResult = await fulfillRes.json();
+  } catch (fulfillErr) {
+    console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
+  }
+
+  // Refetch order for latest status
+  const { data: updatedOrder } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", order.id)
+    .single();
+
+  return json({
+    success: true,
+    intent_type: intent.intent_type,
+    order: updatedOrder || order,
+    fulfillment: fulfillmentResult,
+  });
+}

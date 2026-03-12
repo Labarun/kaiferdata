@@ -1,24 +1,18 @@
 /**
  * PaymentCallbackPage — Handles Paystack redirect back
- * Verifies payment server-side, shows real order result
+ * Supports both bundle purchase and wallet deposit verification
  */
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { verifyPayment } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Copy,
-  ArrowRight,
-  RotateCcw,
-  AlertTriangle,
-  ShieldCheck,
+  Loader2, CheckCircle2, XCircle, Copy, ArrowRight,
+  RotateCcw, AlertTriangle, ShieldCheck, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type PageState = "verifying" | "success" | "failed" | "error";
+type PageState = "verifying" | "success" | "deposit_success" | "failed" | "error";
 
 export default function PaymentCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -30,6 +24,7 @@ export default function PaymentCallbackPage() {
 
   const [state, setState] = useState<PageState>("verifying");
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
+  const [deposit, setDeposit] = useState<Record<string, unknown> | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
   const verifiedRef = useRef(false);
@@ -46,13 +41,18 @@ export default function PaymentCallbackPage() {
 
     verifyPayment(ref)
       .then((result) => {
-        if (result.success && result.order) {
-          setOrder(result.order);
-          setState("success");
+        if (result.success) {
+          if (result.intent_type === "wallet_deposit") {
+            setDeposit(result.deposit || null);
+            setState("deposit_success");
+          } else if (result.order) {
+            setOrder(result.order);
+            setState("success");
+          } else {
+            setState("deposit_success"); // already_processed deposit
+          }
         } else {
-          setErrorMsg(
-            result.error || "Payment was not successful."
-          );
+          setErrorMsg(result.error || "Payment was not successful.");
           setState("failed");
         }
       })
@@ -76,7 +76,7 @@ export default function PaymentCallbackPage() {
     return (
       <div className="min-h-[65vh] flex items-center justify-center">
         <div className="text-center space-y-5 animate-fade-in max-w-xs mx-auto px-4">
-          <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-gold-strong">
+          <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto">
             <Loader2 className="h-7 w-7 text-primary animate-spin" />
           </div>
           <div>
@@ -84,7 +84,7 @@ export default function PaymentCallbackPage() {
               Verifying Payment…
             </h2>
             <p className="text-[12px] text-muted-foreground/50 mt-2 leading-relaxed">
-              We're confirming your payment with our provider. This usually takes a few seconds.
+              Confirming your payment with our provider. This usually takes a few seconds.
             </p>
           </div>
           <div className="flex items-center justify-center gap-2 pt-2">
@@ -101,12 +101,65 @@ export default function PaymentCallbackPage() {
     );
   }
 
-  /* ── Success ── */
+  /* ── Deposit Success ── */
+  if (state === "deposit_success") {
+    const depositAmt = deposit?.amount as number | undefined;
+    const newBalance = deposit?.new_balance as number | undefined;
+
+    return (
+      <div className="container py-8 sm:py-12">
+        <div className="max-w-md mx-auto space-y-6 animate-fade-in">
+          <div className="text-center">
+            <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
+              Deposit Successful!
+            </h2>
+            <p className="text-[12.5px] text-muted-foreground/55 mt-1.5 leading-relaxed max-w-[280px] mx-auto">
+              Your wallet has been credited successfully.
+            </p>
+          </div>
+
+          <div className="glass-premium rounded-2xl p-5 text-center space-y-2">
+            <Wallet className="h-6 w-6 text-primary mx-auto" />
+            {depositAmt && (
+              <p className="text-[13px] text-muted-foreground">
+                Deposited: <span className="font-bold text-foreground">GH₵{depositAmt.toFixed(2)}</span>
+              </p>
+            )}
+            {newBalance !== undefined && (
+              <p className="text-2xl font-bold text-foreground tracking-tight">
+                <span className="text-lg text-muted-foreground/60">GH₵</span>{newBalance.toFixed(2)}
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground/45">New wallet balance</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" asChild className="flex-1 h-12">
+              <Link to="/dashboard/wallet">
+                <Wallet className="mr-1.5 h-3.5 w-3.5" />
+                Back to Wallet
+              </Link>
+            </Button>
+            <Button asChild className="flex-[2] h-12">
+              <Link to="/dashboard/buy">
+                Buy Data
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Purchase Success ── */
   if (state === "success" && order) {
     return (
       <div className="container py-8 sm:py-12">
         <div className="max-w-md mx-auto space-y-6 animate-fade-in">
-          {/* Success icon */}
           <div className="text-center">
             <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
               <CheckCircle2 className="h-8 w-8 text-success" />
@@ -119,10 +172,9 @@ export default function PaymentCallbackPage() {
             </p>
           </div>
 
-          {/* Order ID card */}
           {publicOrderId && (
             <>
-              <div className="glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 shimmer-edge overflow-hidden glow-gold-strong">
+              <div className="glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 shimmer-edge overflow-hidden">
                 <div className="min-w-0">
                   <p className="text-[10px] text-muted-foreground/55 uppercase tracking-wider font-semibold">
                     Order ID
@@ -146,7 +198,6 @@ export default function PaymentCallbackPage() {
             </>
           )}
 
-          {/* Order details */}
           <div className="rounded-2xl glass-card divide-y divide-border/20 overflow-hidden">
             <Row label="Network" value={order.network as string} />
             <Row
@@ -161,8 +212,9 @@ export default function PaymentCallbackPage() {
             />
             <div className="flex items-center justify-between px-4 py-3.5">
               <span className="text-xs text-muted-foreground font-medium">Amount Paid</span>
-              <span className="text-lg font-bold text-gradient-gold">
-                GH₵{Number(order.amount_charged).toLocaleString()}
+              <span className="font-bold text-gradient-brand">
+                <span className="text-sm">GH₵</span>
+                <span className="text-lg">{Number(order.amount_charged).toFixed(2)}</span>
               </span>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
@@ -173,15 +225,13 @@ export default function PaymentCallbackPage() {
             </div>
           </div>
 
-          {/* Trust message */}
           <div className="flex items-start gap-2.5 text-[10.5px] text-muted-foreground/50 px-1">
             <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
             <span className="leading-relaxed">
-              Your data bundle will be delivered to the recipient shortly. Use your Order ID to track progress.
+              Your data bundle will be delivered shortly. Use your Order ID to track progress.
             </span>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3">
             <Button variant="outline" asChild className="flex-1 h-12">
               <Link to="/">
@@ -237,15 +287,15 @@ export default function PaymentCallbackPage() {
               Try Again
             </Link>
           </Button>
-          <Button variant="glass" asChild className="flex-1 h-12">
-            <a href="https://wa.me/233000000000" target="_blank" rel="noopener noreferrer">
-              Contact Support
-            </a>
+          <Button variant="ghost" asChild className="flex-1 h-12">
+            <Link to="/dashboard/wallet">
+              Back to Wallet
+            </Link>
           </Button>
         </div>
 
         <p className="text-[10px] text-muted-foreground/40 text-center leading-relaxed">
-          If you were charged, please contact support with your reference number. We'll resolve it promptly.
+          If you were charged, please contact support with your reference number.
         </p>
       </div>
     </div>
