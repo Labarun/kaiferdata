@@ -283,14 +283,15 @@ export function CheckoutSheet({
                     value={phoneNumber}
                     onChange={(e) => handlePhoneInput(e.target.value)}
                     className={cn(
-                      "h-14 text-[18px] font-semibold tracking-widest rounded-2xl pl-4 pr-12",
+                      "h-14 text-base font-semibold tracking-widest rounded-2xl pl-4 pr-12",
                       "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
                       "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
                       "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)]",
-                      "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-[16px]",
+                      "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-base",
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
                     )}
+                    style={{ fontSize: '16px' }}
                     maxLength={11}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
