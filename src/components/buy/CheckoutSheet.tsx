@@ -415,7 +415,7 @@ export function CheckoutSheet({
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵{Number(plan.amount).toLocaleString()}
+                  Pay GH₵{Number(plan.amount).toFixed(2)}
                 </Button>
               </div>
             </div>

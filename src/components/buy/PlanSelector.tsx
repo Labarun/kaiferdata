@@ -92,19 +92,20 @@ const PlanCard = memo(function PlanCard({
           </div>
         </div>
 
-        <span className="text-[10.5px] text-muted-foreground/45 leading-snug line-clamp-1 font-medium relative z-[1]">
+        <span className="text-[10px] text-muted-foreground/40 leading-snug line-clamp-1 font-medium relative z-[1]">
           {plan.plan_name}
         </span>
 
         <div className="flex items-center justify-between pt-2.5 border-t border-border/20 relative z-[1]">
           <span
             className={cn(
-              "text-[15px] font-bold tracking-tight transition-colors duration-200",
+              "tracking-tight transition-colors duration-200 font-bold",
               !isActive && "text-foreground/60"
             )}
             style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
           >
-            GH₵{Number(plan.amount).toLocaleString()}
+            <span className="text-[12px]">GH₵</span>
+            <span className="text-[16px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
           </span>
           <ChevronRight
             className={cn(

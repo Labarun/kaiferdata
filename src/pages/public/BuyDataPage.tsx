@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
+import { Loader2, Zap, Shield, Clock, Search, Wifi } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
