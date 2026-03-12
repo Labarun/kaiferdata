@@ -1,7 +1,7 @@
 /**
  * BuyDataPage — Flagship premium buy-data landing with liquid-glass atmosphere
  */
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Loader2, ArrowRight, Zap, Shield, Clock, Search, Wifi, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,7 @@ import {
   initializePayment,
   type DataPlan,
 } from "@/services/purchaseIntent";
-
+import { getNetworkBrand } from "@/config/networkBrands";
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
 const NETWORK_TINT: Record<string, string> = {
@@ -216,7 +216,7 @@ export default function BuyDataPage() {
                   {filteredPlans.length} available
                 </span>
               </div>
-              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} />
+              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
             </section>
           )}
 
@@ -235,8 +235,17 @@ export default function BuyDataPage() {
       {plan && summaryVisible && !checkoutOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-5 pt-2 pointer-events-none">
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-brand-strong shimmer-edge refraction-rim">
-              <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            {(() => {
+              const nb = getNetworkBrand(network || "");
+              return (
+              <div
+                className="animate-summary-enter glass-premium rounded-2xl overflow-hidden shimmer-edge refraction-rim"
+                style={{ boxShadow: `0 0 24px -4px hsl(${nb.hsl} / 0.18), 0 8px 20px -8px hsl(${nb.hsl} / 0.12)` }}
+              >
+                <div
+                  className="h-[2px]"
+                  style={{ background: `linear-gradient(90deg, transparent, hsl(${nb.hsl} / 0.55), transparent)` }}
+                />
 
               <div className="p-4 flex items-center gap-4">
                 <div className="min-w-0 flex-1">
@@ -263,6 +272,8 @@ export default function BuyDataPage() {
                 </Button>
               </div>
             </div>
+              );
+            })()}
           </div>
         </div>
       )}
