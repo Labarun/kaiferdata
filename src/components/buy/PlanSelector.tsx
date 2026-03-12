@@ -34,16 +34,16 @@ const PlanCard = memo(function PlanCard({
       onClick={() => onSelect(plan)}
       className={cn(
         "group relative flex flex-col rounded-2xl text-left overflow-hidden",
-        "transition-[background,border-color,box-shadow] duration-300 ease-out",
-        "active:scale-[0.95] active:duration-100",
+        "transition-[transform,box-shadow,border-color,background] duration-200 ease-out",
+        "active:scale-[0.97] active:duration-100",
         isActive
-          ? "glass-elevated refraction-rim"
-          : "glass-card hover:glass-elevated"
+          ? "glass-elevated refraction-rim -translate-y-[1px]"
+          : "glass-card hover:glass-elevated hover:-translate-y-[1px]"
       )}
       style={{
         animationDelay: `${index * 50}ms`,
         ...(isActive ? {
-          boxShadow: `0 0 20px -4px hsl(${brandHsl} / 0.2), 0 4px 16px -4px hsl(${brandHsl} / 0.12)`,
+          boxShadow: `0 0 24px -4px hsl(${brandHsl} / 0.22), 0 6px 20px -6px hsl(${brandHsl} / 0.15), 0 1px 3px 0 hsl(213 35% 50% / 0.06)`,
         } : {}),
       }}
     >
