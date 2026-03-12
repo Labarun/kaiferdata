@@ -55,7 +55,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
             <Link to="/" className="flex items-center gap-2 group">
               <img src={kaiferLogo} alt="Kaiferdata logo" className="h-8 w-8 object-contain shrink-0" />
               <span className="text-lg font-bold tracking-tight">
-                <span className="text-gradient-gold">Kaifer</span>
+                <span className="text-gradient-brand">Kaifer</span>
                 <span className="text-foreground">data</span>
               </span>
             </Link>

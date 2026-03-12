@@ -34,7 +34,7 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
         </p>
       </div>
 
-      <div className="glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 glow-gold shimmer-edge overflow-hidden">
+      <div className="glass-premium rounded-2xl p-4 flex items-center justify-between gap-3 glow-brand shimmer-edge overflow-hidden">
         <div className="min-w-0 relative z-10">
           <p className="text-[10px] text-muted-foreground/55 uppercase tracking-wider font-semibold">
             Reference

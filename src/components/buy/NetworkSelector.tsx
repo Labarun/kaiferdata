@@ -57,8 +57,8 @@ const fallback = {
   activeRing: "ring-primary/20",
   activeIconBg: "bg-primary/8",
   activeTint: "from-primary/5 via-transparent to-transparent",
-  glowClass: "glow-gold",
-  dotHsl: "38 82% 44%",
+  glowClass: "glow-brand",
+  dotHsl: "215 72% 42%",
   activeBorderColor: "border-primary/25",
 };
 
@@ -89,7 +89,7 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
                 "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 text-[15px] font-bold tracking-tight",
                 isActive
                   ? `${b.activeIconBg} ${b.color} ring-2 ${b.activeRing} shadow-[0_2px_12px_-2px_hsl(${b.dotHsl}/0.2)]`
-                  : "bg-[hsl(228_18%_94%/0.7)] text-muted-foreground/45 border border-[hsl(228_18%_88%/0.5)]"
+                  : "bg-[hsl(215_18%_94%/0.7)] text-muted-foreground/45 border border-[hsl(215_18%_88%/0.5)]"
               )}
             >
               {b.letter}

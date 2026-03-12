@@ -103,7 +103,7 @@ export function CheckoutSheet({
 
   if (!network || !plan) return null;
 
-  const dotHsl = NET_DOT[network] || "38 82% 44%";
+  const dotHsl = NET_DOT[network] || "215 72% 42%";
 
   const cleanPhone = (v: string) => v.replace(/[^0-9]/g, "").slice(0, 11);
   const handlePhoneInput = (v: string) => {
@@ -224,7 +224,7 @@ export function CheckoutSheet({
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[18px] font-bold text-gradient-gold tracking-tight">
+                  <p className="text-[18px] font-bold text-gradient-brand tracking-tight">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
@@ -256,7 +256,7 @@ export function CheckoutSheet({
                       "h-14 text-[18px] font-semibold tracking-widest rounded-2xl pl-4 pr-12",
                       "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
                       "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
-                      "focus:shadow-[0_0_0_4px_hsl(38_82%_44%/0.06),0_0_0_1px_hsl(38_82%_44%/0.12),0_4px_16px_-4px_hsl(228_30%_48%/0.08)]",
+                      "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)]",
                       "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-[16px]",
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
@@ -351,11 +351,11 @@ export function CheckoutSheet({
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
-                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(38_40%_96%/0.4)]">
+                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
-                  <span className="text-[22px] font-bold text-gradient-gold tracking-tight">
+                  <span className="text-[22px] font-bold text-gradient-brand tracking-tight">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </span>
                 </div>
@@ -391,7 +391,7 @@ export function CheckoutSheet({
           {/* ── STEP: Processing ── */}
           {step === "processing" && (
             <div className="py-10 space-y-6 animate-fade-in text-center">
-              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-gold-strong">
+              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto glow-brand-strong">
                 <Loader2 className="h-7 w-7 text-primary animate-spin" />
               </div>
               <div>
@@ -412,7 +412,7 @@ export function CheckoutSheet({
                       {i > 0 && <div className="h-px w-4 bg-border/30" />}
                       <div className={cn(
                         "h-2 w-2 rounded-full transition-all duration-300",
-                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(38_82%_44%/0.4)]" : "bg-border/40"
+                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
                       )} />
                     </div>
                   );
