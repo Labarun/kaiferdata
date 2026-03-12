@@ -497,8 +497,10 @@
 }
 
 /* Ensure touch targets are not blocked by decorative layers */
-input, select, textarea, button {
+input, select, textarea {
   position: relative;
   z-index: 1;
+}
+input, select, textarea, button, a, [role="button"] {
   touch-action: manipulation;
 }
