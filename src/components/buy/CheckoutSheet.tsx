@@ -351,7 +351,7 @@ export function CheckoutSheet({
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
-                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(38_40%_96%/0.4)]">
+                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
