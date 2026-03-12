@@ -129,10 +129,10 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-image:
-      radial-gradient(ellipse 90% 55% at 50% -15%, hsl(215 45% 90% / 0.5) 0%, transparent 55%),
-      radial-gradient(ellipse 55% 40% at 92% 85%, hsl(170 35% 88% / 0.3) 0%, transparent 45%),
-      radial-gradient(ellipse 45% 30% at 5% 70%, hsl(215 40% 88% / 0.22) 0%, transparent 40%),
-      radial-gradient(ellipse 30% 25% at 50% 50%, hsl(215 20% 96% / 0.5) 0%, transparent 50%);
+      radial-gradient(ellipse 90% 55% at 50% -15%, hsl(213 50% 90% / 0.5) 0%, transparent 55%),
+      radial-gradient(ellipse 55% 40% at 92% 85%, hsl(192 45% 88% / 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse 45% 30% at 5% 70%, hsl(213 45% 88% / 0.22) 0%, transparent 40%),
+      radial-gradient(ellipse 30% 25% at 50% 50%, hsl(214 30% 96% / 0.5) 0%, transparent 50%);
     background-attachment: fixed;
   }
 }
