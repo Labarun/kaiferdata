@@ -224,7 +224,7 @@ export function CheckoutSheet({
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[18px] font-bold text-gradient-gold tracking-tight">
+                  <p className="text-[18px] font-bold text-gradient-brand tracking-tight">
                     GH₵{Number(plan.amount).toLocaleString()}
                   </p>
                 </div>
