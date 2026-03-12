@@ -103,7 +103,7 @@ export function CheckoutSheet({
 
   if (!network || !plan) return null;
 
-  const dotHsl = NET_DOT[network] || "38 82% 44%";
+  const dotHsl = NET_DOT[network] || "215 72% 42%";
 
   const cleanPhone = (v: string) => v.replace(/[^0-9]/g, "").slice(0, 11);
   const handlePhoneInput = (v: string) => {
