@@ -175,61 +175,66 @@ function MobileSidebar({ navItems, title }: { navItems: AdminNavItem[]; title: s
         <PanelLeft className="h-5 w-5" />
       </button>
 
-      {/* Overlay */}
-      <div
-        className={`fixed inset-0 z-[60] bg-black/50 backdrop-blur-[2px] md:hidden transition-opacity duration-300 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setOpen(false)}
-        aria-hidden="true"
-      />
+      {createPortal(
+        <>
+          {/* Overlay */}
+          <div
+            className={`fixed inset-0 z-[9998] bg-black/50 backdrop-blur-[2px] md:hidden transition-opacity duration-300 ${
+              open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            }`}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
 
-      {/* Drawer panel */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-[70] w-[82%] max-w-[300px] bg-sidebar border-r border-sidebar-border md:hidden
-          flex flex-col transition-transform duration-300 ease-out ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Drawer header */}
-        <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
-          <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">{title}</span>
-          <button onClick={() => setOpen(false)} className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent">
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Nav items — scrollable */}
-        <nav className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-0.5">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors active:opacity-70 ${
-                isActive(item.path)
-                  ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-              }`}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* Drawer footer */}
-        <div className="p-3 border-t border-sidebar-border shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <User className="h-4 w-4 text-sidebar-foreground" />
+          {/* Drawer panel */}
+          <aside
+            className={`fixed inset-y-0 left-0 z-[9999] w-[82%] max-w-[300px] bg-sidebar border-r border-sidebar-border md:hidden
+              flex flex-col transition-transform duration-300 ease-out ${
+              open ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            {/* Drawer header */}
+            <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
+              <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">{title}</span>
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent">
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">Admin</p>
+
+            {/* Nav items — scrollable */}
+            <nav className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-0.5">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors active:opacity-70 ${
+                    isActive(item.path)
+                      ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+
+            {/* Drawer footer */}
+            <div className="p-3 border-t border-sidebar-border shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+                  <User className="h-4 w-4 text-sidebar-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-sidebar-foreground truncate">Admin</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </aside>
+          </aside>
+        </>,
+        document.body
+      )}
     </>
   );
 }
