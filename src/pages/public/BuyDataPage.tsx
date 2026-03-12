@@ -235,8 +235,17 @@ export default function BuyDataPage() {
       {plan && summaryVisible && !checkoutOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-5 pt-2 pointer-events-none">
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-brand-strong shimmer-edge refraction-rim">
-              <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            {(() => {
+              const nb = getNetworkBrand(network || "");
+              return (
+              <div
+                className="animate-summary-enter glass-premium rounded-2xl overflow-hidden shimmer-edge refraction-rim"
+                style={{ boxShadow: `0 0 24px -4px hsl(${nb.hsl} / 0.18), 0 8px 20px -8px hsl(${nb.hsl} / 0.12)` }}
+              >
+                <div
+                  className="h-[2px]"
+                  style={{ background: `linear-gradient(90deg, transparent, hsl(${nb.hsl} / 0.55), transparent)` }}
+                />
 
               <div className="p-4 flex items-center gap-4">
                 <div className="min-w-0 flex-1">
