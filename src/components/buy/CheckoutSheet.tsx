@@ -170,25 +170,32 @@ export function CheckoutSheet({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         className={cn(
-          "max-h-[94vh] border-0 rounded-t-[28px] overflow-hidden",
+          "border-0 rounded-t-[28px] overflow-hidden",
           "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
-          "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]"
+          "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+          keyboardOpen ? "max-h-[100dvh]" : "max-h-[94vh]"
         )}
+        style={{ maxHeight: keyboardOpen ? '100dvh' : undefined }}
       >
         {/* ── Premium handle ── */}
-        <div className="flex justify-center pt-3.5 pb-2">
+        <div className="flex justify-center pt-3.5 pb-2 shrink-0">
           <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
         </div>
 
         {/* ── Top edge accent ── */}
         <div
-          className="h-[1px] mx-6"
+          className="h-[1px] mx-6 shrink-0"
           style={{
             background: `linear-gradient(90deg, transparent 10%, hsl(${dotHsl} / 0.2) 50%, transparent 90%)`,
           }}
         />
 
-        <div className="overflow-y-auto px-5 pb-8 pt-3">
+        <div
+          ref={contentRef}
+          className="overflow-y-auto overscroll-contain px-5 pb-8 pt-3 flex-1"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          onFocus={scrollToFocused}
+        >
           {/* ── Header ── */}
           {step !== "processing" && step !== "error" && (
             <div className="text-center mb-5">
