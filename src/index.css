@@ -121,7 +121,7 @@
       radial-gradient(ellipse 40% 35% at 3% 65%, hsl(213 50% 86% / 0.2) 0%, transparent 45%),
       radial-gradient(ellipse 80% 50% at 50% 105%, hsl(213 35% 92% / 0.4) 0%, transparent 55%),
       radial-gradient(ellipse 35% 25% at 50% 50%, hsl(214 30% 96% / 0.5) 0%, transparent 50%);
-    background-attachment: fixed;
+    /* background-attachment: fixed removed — causes full repaint on every scroll on mobile */
   }
 }
 
