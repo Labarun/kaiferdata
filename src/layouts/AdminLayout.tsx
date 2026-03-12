@@ -3,6 +3,7 @@
  * Serious sidebar with collapsible navigation.
  */
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "@/services/auth";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
