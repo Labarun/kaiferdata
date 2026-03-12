@@ -45,9 +45,7 @@ export default function BuyDataPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Track plan grid transition key for re-entrance animation
   const [plansKey, setPlansKey] = useState(0);
-  // Track summary visibility state for exit animation
   const [summaryVisible, setSummaryVisible] = useState(false);
   const summaryTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -78,17 +76,14 @@ export default function BuyDataPage() {
     setNetwork(n);
     setPlan(null);
     setSummaryVisible(false);
-    // Trigger re-entrance animation for plans grid
     setPlansKey((k) => k + 1);
   }, []);
 
   const handlePlanSelect = useCallback((p: DataPlan) => {
     setPlan(p);
-    // Don't auto-open checkout; show floating summary instead
     setSummaryVisible(true);
   }, []);
 
-  // Manage summary exit animation before hiding
   const handleDismissSummary = useCallback(() => {
     setSummaryVisible(false);
   }, []);
@@ -106,7 +101,6 @@ export default function BuyDataPage() {
     setPaymentError(null);
 
     try {
-      // Step 1: Create purchase intent
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
@@ -116,11 +110,9 @@ export default function BuyDataPage() {
         customerName: customerName || undefined,
       });
 
-      // Step 2: Initialize Paystack payment
       setProcessingLabel("Initializing payment…");
       const payment = await initializePayment(result.id);
 
-      // Step 3: Redirect to Paystack
       setProcessingLabel("Redirecting to Paystack…");
       window.location.href = payment.authorization_url;
     } catch (err: any) {
@@ -156,7 +148,6 @@ export default function BuyDataPage() {
     );
   }
 
-
   const networkTint = network ? NETWORK_TINT[network] || "" : "";
 
   return (
@@ -165,9 +156,9 @@ export default function BuyDataPage() {
       <section className="bg-hero-gradient relative overflow-hidden">
         {/* Layered ambient light */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[35%] left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-[hsl(38_45%_85%/0.4)] blur-[120px]" />
-          <div className="absolute bottom-[-25%] right-[-12%] w-[280px] h-[280px] rounded-full bg-[hsl(212_35%_86%/0.28)] blur-[90px]" />
-          <div className="absolute top-[40%] left-[-10%] w-[220px] h-[220px] rounded-full bg-[hsl(38_40%_84%/0.22)] blur-[80px]" />
+          <div className="absolute -top-[35%] left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-[hsl(215_45%_85%/0.4)] blur-[120px]" />
+          <div className="absolute bottom-[-25%] right-[-12%] w-[280px] h-[280px] rounded-full bg-[hsl(170_35%_86%/0.28)] blur-[90px]" />
+          <div className="absolute top-[40%] left-[-10%] w-[220px] h-[220px] rounded-full bg-[hsl(215_40%_84%/0.22)] blur-[80px]" />
         </div>
 
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
@@ -187,7 +178,7 @@ export default function BuyDataPage() {
             {/* Headline */}
             <h1 className="text-[1.75rem] sm:text-[2.125rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.1] animate-fade-in">
               Buy Data{" "}
-              <span className="text-gradient-gold">Instantly</span>
+              <span className="text-gradient-brand">Instantly</span>
             </h1>
             <p
               className="mt-3.5 text-[13.5px] text-muted-foreground/75 leading-[1.65] max-w-[300px] mx-auto animate-fade-in"
@@ -211,7 +202,7 @@ export default function BuyDataPage() {
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
                   {i > 0 && <span className="h-3 w-px bg-border/30 -ml-2.5 mr-0.5 sm:-ml-4 sm:mr-0" />}
-                  <div className="h-5 w-5 rounded-md bg-[hsl(0_0%_100%/0.5)] border border-[hsl(228_18%_86%/0.5)] flex items-center justify-center">
+                  <div className="h-5 w-5 rounded-md bg-[hsl(0_0%_100%/0.5)] border border-[hsl(215_18%_86%/0.5)] flex items-center justify-center">
                     <item.icon className={`h-3 w-3 ${item.accent}`} />
                   </div>
                   <span className="text-[11px] text-muted-foreground/65 font-medium">{item.label}</span>
@@ -241,10 +232,9 @@ export default function BuyDataPage() {
             />
           </section>
 
-          {/* Plans — with entrance animation on network switch */}
+          {/* Plans */}
           {network && (
             <section key={plansKey} className="animate-plans-enter mb-7">
-              {/* Context-aware tint overlay behind plans */}
               <div className={`absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b ${networkTint} rounded-3xl opacity-60`} />
 
               <div className="flex items-center justify-between mb-3.5">
@@ -280,12 +270,10 @@ export default function BuyDataPage() {
       {plan && summaryVisible && !checkoutOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-5 pt-2 pointer-events-none">
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-gold-strong shimmer-edge">
-              {/* Context network tint at top */}
+            <div className="animate-summary-enter glass-premium rounded-2xl overflow-hidden glow-brand-strong shimmer-edge">
               <div className={`h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent`} />
 
               <div className="p-4 flex items-center gap-4">
-                {/* Plan info */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -300,7 +288,7 @@ export default function BuyDataPage() {
                     <span className="text-lg font-bold text-foreground/85 tracking-tight">
                       {plan.volume}
                     </span>
-                    <span className="text-[15px] font-bold text-gradient-gold">
+                    <span className="text-[15px] font-bold text-gradient-brand">
                       GH₵{Number(plan.amount).toLocaleString()}
                     </span>
                   </div>
@@ -309,7 +297,7 @@ export default function BuyDataPage() {
                 {/* CTA */}
                 <button
                   onClick={handleOpenCheckout}
-                  className="shrink-0 h-12 px-6 rounded-xl bg-gradient-to-b from-[hsl(38_88%_50%)] via-primary to-[hsl(34_75%_38%)] text-primary-foreground text-[13px] font-semibold flex items-center gap-2 shadow-[inset_0_1.5px_0_0_hsl(42_92%_65%/0.55),0_2px_8px_-2px_hsl(38_82%_44%/0.25),0_8px_24px_-8px_hsl(38_82%_44%/0.2)] active:scale-[0.96] active:brightness-[0.94] transition-all duration-150"
+                  className="shrink-0 h-12 px-6 rounded-xl bg-gradient-to-b from-[hsl(215_72%_50%)] via-primary to-[hsl(215_72%_36%)] text-primary-foreground text-[13px] font-semibold flex items-center gap-2 shadow-[inset_0_1.5px_0_0_hsl(215_72%_62%/0.55),0_2px_8px_-2px_hsl(215_72%_42%/0.25),0_8px_24px_-8px_hsl(215_72%_42%/0.2)] active:scale-[0.96] active:brightness-[0.94] transition-all duration-150"
                 >
                   Continue
                   <ArrowRight className="h-4 w-4" />
