@@ -194,7 +194,7 @@
 
   .glass-elevated {
     background:
-      linear-gradient(170deg, hsl(0 0% 100% / 0.72) 0%, hsl(0 0% 100% / 0.56) 100%);
+      linear-gradient(170deg, hsl(216 50% 99% / 0.72) 0%, hsl(216 40% 99% / 0.56) 100%);
     backdrop-filter: blur(28px) saturate(1.75);
     -webkit-backdrop-filter: blur(28px) saturate(1.75);
     border: 1px solid hsl(213 25% 82% / 0.5);
