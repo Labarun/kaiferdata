@@ -41,7 +41,7 @@ export function NetworkSelector({ networks, selected, onSelect }: NetworkSelecto
               )}
             >
               {b.logo ? (
-                <img src={b.logo} alt={`${net} logo`} className="h-8 w-8 object-contain" />
+                <img src={b.logo} alt={`${net} logo`} className="h-12 w-12 object-cover rounded-2xl" />
               ) : (
                 <span className="text-[15px] font-bold text-muted-foreground/45">{net[0]}</span>
               )}
