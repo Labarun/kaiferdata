@@ -254,8 +254,9 @@ export function CheckoutSheet({
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[18px] font-bold text-gradient-brand tracking-tight">
-                    GH₵{Number(plan.amount).toLocaleString()}
+                  <p className="font-bold text-gradient-brand tracking-tight">
+                    <span className="text-[14px]">GH₵</span>
+                    <span className="text-[20px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
@@ -386,8 +387,9 @@ export function CheckoutSheet({
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
-                  <span className="text-[22px] font-bold text-gradient-brand tracking-tight">
-                    GH₵{Number(plan.amount).toLocaleString()}
+                  <span className="font-bold text-gradient-brand tracking-tight">
+                    <span className="text-[16px]">GH₵</span>
+                    <span className="text-[24px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
                   </span>
                 </div>
               </div>
@@ -413,7 +415,7 @@ export function CheckoutSheet({
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵{Number(plan.amount).toLocaleString()}
+                  Pay GH₵{Number(plan.amount).toFixed(2)}
                 </Button>
               </div>
             </div>

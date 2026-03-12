@@ -36,7 +36,7 @@ export function WalletCard({ compact }: { compact?: boolean }) {
         {loading ? (
           <div className="h-5 w-20 bg-muted animate-pulse rounded" />
         ) : (
-          <span className="text-sm font-semibold text-foreground">GH₵{balance.toLocaleString()}</span>
+          <span className="text-sm font-semibold text-foreground">GH₵{balance.toFixed(2)}</span>
         )}
       </div>
     );
@@ -65,13 +65,13 @@ export function WalletCard({ compact }: { compact?: boolean }) {
       ) : (
         <div className="relative z-[1]">
           <p className="text-4xl font-bold text-foreground tracking-tight leading-none">
-            GH₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+            <span className="text-2xl">GH₵</span>{balance.toFixed(2)}
           </p>
           {locked > 0 && (
             <div className="flex items-center gap-1.5 mt-2.5">
               <Lock className="h-3 w-3 text-muted-foreground/60" />
               <p className="text-xs text-muted-foreground">
-                Locked: GH₵{locked.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+                Locked: GH₵{locked.toFixed(2)}
               </p>
             </div>
           )}

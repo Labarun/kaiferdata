@@ -34,16 +34,16 @@ const PlanCard = memo(function PlanCard({
       onClick={() => onSelect(plan)}
       className={cn(
         "group relative flex flex-col rounded-2xl text-left overflow-hidden",
-        "transition-[background,border-color,box-shadow] duration-300 ease-out",
-        "active:scale-[0.95] active:duration-100",
+        "transition-[transform,box-shadow,border-color,background] duration-200 ease-out",
+        "active:scale-[0.97] active:duration-100",
         isActive
-          ? "glass-elevated refraction-rim"
-          : "glass-card hover:glass-elevated"
+          ? "glass-elevated refraction-rim -translate-y-[1px]"
+          : "glass-card hover:glass-elevated hover:-translate-y-[1px]"
       )}
       style={{
         animationDelay: `${index * 50}ms`,
         ...(isActive ? {
-          boxShadow: `0 0 20px -4px hsl(${brandHsl} / 0.2), 0 4px 16px -4px hsl(${brandHsl} / 0.12)`,
+          boxShadow: `0 0 24px -4px hsl(${brandHsl} / 0.22), 0 6px 20px -6px hsl(${brandHsl} / 0.15), 0 1px 3px 0 hsl(213 35% 50% / 0.06)`,
         } : {}),
       }}
     >
@@ -70,8 +70,8 @@ const PlanCard = memo(function PlanCard({
         <div className="flex items-start justify-between relative z-[1]">
           <span
             className={cn(
-              "text-[21px] font-bold leading-none tracking-tight transition-colors duration-200",
-              isActive ? "text-foreground/90" : "text-foreground/80"
+              "text-[22px] font-bold leading-none tracking-tight transition-colors duration-200",
+              isActive ? "text-foreground/90" : "text-foreground/75"
             )}
             style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
           >
@@ -92,19 +92,20 @@ const PlanCard = memo(function PlanCard({
           </div>
         </div>
 
-        <span className="text-[10.5px] text-muted-foreground/45 leading-snug line-clamp-1 font-medium relative z-[1]">
+        <span className="text-[10px] text-muted-foreground/40 leading-snug line-clamp-1 font-medium relative z-[1]">
           {plan.plan_name}
         </span>
 
         <div className="flex items-center justify-between pt-2.5 border-t border-border/20 relative z-[1]">
           <span
             className={cn(
-              "text-[15px] font-bold tracking-tight transition-colors duration-200",
+              "tracking-tight transition-colors duration-200 font-bold",
               !isActive && "text-foreground/60"
             )}
             style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
           >
-            GH₵{Number(plan.amount).toLocaleString()}
+            <span className="text-[12px]">GH₵</span>
+            <span className="text-[16px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
           </span>
           <ChevronRight
             className={cn(
