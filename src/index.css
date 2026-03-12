@@ -234,15 +234,15 @@
 
   /* ── Text gradients ── */
   .text-gradient-brand {
-    background: linear-gradient(140deg, hsl(215 72% 52%), hsl(200 68% 46%), hsl(170 55% 45%));
+    background: linear-gradient(140deg, hsl(213 73% 48%), hsl(200 80% 46%), hsl(192 100% 42%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Keep old class name for backward compat, now blue */
+  /* Keep old class name for backward compat */
   .text-gradient-gold {
-    background: linear-gradient(140deg, hsl(215 72% 52%), hsl(200 68% 46%), hsl(170 55% 45%));
+    background: linear-gradient(140deg, hsl(213 73% 48%), hsl(200 80% 46%), hsl(192 100% 42%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
