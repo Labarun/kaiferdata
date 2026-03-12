@@ -178,15 +178,14 @@
   .glass-card {
     background:
       linear-gradient(178deg, hsl(216 70% 99% / 0.64) 0%, hsl(216 45% 98% / 0.48) 100%);
-    backdrop-filter: blur(22px) saturate(1.65);
-    -webkit-backdrop-filter: blur(22px) saturate(1.65);
+    backdrop-filter: blur(14px) saturate(1.5);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
     border: 1px solid hsl(213 28% 84% / 0.4);
     box-shadow:
       inset 0 1px 0 0 hsl(var(--glass-highlight)),
-      inset 0 0 0 0.5px hsl(var(--glass-edge-brand)),
       0 1px 2px 0 hsl(var(--glass-shadow-xs)),
-      0 2px 8px -2px hsl(var(--glass-shadow-sm)),
-      0 8px 24px -8px hsl(var(--glass-shadow-md));
+      0 2px 8px -2px hsl(var(--glass-shadow-sm));
+    contain: layout style paint;
   }
 
   /* Layer 3 — Elevated interactive surface */
