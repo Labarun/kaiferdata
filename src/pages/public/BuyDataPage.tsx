@@ -150,7 +150,6 @@ export default function BuyDataPage() {
           <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[60px] will-change-transform" />
           <div className="absolute top-[45%] left-[-8%] w-[240px] h-[240px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[50px] will-change-transform" />
         </div>
-        </div>
 
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
