@@ -61,6 +61,31 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Realtime updates for this order
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`order-detail-${orderId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
+        fetchAll();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId, fetchAll]);
+
+  const handleSyncStatus = async () => {
+    setSyncingStatus(true);
+    try {
+      await triggerStatusSync(orderId);
+      toast({ title: "Status synced" });
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncingStatus(false);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!order) return <div className="text-center py-16 text-sm text-muted-foreground">Order not found.</div>;
 
