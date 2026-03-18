@@ -142,7 +142,13 @@ async function submitToSupplierApi(
   });
   clearTimeout(timeout);
 
-  const responseData = await apiRes.json().catch(() => ({ raw: await apiRes.text() }));
+  let responseData: Record<string, unknown>;
+  try {
+    responseData = await apiRes.json();
+  } catch {
+    const rawText = await apiRes.text();
+    responseData = { raw: rawText };
+  }
 
   if (!apiRes.ok) {
     return {
