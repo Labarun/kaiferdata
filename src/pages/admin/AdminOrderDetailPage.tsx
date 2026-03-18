@@ -1,5 +1,5 @@
 /**
- * Admin Order Detail Page — Full operational view with timeline, supplier logs, retry action
+ * Admin Order Detail Page — Full operational view with timeline, supplier logs, retry, manual status change, status sync
  */
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -7,11 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { RetryFulfillmentButton } from "@/components/admin/RetryFulfillmentButton";
+import { ManualStatusDialog } from "@/components/admin/ManualStatusDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Loader2, Copy, Clock, CheckCircle2, XCircle, Truck, Package,
-  CreditCard, FileText, ArrowRight, Server,
+  CreditCard, FileText, ArrowRight, Server, Pencil, RefreshCw,
 } from "lucide-react";
+import { triggerStatusSync } from "@/services/supplierAdmin";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_ICON: Record<string, typeof Clock> = {
   paid: Clock, queued: Clock, processing: Truck, delivered: CheckCircle2,
