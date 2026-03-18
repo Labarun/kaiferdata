@@ -24,6 +24,7 @@ const STATUS_ICON: Record<string, typeof Clock> = {
 
 export default function AdminOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const { toast } = useToast();
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [timeline, setTimeline] = useState<Record<string, unknown>[]>([]);
   const [supplierLogs, setSupplierLogs] = useState<Record<string, unknown>[]>([]);
@@ -31,6 +32,8 @@ export default function AdminOrderDetailPage() {
   const [payment, setPayment] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [syncingStatus, setSyncingStatus] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!orderId) return;
