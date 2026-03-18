@@ -109,13 +109,14 @@ async function submitToSupplierApi(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
-  // Look up the supplier's plan_id from data_packages
+  // Look up the supplier's plan_id and network_id from data_packages
   let supplierPlanId = order.bundle_code as string;
+  let supplierNetworkId = mappedNetwork; // fallback to mapped network name
   try {
     // First try: exact match by package_code
     let { data: pkg } = await supabaseClient
       .from("data_packages")
-      .select("supplier_source_id")
+      .select("supplier_source_id, source_metadata")
       .eq("package_code", order.bundle_code)
       .eq("network", order.network)
       .eq("is_active", true)
@@ -127,14 +128,13 @@ async function submitToSupplierApi(
       const volumeStr = String(snapshot.volume);
       const { data: pkg2 } = await supabaseClient
         .from("data_packages")
-        .select("supplier_source_id, package_size_label")
+        .select("supplier_source_id, package_size_label, source_metadata")
         .eq("network", order.network)
         .eq("source_type", "supplier_api")
         .eq("is_active", true)
         .not("supplier_source_id", "is", null);
 
       if (pkg2 && pkg2.length > 0) {
-        // Find a match by volume (e.g. "1GB" matches "1GB")
         const match = pkg2.find(p => 
           p.package_size_label?.toLowerCase() === volumeStr.toLowerCase()
         );
@@ -146,6 +146,12 @@ async function submitToSupplierApi(
 
     if (pkg?.supplier_source_id) {
       supplierPlanId = pkg.supplier_source_id;
+      // Extract network_id from source_metadata if available
+      const meta = (pkg.source_metadata || {}) as Record<string, unknown>;
+      const networkObj = meta.network as Record<string, unknown> | undefined;
+      if (networkObj?.id) {
+        supplierNetworkId = String(networkObj.id);
+      }
     }
   } catch (lookupErr) {
     console.warn("Package lookup failed, using bundle_code:", lookupErr);
@@ -160,7 +166,7 @@ async function submitToSupplierApi(
 
   requestBody[phoneField] = order.beneficiary_number;
   requestBody[productCodeField] = supplierPlanId;
-  requestBody[networkField] = mappedNetwork;
+  requestBody[networkField] = supplierNetworkId;
   requestBody[amountField] = order.amount_charged;
   requestBody[referenceField] = order.public_order_id;
 
