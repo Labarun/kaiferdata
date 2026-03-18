@@ -113,29 +113,29 @@ async function submitToSupplierApi(
   let supplierPlanId = order.bundle_code as string;
   let supplierNetworkId = mappedNetwork; // fallback to mapped network name
   try {
-    // First try: exact match by package_code
+    // First try: exact match by package_code (do not require is_active)
+    // We still need supplier IDs even if synced supplier packages are temporarily inactive in storefront.
     let { data: pkg } = await supabaseClient
       .from("data_packages")
       .select("supplier_source_id, source_metadata")
       .eq("package_code", order.bundle_code)
       .eq("network", order.network)
-      .eq("is_active", true)
       .not("supplier_source_id", "is", null)
       .maybeSingle();
 
-    // Second try: match by network + volume/size from bundle_snapshot
+    // Second try: match by network + volume/size from bundle_snapshot against supplier_api rows.
     if (!pkg?.supplier_source_id && snapshot.volume) {
       const volumeStr = String(snapshot.volume);
       const { data: pkg2 } = await supabaseClient
         .from("data_packages")
-        .select("supplier_source_id, package_size_label, source_metadata")
+        .select("supplier_source_id, package_size_label, source_metadata, updated_at")
         .eq("network", order.network)
         .eq("source_type", "supplier_api")
-        .eq("is_active", true)
-        .not("supplier_source_id", "is", null);
+        .not("supplier_source_id", "is", null)
+        .order("updated_at", { ascending: false });
 
       if (pkg2 && pkg2.length > 0) {
-        const match = pkg2.find(p => 
+        const match = pkg2.find(p =>
           p.package_size_label?.toLowerCase() === volumeStr.toLowerCase()
         );
         if (match?.supplier_source_id) {
@@ -151,6 +151,10 @@ async function submitToSupplierApi(
       const networkObj = meta.network as Record<string, unknown> | undefined;
       if (networkObj?.id) {
         supplierNetworkId = String(networkObj.id);
+      } else if (meta.network_id) {
+        supplierNetworkId = String(meta.network_id);
+      } else if (meta.networkId) {
+        supplierNetworkId = String(meta.networkId);
       }
     }
   } catch (lookupErr) {
