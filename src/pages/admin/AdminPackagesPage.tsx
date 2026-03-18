@@ -271,3 +271,32 @@ function StatMini({ label, value, icon: Icon, valueIsString }: {
     </div>
   );
 }
+
+function SyncButton({ onSuccess }: { onSuccess: () => void }) {
+  const [syncing, setSyncing] = useState(false);
+  const { toast } = useToast();
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await triggerProductSync();
+      const results = (result as any).results || [];
+      const summary = results.map((r: any) =>
+        r.success ? `${r.supplier_name}: +${r.created} / ~${r.updated} / -${r.deactivated}` : `${r.supplier_name}: failed`
+      ).join(", ");
+      toast({ title: "Product Sync Complete", description: summary || "Done" });
+      onSuccess();
+    } catch (err: any) {
+      toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="gap-1.5">
+      {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
+      Sync Products
+    </Button>
+  );
+}
