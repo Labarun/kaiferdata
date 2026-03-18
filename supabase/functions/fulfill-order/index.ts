@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
 
     if (orderErr || !order) return json({ error: "Order not found" }, 404);
 
-    if (!["paid", "queued"].includes(order.status)) {
+    if (!["paid", "queued", "failed"].includes(order.status)) {
       return json({
         error: `Order is in '${order.status}' state and cannot be submitted`,
         order_id: order.id,

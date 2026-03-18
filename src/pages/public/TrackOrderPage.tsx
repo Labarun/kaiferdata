@@ -76,6 +76,26 @@ export default function TrackOrderPage() {
     setLoading(false);
   }
 
+  // Auto-refresh: subscribe to realtime order updates
+  useEffect(() => {
+    if (!order?.id) return;
+    const orderId = order.id as string;
+    const channel = supabase
+      .channel(`track-order-${orderId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, (payload) => {
+        setOrder((prev) => prev ? { ...prev, ...payload.new } : prev);
+        // Re-fetch timeline on status change
+        supabase
+          .from("order_status_history")
+          .select("*")
+          .eq("order_id", orderId)
+          .order("changed_at", { ascending: true })
+          .then(({ data }) => { if (data) setTimeline(data); });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [order?.id]);
+
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
   const status = String(order?.status || "");
   const statusConf = STATUS_CONFIG[status] || STATUS_CONFIG.processing;

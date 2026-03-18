@@ -1,5 +1,5 @@
 /**
- * AdminPackagesPage — Package catalog management with filters, profit visibility
+ * AdminPackagesPage — Package catalog management with filters, profit visibility, sync
  */
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { PackageFormDialog } from "@/components/admin/PackageFormDialog";
 import { fetchAllPackages, calcProfit, calcMargin, type DataPackage } from "@/services/packageCatalog";
+import { triggerProductSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -32,6 +33,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const NETWORKS = ["All", "MTN", "Telecel", "AirtelTigo"];
@@ -104,9 +106,12 @@ export default function AdminPackagesPage() {
           <h1 className="text-xl font-bold text-foreground">Packages</h1>
           <p className="text-sm text-muted-foreground">Manage data package catalog · {packages.length} total</p>
         </div>
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="h-4 w-4 mr-1.5" /> Add Package
-        </Button>
+        <div className="flex items-center gap-2">
+          <SyncButton onSuccess={load} />
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="h-4 w-4 mr-1.5" /> Add Package
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -264,5 +269,34 @@ function StatMini({ label, value, icon: Icon, valueIsString }: {
       </div>
       <p className="text-lg font-bold text-foreground">{valueIsString ? value : value}</p>
     </div>
+  );
+}
+
+function SyncButton({ onSuccess }: { onSuccess: () => void }) {
+  const [syncing, setSyncing] = useState(false);
+  const { toast } = useToast();
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await triggerProductSync();
+      const results = (result as any).results || [];
+      const summary = results.map((r: any) =>
+        r.success ? `${r.supplier_name}: +${r.created} / ~${r.updated} / -${r.deactivated}` : `${r.supplier_name}: failed`
+      ).join(", ");
+      toast({ title: "Product Sync Complete", description: summary || "Done" });
+      onSuccess();
+    } catch (err: any) {
+      toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="gap-1.5">
+      {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
+      Sync Products
+    </Button>
   );
 }
