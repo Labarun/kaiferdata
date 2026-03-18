@@ -69,6 +69,19 @@ export default function AdminSupplierPage() {
   const handleEdit = (s: Supplier) => { setEditSupplier(s); setFormOpen(true); };
   const handleCreate = () => { setEditSupplier(null); setFormOpen(true); };
 
+  const handleDiagnostics = async (supplierId: string) => {
+    setDiagLoading(true);
+    setDiagnostics(null);
+    try {
+      const result = await triggerHealthCheck(supplierId);
+      setDiagnostics(result);
+    } catch (err: any) {
+      toast({ title: "Diagnostics Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
