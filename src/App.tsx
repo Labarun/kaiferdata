@@ -53,6 +53,7 @@ const AdminReconciliationPage = lazy(() => import("@/pages/admin/AdminReconcilia
 const AdminIntentsPage = lazy(() => import("@/pages/admin/AdminIntentsPage"));
 const AdminIntentDetailPage = lazy(() => import("@/pages/admin/AdminIntentDetailPage"));
 const AdminPackagesPage = lazy(() => import("@/pages/admin/AdminPackagesPage"));
+const AdminSupplierPage = lazy(() => import("@/pages/admin/AdminSupplierPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
