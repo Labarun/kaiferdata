@@ -112,11 +112,7 @@ async function submitToSupplierApi(
   // Look up the supplier's plan_id from data_packages
   let supplierPlanId = order.bundle_code as string;
   try {
-    const supabaseForLookup = (await import("https://esm.sh/@supabase/supabase-js@2.49.1")).createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    const { data: pkg } = await supabaseForLookup
+    const { data: pkg } = await supabaseClient
       .from("data_packages")
       .select("supplier_source_id")
       .eq("package_code", order.bundle_code)
