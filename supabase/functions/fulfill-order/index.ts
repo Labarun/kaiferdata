@@ -87,7 +87,7 @@ async function submitToSupplierApi(
   const orderResponseMapping = (endpointConfig.order_response_mapping || {}) as Record<string, string>;
   const reverseNetworkMapping = (endpointConfig.reverse_network_mapping || {}) as Record<string, string>;
 
-  const submitPath = (submitEndpoint.path as string) || "/orders";
+  const submitPath = (submitEndpoint.path as string) || "/v1/orders";
   const submitMethod = (submitEndpoint.method as string) || "POST";
 
   // Build auth headers
