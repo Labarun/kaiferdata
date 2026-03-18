@@ -57,6 +57,27 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   return path.split(".").reduce((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
 }
 
+function normalizeToken(value: unknown): string {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[-_]/g, "");
+}
+
+function normalizeSize(value: unknown): string {
+  return normalizeToken(value).replace(/(\d)(gb|mb|tb)/g, "$1$2");
+}
+
+function isUuid(value: unknown): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+}
+
+function looksLikeMachineId(value: string): boolean {
+  const v = String(value || "").trim();
+  return isUuid(v) || /^ORD-[A-Z0-9-]+$/i.test(v);
+}
+
 /** ── Stub Supplier Implementation ── */
 async function submitToStubSupplier(
   order: Record<string, unknown>,
@@ -109,56 +130,83 @@ async function submitToSupplierApi(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
-  // Look up the supplier's plan_id and network_id from data_packages
+  // Resolve supplier plan/network IDs with robust fallbacks for manual storefront packages.
   let supplierPlanId = order.bundle_code as string;
-  let supplierNetworkId = mappedNetwork; // fallback to mapped network name
+  let supplierNetworkId = mappedNetwork;
+
   try {
-    // First try: exact match by package_code (do not require is_active)
-    // We still need supplier IDs even if synced supplier packages are temporarily inactive in storefront.
-    let { data: pkg } = await supabaseClient
+    const { data: supplierPackages } = await supabaseClient
       .from("data_packages")
-      .select("supplier_source_id, source_metadata")
-      .eq("package_code", order.bundle_code)
+      .select("supplier_source_id, package_code, package_name, package_size_label, package_volume_value, source_metadata, updated_at")
       .eq("network", order.network)
+      .eq("source_type", "supplier_api")
       .not("supplier_source_id", "is", null)
-      .maybeSingle();
+      .order("updated_at", { ascending: false });
 
-    // Second try: match by network + volume/size from bundle_snapshot against supplier_api rows.
-    if (!pkg?.supplier_source_id && snapshot.volume) {
-      const volumeStr = String(snapshot.volume);
-      const { data: pkg2 } = await supabaseClient
-        .from("data_packages")
-        .select("supplier_source_id, package_size_label, source_metadata, updated_at")
-        .eq("network", order.network)
-        .eq("source_type", "supplier_api")
-        .not("supplier_source_id", "is", null)
-        .order("updated_at", { ascending: false });
+    if (supplierPackages && supplierPackages.length > 0) {
+      const codeNeedle = normalizeToken(order.bundle_code);
+      const sizeHints = new Set<string>();
+      const addHint = (v: unknown) => {
+        const n = normalizeSize(v);
+        if (n) sizeHints.add(n);
+      };
 
-      if (pkg2 && pkg2.length > 0) {
-        const match = pkg2.find(p =>
-          p.package_size_label?.toLowerCase() === volumeStr.toLowerCase()
-        );
-        if (match?.supplier_source_id) {
-          pkg = match;
+      addHint(snapshot.volume);
+      addHint(snapshot.package_size_label);
+      addHint(snapshot.package_volume_value);
+      addHint(order.bundle_name);
+
+      const codeVolumeMatch = String(order.bundle_code || "").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
+      if (codeVolumeMatch) addHint(codeVolumeMatch[1]);
+
+      let pkg = supplierPackages.find((p) => normalizeToken(p.package_code) === codeNeedle);
+
+      if (!pkg && sizeHints.size > 0) {
+        pkg = supplierPackages.find((p) => {
+          const packageValues = [p.package_size_label, p.package_volume_value, p.package_name, p.package_code]
+            .map((v) => normalizeSize(v))
+            .filter(Boolean);
+          return Array.from(sizeHints).some((hint) => packageValues.includes(hint));
+        });
+      }
+
+      // Safe fallback only when exactly one supplier package exists for this network.
+      if (!pkg && supplierPackages.length === 1) {
+        pkg = supplierPackages[0];
+      }
+
+      if (pkg?.supplier_source_id) {
+        supplierPlanId = String(pkg.supplier_source_id);
+
+        const meta = (pkg.source_metadata || {}) as Record<string, unknown>;
+        const networkObj = meta.network as Record<string, unknown> | undefined;
+
+        if (networkObj?.id) supplierNetworkId = String(networkObj.id);
+        else if (meta.network_id) supplierNetworkId = String(meta.network_id);
+        else if (meta.networkId) supplierNetworkId = String(meta.networkId);
+        else if (isUuid(meta.network)) supplierNetworkId = String(meta.network);
+      }
+
+      // If network UUID still unresolved, borrow it from any recent synced package for same network.
+      if (!isUuid(supplierNetworkId)) {
+        const networkCarrier = supplierPackages.find((p) => {
+          const meta = (p.source_metadata || {}) as Record<string, unknown>;
+          const networkObj = meta.network as Record<string, unknown> | undefined;
+          return Boolean(networkObj?.id || meta.network_id || meta.networkId || isUuid(meta.network));
+        });
+
+        if (networkCarrier) {
+          const meta = (networkCarrier.source_metadata || {}) as Record<string, unknown>;
+          const networkObj = meta.network as Record<string, unknown> | undefined;
+          if (networkObj?.id) supplierNetworkId = String(networkObj.id);
+          else if (meta.network_id) supplierNetworkId = String(meta.network_id);
+          else if (meta.networkId) supplierNetworkId = String(meta.networkId);
+          else if (isUuid(meta.network)) supplierNetworkId = String(meta.network);
         }
       }
     }
-
-    if (pkg?.supplier_source_id) {
-      supplierPlanId = pkg.supplier_source_id;
-      // Extract network_id from source_metadata if available
-      const meta = (pkg.source_metadata || {}) as Record<string, unknown>;
-      const networkObj = meta.network as Record<string, unknown> | undefined;
-      if (networkObj?.id) {
-        supplierNetworkId = String(networkObj.id);
-      } else if (meta.network_id) {
-        supplierNetworkId = String(meta.network_id);
-      } else if (meta.networkId) {
-        supplierNetworkId = String(meta.networkId);
-      }
-    }
   } catch (lookupErr) {
-    console.warn("Package lookup failed, using bundle_code:", lookupErr);
+    console.warn("Package lookup failed, using fallbacks:", lookupErr);
   }
 
   const requestBody: Record<string, unknown> = {};
@@ -167,6 +215,17 @@ async function submitToSupplierApi(
   const networkField = orderRequestMapping.network || "network";
   const amountField = orderRequestMapping.amount || "amount";
   const referenceField = orderRequestMapping.reference || "reference";
+
+  // Guardrails: if endpoint expects *_id fields, enforce UUID resolution before sending request.
+  const expectsPlanUuid = /_id$/i.test(productCodeField);
+  const expectsNetworkUuid = /_id$/i.test(networkField);
+
+  if (expectsPlanUuid && !isUuid(supplierPlanId)) {
+    throw new Error(`Unable to resolve supplier plan UUID for ${order.bundle_code}`);
+  }
+  if (expectsNetworkUuid && !isUuid(supplierNetworkId)) {
+    throw new Error(`Unable to resolve supplier network UUID for ${order.network}`);
+  }
 
   requestBody[phoneField] = order.beneficiary_number;
   requestBody[productCodeField] = supplierPlanId;
@@ -238,11 +297,13 @@ async function submitToSupplierApi(
     else outcome = "processing";
   }
 
+  const safeMessage = looksLikeMachineId(supplierMsg) ? null : supplierMsg;
+
   return {
     outcome,
     supplier_reference: supplierRef || null,
-    delivery_message: supplierMsg || null,
-    error_message: outcome === "failed" ? (supplierMsg || rawStatus) : null,
+    delivery_message: safeMessage || null,
+    error_message: outcome === "failed" ? (safeMessage || rawStatus) : null,
     raw_response: responseData as Record<string, unknown>,
   };
 }
