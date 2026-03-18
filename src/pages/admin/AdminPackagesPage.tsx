@@ -1,5 +1,5 @@
 /**
- * AdminPackagesPage — Package catalog management with filters, profit visibility
+ * AdminPackagesPage — Package catalog management with filters, profit visibility, sync
  */
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { PackageFormDialog } from "@/components/admin/PackageFormDialog";
 import { fetchAllPackages, calcProfit, calcMargin, type DataPackage } from "@/services/packageCatalog";
+import { triggerProductSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -32,6 +33,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const NETWORKS = ["All", "MTN", "Telecel", "AirtelTigo"];
