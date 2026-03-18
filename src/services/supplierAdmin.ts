@@ -140,8 +140,9 @@ export async function triggerHealthCheck(supplierId: string): Promise<Record<str
     .single();
   if (error || !supplier) throw new Error("Supplier not found");
 
-  const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
-  const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
+  const s = supplier as any;
+  const endpointConfig = (s.endpoint_config || {}) as Record<string, unknown>;
+  const authConfig = (s.auth_config || {}) as Record<string, unknown>;
   const healthEndpoint = (endpointConfig.health || {}) as Record<string, unknown>;
   const balanceEndpoint = (endpointConfig.balance || {}) as Record<string, unknown>;
 
