@@ -297,7 +297,7 @@ export default function AdminSupplierPage() {
             )}
           </CardContent>
         </Card>
-      )
+      )}
 
       {/* Sync Logs */}
       {syncLogs.length > 0 && (
