@@ -5,8 +5,7 @@
  * Receives an order_id, selects a supplier, submits the request,
  * logs everything, and updates order status through the pipeline.
  *
- * Supports: guest, user, agent, admin-recovery orders.
- * Current: stub supplier (simulates instant delivery).
+ * Supports: stub supplier + real supplier API via endpoint_config.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -54,29 +53,139 @@ function outcomeToMessage(outcome: SupplierOutcome, network: string, volume: str
   }
 }
 
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  return path.split(".").reduce((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+}
+
 /** ── Stub Supplier Implementation ── */
 async function submitToStubSupplier(
   order: Record<string, unknown>,
   _supplier: Record<string, unknown>
 ): Promise<SupplierResult> {
-  // Simulate a brief processing delay
   await new Promise((r) => setTimeout(r, 500));
-
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const ref = `STUB-${Date.now().toString(36).toUpperCase()}`;
-
-  // Stub always succeeds for now — swap this with real API calls later
   return {
     outcome: "delivered",
     supplier_reference: ref,
     delivery_message: `${snapshot.volume || ""} ${order.network || ""} data delivered to ${order.beneficiary_number || "recipient"}.`,
     error_message: null,
-    raw_response: {
-      stub: true,
-      reference: ref,
-      status: "success",
-      timestamp: new Date().toISOString(),
+    raw_response: { stub: true, reference: ref, status: "success", timestamp: new Date().toISOString() },
+  };
+}
+
+/** ── Real Supplier API Implementation ── */
+async function submitToSupplierApi(
+  order: Record<string, unknown>,
+  supplier: Record<string, unknown>
+): Promise<SupplierResult> {
+  const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
+  const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
+  const submitEndpoint = (endpointConfig.submit_order || {}) as Record<string, unknown>;
+  const statusMapping = (endpointConfig.status_mapping || {}) as Record<string, string>;
+  const orderRequestMapping = (endpointConfig.order_request_mapping || {}) as Record<string, string>;
+  const orderResponseMapping = (endpointConfig.order_response_mapping || {}) as Record<string, string>;
+  const reverseNetworkMapping = (endpointConfig.reverse_network_mapping || {}) as Record<string, string>;
+
+  const submitPath = (submitEndpoint.path as string) || "/orders";
+  const submitMethod = (submitEndpoint.method as string) || "POST";
+
+  // Build auth headers
+  const secretName = (authConfig.secret_name as string) || "SUPPLIER_API_KEY";
+  const apiKey = Deno.env.get(secretName);
+  if (!apiKey) throw new Error(`Missing supplier secret: ${secretName}`);
+
+  const authType = (authConfig.auth_type as string) || "bearer";
+  const headerName = (authConfig.header_name as string) || "Authorization";
+  let authHeaderValue: string;
+  switch (authType) {
+    case "bearer": authHeaderValue = `Bearer ${apiKey}`; break;
+    case "api_key": authHeaderValue = apiKey; break;
+    default: authHeaderValue = apiKey;
+  }
+
+  // Build request body using field mapping
+  const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
+  const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
+
+  const requestBody: Record<string, unknown> = {};
+  // Default mapping if not configured
+  const phoneField = orderRequestMapping.phone || "phone";
+  const productCodeField = orderRequestMapping.product_code || "product_code";
+  const networkField = orderRequestMapping.network || "network";
+  const amountField = orderRequestMapping.amount || "amount";
+  const referenceField = orderRequestMapping.reference || "reference";
+
+  requestBody[phoneField] = order.beneficiary_number;
+  requestBody[productCodeField] = order.bundle_code;
+  requestBody[networkField] = mappedNetwork;
+  requestBody[amountField] = order.amount_charged;
+  requestBody[referenceField] = order.public_order_id;
+
+  // Add any extra static fields from config
+  const extraFields = (submitEndpoint.extra_fields || {}) as Record<string, unknown>;
+  Object.assign(requestBody, extraFields);
+
+  // Make the API call
+  const apiUrl = `${supplier.api_base_url}${submitPath}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), (supplier.request_timeout_ms as number) || 30000);
+
+  const apiRes = await fetch(apiUrl, {
+    method: submitMethod,
+    headers: {
+      "Content-Type": "application/json",
+      [headerName]: authHeaderValue,
     },
+    body: JSON.stringify(requestBody),
+    signal: controller.signal,
+  });
+  clearTimeout(timeout);
+
+  const responseData = await apiRes.json().catch(() => ({ raw: await apiRes.text() }));
+
+  if (!apiRes.ok) {
+    return {
+      outcome: "failed",
+      supplier_reference: null,
+      delivery_message: null,
+      error_message: `Supplier API returned ${apiRes.status}: ${JSON.stringify(responseData).slice(0, 300)}`,
+      raw_response: responseData as Record<string, unknown>,
+    };
+  }
+
+  // Parse response using mapping
+  const respStatusField = orderResponseMapping.status || "status";
+  const respReferenceField = orderResponseMapping.reference || "reference";
+  const respMessageField = orderResponseMapping.message || "message";
+
+  const rawStatus = String(getNestedValue(responseData as Record<string, unknown>, respStatusField) || "unknown");
+  const supplierRef = String(getNestedValue(responseData as Record<string, unknown>, respReferenceField) || "");
+  const supplierMsg = String(getNestedValue(responseData as Record<string, unknown>, respMessageField) || "");
+
+  // Normalize supplier status to outcome
+  let outcome: SupplierOutcome;
+  const mappedStatus = statusMapping[rawStatus] || statusMapping[rawStatus.toLowerCase()];
+
+  if (mappedStatus) {
+    if (mappedStatus === "delivered") outcome = "delivered";
+    else if (mappedStatus === "failed") outcome = "failed";
+    else if (mappedStatus === "queued") outcome = "accepted";
+    else outcome = "processing";
+  } else {
+    const lower = rawStatus.toLowerCase();
+    if (lower.includes("success") || lower.includes("deliver") || lower.includes("complet")) outcome = "delivered";
+    else if (lower.includes("fail") || lower.includes("error") || lower.includes("reject")) outcome = "failed";
+    else if (lower.includes("accept") || lower.includes("queue")) outcome = "accepted";
+    else outcome = "processing";
+  }
+
+  return {
+    outcome,
+    supplier_reference: supplierRef || null,
+    delivery_message: supplierMsg || null,
+    error_message: outcome === "failed" ? (supplierMsg || rawStatus) : null,
+    raw_response: responseData as Record<string, unknown>,
   };
 }
 
@@ -122,9 +231,7 @@ Deno.serve(async (req) => {
 
     if (!order_id) return json({ error: "Missing order_id" }, 400);
 
-    // ═══════════════════════════════════════════════════
-    // 1. FETCH ORDER
-    // ═══════════════════════════════════════════════════
+    // ═══ 1. FETCH ORDER ═══
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select("*")
@@ -133,7 +240,6 @@ Deno.serve(async (req) => {
 
     if (orderErr || !order) return json({ error: "Order not found" }, 404);
 
-    // Only fulfill paid/queued orders
     if (!["paid", "queued"].includes(order.status)) {
       return json({
         error: `Order is in '${order.status}' state and cannot be submitted`,
@@ -141,16 +247,13 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
-    // ═══════════════════════════════════════════════════
-    // 2. SELECT SUPPLIER
-    // ═══════════════════════════════════════════════════
+    // ═══ 2. SELECT SUPPLIER ═══
     const { data: suppliers } = await supabase
       .from("suppliers")
       .select("*")
       .eq("is_active", true)
       .order("priority", { ascending: true });
 
-    // Find supplier that supports this network
     let selectedSupplier = null;
     if (suppliers && suppliers.length > 0) {
       for (const s of suppliers) {
@@ -160,22 +263,14 @@ Deno.serve(async (req) => {
           break;
         }
       }
-      // Fallback to first active supplier
       if (!selectedSupplier) selectedSupplier = suppliers[0];
     }
 
-    // If no supplier configured, create a virtual stub entry
     if (!selectedSupplier) {
-      selectedSupplier = {
-        id: null,
-        provider_code: "stub",
-        name: "Stub Supplier",
-      };
+      selectedSupplier = { id: null, provider_code: "stub", name: "Stub Supplier" };
     }
 
-    // ═══════════════════════════════════════════════════
-    // 3. UPDATE ORDER → submitting
-    // ═══════════════════════════════════════════════════
+    // ═══ 3. UPDATE ORDER → submitting ═══
     const oldStatus = order.status;
     await supabase
       .from("orders")
@@ -184,20 +279,20 @@ Deno.serve(async (req) => {
 
     await logStatusChange(supabase, order_id, oldStatus, "processing", "fulfillment_service", "Submitting to supplier");
 
-    // ═══════════════════════════════════════════════════
-    // 4. SUBMIT TO SUPPLIER
-    // ═══════════════════════════════════════════════════
+    // ═══ 4. SUBMIT TO SUPPLIER ═══
     const requestStarted = new Date().toISOString();
     let result: SupplierResult;
 
     try {
       const providerCode = (selectedSupplier as Record<string, unknown>).provider_code as string;
+      const supportsSubmission = (selectedSupplier as Record<string, unknown>).supports_order_submission;
+      const hasApiUrl = (selectedSupplier as Record<string, unknown>).api_base_url;
 
-      if (providerCode === "stub" || !providerCode) {
-        result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);
+      if (supportsSubmission && hasApiUrl && providerCode !== "stub") {
+        // Real supplier API submission
+        result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>);
       } else {
-        // Future: route to real supplier implementations
-        // e.g. if (providerCode === "vtpass") result = await submitToVTPass(order, selectedSupplier);
+        // Fallback to stub
         result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);
       }
     } catch (err) {
@@ -210,9 +305,7 @@ Deno.serve(async (req) => {
       };
     }
 
-    // ═══════════════════════════════════════════════════
-    // 5. LOG SUPPLIER REQUEST
-    // ═══════════════════════════════════════════════════
+    // ═══ 5. LOG SUPPLIER REQUEST ═══
     const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
     await supabase.from("supplier_request_logs").insert({
       supplier_id: (selectedSupplier as Record<string, unknown>).id as string | null,
@@ -233,9 +326,7 @@ Deno.serve(async (req) => {
       response_received_at: new Date().toISOString(),
     });
 
-    // ═══════════════════════════════════════════════════
-    // 6. UPDATE ORDER WITH RESULT
-    // ═══════════════════════════════════════════════════
+    // ═══ 6. UPDATE ORDER WITH RESULT ═══
     const newOrderStatus = outcomeToOrderStatus(result.outcome);
     const deliveryMsg = outcomeToMessage(result.outcome, order.network, String(snapshot.volume || ""));
 
@@ -261,9 +352,7 @@ Deno.serve(async (req) => {
       { supplier_code: (selectedSupplier as Record<string, unknown>).provider_code, outcome: result.outcome }
     );
 
-    // ═══════════════════════════════════════════════════
-    // 7. AUDIT LOG
-    // ═══════════════════════════════════════════════════
+    // ═══ 7. AUDIT LOG ═══
     await supabase.from("audit_logs").insert({
       action: `order_${result.outcome}`,
       actor_role: "system",
@@ -277,9 +366,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    // ═══════════════════════════════════════════════════
-    // 8. RETURN RESULT
-    // ═══════════════════════════════════════════════════
+    // ═══ 8. RETURN RESULT ═══
     return json({
       success: result.outcome !== "failed",
       order_id: order_id,
