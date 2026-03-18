@@ -106,9 +106,12 @@ export default function AdminPackagesPage() {
           <h1 className="text-xl font-bold text-foreground">Packages</h1>
           <p className="text-sm text-muted-foreground">Manage data package catalog · {packages.length} total</p>
         </div>
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="h-4 w-4 mr-1.5" /> Add Package
-        </Button>
+        <div className="flex items-center gap-2">
+          <SyncButton onSuccess={load} />
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="h-4 w-4 mr-1.5" /> Add Package
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
