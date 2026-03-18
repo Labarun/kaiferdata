@@ -215,6 +215,90 @@ export default function AdminSupplierPage() {
         </div>
       )}
 
+      {/* Diagnostics Results */}
+      {diagnostics && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" /> Supplier Diagnostics — {String(diagnostics.supplier_name || "")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Health */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Health Check</p>
+                {(diagnostics.health as any)?.ok ? (
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">Healthy</span>
+                    <span className="text-muted-foreground ml-auto">{(diagnostics.health as any)?.response_time_ms}ms</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                    <span className="font-medium text-destructive">Unreachable</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Balance */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">API Balance</p>
+                {(diagnostics.balance as any)?.ok ? (
+                  <div>
+                    <pre className="text-[10px] text-foreground/80 whitespace-pre-wrap break-all max-h-16 overflow-auto">
+                      {JSON.stringify((diagnostics.balance as any)?.data, null, 1)}
+                    </pre>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Unavailable</span>
+                )}
+              </div>
+
+              {/* Last Product Sync */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Last Product Sync</p>
+                {diagnostics.last_product_sync ? (
+                  <div>
+                    <Badge variant={(diagnostics.last_product_sync as any).status === "completed" ? "default" : "destructive"} className="text-[9px]">
+                      {(diagnostics.last_product_sync as any).status}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date((diagnostics.last_product_sync as any).started_at).toLocaleString()}
+                    </p>
+                  </div>
+                ) : <span className="text-muted-foreground">Never</span>}
+              </div>
+
+              {/* Last Failed Request */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Last Failed Request</p>
+                {diagnostics.last_failed_request ? (
+                  <div>
+                    <p className="text-[10px] text-destructive truncate">{(diagnostics.last_failed_request as any).error_message}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date((diagnostics.last_failed_request as any).created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ) : <span className="text-green-600 text-[10px]">No recent failures</span>}
+              </div>
+            </div>
+
+            {/* Webhook URL */}
+            {diagnostics.webhook_url && (
+              <div className="mt-3 border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                  <Link className="h-3 w-3" /> Webhook URL
+                </p>
+                <code className="text-[10px] text-foreground/80 break-all">{String(diagnostics.webhook_url)}</code>
+                <p className="text-[10px] text-muted-foreground mt-1">Configure this URL in your supplier's webhook settings for real-time order status updates.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )
+
       {/* Sync Logs */}
       {syncLogs.length > 0 && (
         <Card>
