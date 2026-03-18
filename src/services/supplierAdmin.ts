@@ -130,6 +130,50 @@ export async function triggerStatusSync(orderId?: string): Promise<Record<string
   return data;
 }
 
+/** Trigger supplier health check */
+export async function triggerHealthCheck(supplierId: string): Promise<Record<string, unknown>> {
+  // Fetch supplier config
+  const { data: supplier, error } = await supabase
+    .from("suppliers" as any)
+    .select("*")
+    .eq("id", supplierId)
+    .single();
+  if (error || !supplier) throw new Error("Supplier not found");
+
+  const s = supplier as any;
+  const endpointConfig = (s.endpoint_config || {}) as Record<string, unknown>;
+  const authConfig = (s.auth_config || {}) as Record<string, unknown>;
+  const healthEndpoint = (endpointConfig.health || {}) as Record<string, unknown>;
+  const balanceEndpoint = (endpointConfig.balance || {}) as Record<string, unknown>;
+
+  const healthPath = (healthEndpoint.path as string) || "/v1/health";
+  const balancePath = (balanceEndpoint.path as string) || "/v1/account/balance";
+
+  // Build auth headers
+  const secretName = (authConfig.secret_name as string) || "SUPPLIER_API_KEY";
+  // We can't access edge function secrets from client, so we call via edge function
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+  // We'll use a simple proxy through a diagnostics call
+  const res = await fetch(
+    `https://${projectId}.supabase.co/functions/v1/supplier-diagnostics`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ supplier_id: supplierId, checks: ["health", "balance"] }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Health check failed");
+  return data;
+}
+
 /** Admin manual status update for a single order */
 export async function updateOrderStatus(
   orderId: string,

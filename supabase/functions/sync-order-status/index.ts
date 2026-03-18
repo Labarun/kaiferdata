@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       const statusMapping = (endpointConfig.status_mapping || {}) as Record<string, string>;
       const orderResponseMapping = (endpointConfig.order_response_mapping || {}) as Record<string, string>;
 
-      const statusPath = (statusEndpoint.path as string) || "/orders/{reference}";
+      const statusPath = (statusEndpoint.path as string) || "/v1/orders/{reference}";
       const statusMethod = (statusEndpoint.method as string) || "GET";
 
       // Replace {reference} placeholder in path

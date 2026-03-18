@@ -1,5 +1,5 @@
 /**
- * AdminSupplierPage — Supplier API configuration, product sync, status sync, and sync logs
+ * AdminSupplierPage — Supplier API configuration, product sync, status sync, diagnostics, and sync logs
  */
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   fetchSuppliers, updateSupplier, createSupplier, fetchSyncLogs,
-  triggerProductSync, triggerStatusSync,
+  triggerProductSync, triggerStatusSync, triggerHealthCheck,
   type Supplier, type SupplierSyncLog,
 } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Plus, RefreshCw, Server, Pencil, Clock, CheckCircle2, XCircle,
-  Package, ArrowDownToLine, Zap, Settings2,
+  Package, ArrowDownToLine, Zap, Settings2, Activity, Wallet, Link,
 } from "lucide-react";
 
 export default function AdminSupplierPage() {
@@ -33,6 +33,8 @@ export default function AdminSupplierPage() {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,6 +68,19 @@ export default function AdminSupplierPage() {
 
   const handleEdit = (s: Supplier) => { setEditSupplier(s); setFormOpen(true); };
   const handleCreate = () => { setEditSupplier(null); setFormOpen(true); };
+
+  const handleDiagnostics = async (supplierId: string) => {
+    setDiagLoading(true);
+    setDiagnostics(null);
+    try {
+      const result = await triggerHealthCheck(supplierId);
+      setDiagnostics(result);
+    } catch (err: any) {
+      toast({ title: "Diagnostics Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setDiagLoading(false);
+    }
+  };
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -176,7 +191,7 @@ export default function AdminSupplierPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-3"
+                    className="mt-3 mr-2"
                     disabled={syncing === "product"}
                     onClick={() => handleSync("product", s.id)}
                   >
@@ -184,10 +199,104 @@ export default function AdminSupplierPage() {
                     Sync This Supplier
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  disabled={diagLoading}
+                  onClick={() => handleDiagnostics(s.id)}
+                >
+                  {diagLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Activity className="h-3.5 w-3.5 mr-1.5" />}
+                  Diagnostics
+                </Button>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Diagnostics Results */}
+      {diagnostics && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" /> Supplier Diagnostics — {String(diagnostics.supplier_name || "")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Health */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Health Check</p>
+                {(diagnostics.health as any)?.ok ? (
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span className="font-medium">Healthy</span>
+                    <span className="text-muted-foreground ml-auto">{(diagnostics.health as any)?.response_time_ms}ms</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                    <span className="font-medium text-destructive">Unreachable</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Balance */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">API Balance</p>
+                {(diagnostics.balance as any)?.ok ? (
+                  <div>
+                    <pre className="text-[10px] text-foreground/80 whitespace-pre-wrap break-all max-h-16 overflow-auto">
+                      {JSON.stringify((diagnostics.balance as any)?.data, null, 1)}
+                    </pre>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Unavailable</span>
+                )}
+              </div>
+
+              {/* Last Product Sync */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Last Product Sync</p>
+                {diagnostics.last_product_sync ? (
+                  <div>
+                    <Badge variant={(diagnostics.last_product_sync as any).status === "completed" ? "default" : "destructive"} className="text-[9px]">
+                      {(diagnostics.last_product_sync as any).status}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date((diagnostics.last_product_sync as any).started_at).toLocaleString()}
+                    </p>
+                  </div>
+                ) : <span className="text-muted-foreground">Never</span>}
+              </div>
+
+              {/* Last Failed Request */}
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Last Failed Request</p>
+                {diagnostics.last_failed_request ? (
+                  <div>
+                    <p className="text-[10px] text-destructive truncate">{(diagnostics.last_failed_request as any).error_message}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date((diagnostics.last_failed_request as any).created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ) : <span className="text-green-600 text-[10px]">No recent failures</span>}
+              </div>
+            </div>
+
+            {/* Webhook URL */}
+            {diagnostics.webhook_url && (
+              <div className="mt-3 border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                  <Link className="h-3 w-3" /> Webhook URL
+                </p>
+                <code className="text-[10px] text-foreground/80 break-all">{String(diagnostics.webhook_url)}</code>
+                <p className="text-[10px] text-muted-foreground mt-1">Configure this URL in your supplier's webhook settings for real-time order status updates.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Sync Logs */}
@@ -304,12 +413,16 @@ function SupplierFormDialog({
           secret_name: "SUPPLIER_API_KEY",
         }, null, 2),
         endpoint_config_json: JSON.stringify({
-          products: { path: "/api/products", method: "GET", response_data_field: "data" },
-          submit_order: { path: "/api/orders", method: "POST" },
-          check_status: { path: "/api/orders/{reference}", method: "GET" },
-          network_mapping: { mtn: "MTN", telecel: "Telecel", airteltigo: "AirtelTigo" },
+          products: { path: "/v1/plans", method: "GET", response_data_field: "data" },
+          networks: { path: "/v1/networks", method: "GET", response_data_field: "data" },
+          submit_order: { path: "/v1/orders", method: "POST" },
+          check_status: { path: "/v1/orders/{reference}", method: "GET" },
+          health: { path: "/v1/health", method: "GET" },
+          balance: { path: "/v1/account/balance", method: "GET" },
+          list_orders: { path: "/v1/orders", method: "GET" },
+          network_mapping: { mtn: "MTN", telecel: "Telecel", airteltigo: "AirtelTigo", MTN: "MTN", Telecel: "Telecel", AirtelTigo: "AirtelTigo" },
           reverse_network_mapping: { MTN: "mtn", Telecel: "telecel", AirtelTigo: "airteltigo" },
-          status_mapping: { pending: "processing", success: "delivered", failed: "failed", processing: "processing", delivered: "delivered" },
+          status_mapping: { pending: "processing", success: "delivered", failed: "failed", processing: "processing", delivered: "delivered", completed: "delivered", cancelled: "cancelled" },
           product_field_mapping: { id: "id", name: "name", code: "code", price: "price", network: "network", volume: "volume", validity: "validity" },
           order_request_mapping: { phone: "phone", product_code: "product_code", network: "network", amount: "amount", reference: "reference" },
           order_response_mapping: { reference: "reference", status: "status", message: "message" },

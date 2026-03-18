@@ -98,9 +98,46 @@ Deno.serve(async (req) => {
       const productFieldMapping = (endpointConfig.product_field_mapping || {}) as Record<string, string>;
       const networkMapping = (endpointConfig.network_mapping || {}) as Record<string, string>;
 
-      const productsPath = (productsEndpoint.path as string) || "/products";
+      const productsPath = (productsEndpoint.path as string) || "/v1/plans";
       const productsMethod = (productsEndpoint.method as string) || "GET";
       const responseDataField = (productsEndpoint.response_data_field as string) || "data";
+
+      // ── Optional: Fetch networks first for mapping ──
+      const networksEndpoint = (endpointConfig.networks || {}) as Record<string, unknown>;
+      const networksPath = (networksEndpoint.path as string) || "";
+      if (networksPath) {
+        try {
+          const netUrl = `${supplier.api_base_url}${networksPath}`;
+          const netHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+            ...buildAuthHeaders(authConfig),
+          };
+          const netRes = await fetch(netUrl, { method: "GET", headers: netHeaders });
+          if (netRes.ok) {
+            const netData = await netRes.json();
+            const netResponseField = (networksEndpoint.response_data_field as string) || "data";
+            const networksArray = (netResponseField ? getNestedValue(netData, netResponseField) : netData) as Record<string, unknown>[];
+            if (Array.isArray(networksArray)) {
+              // Auto-enhance network mapping from supplier's network list
+              for (const net of networksArray) {
+                const code = String(net.code || net.id || "").toLowerCase();
+                const name = String(net.name || "");
+                if (code && name) {
+                  // Map supplier codes to our internal names
+                  if (!networkMapping[code] && !networkMapping[name]) {
+                    const normalizedName = name.toLowerCase();
+                    if (normalizedName.includes("mtn")) networkMapping[code] = "MTN";
+                    else if (normalizedName.includes("telecel") || normalizedName.includes("vodafone")) networkMapping[code] = "Telecel";
+                    else if (normalizedName.includes("airteltigo") || normalizedName.includes("airtel") || normalizedName.includes("tigo")) networkMapping[code] = "AirtelTigo";
+                  }
+                }
+              }
+            }
+          }
+        } catch (netErr) {
+          console.warn("Network fetch failed (non-blocking):", netErr);
+        }
+      }
 
       // Create sync log entry
       const { data: syncLog } = await supabase
