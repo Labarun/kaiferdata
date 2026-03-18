@@ -77,7 +77,8 @@ async function submitToStubSupplier(
 /** ── Real Supplier API Implementation ── */
 async function submitToSupplierApi(
   order: Record<string, unknown>,
-  supplier: Record<string, unknown>
+  supplier: Record<string, unknown>,
+  supabaseClient: ReturnType<typeof createClient>
 ): Promise<SupplierResult> {
   const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
   const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
@@ -108,8 +109,55 @@ async function submitToSupplierApi(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
+  // Look up the supplier's plan_id and network_id from data_packages
+  let supplierPlanId = order.bundle_code as string;
+  let supplierNetworkId = mappedNetwork; // fallback to mapped network name
+  try {
+    // First try: exact match by package_code
+    let { data: pkg } = await supabaseClient
+      .from("data_packages")
+      .select("supplier_source_id, source_metadata")
+      .eq("package_code", order.bundle_code)
+      .eq("network", order.network)
+      .eq("is_active", true)
+      .not("supplier_source_id", "is", null)
+      .maybeSingle();
+
+    // Second try: match by network + volume/size from bundle_snapshot
+    if (!pkg?.supplier_source_id && snapshot.volume) {
+      const volumeStr = String(snapshot.volume);
+      const { data: pkg2 } = await supabaseClient
+        .from("data_packages")
+        .select("supplier_source_id, package_size_label, source_metadata")
+        .eq("network", order.network)
+        .eq("source_type", "supplier_api")
+        .eq("is_active", true)
+        .not("supplier_source_id", "is", null);
+
+      if (pkg2 && pkg2.length > 0) {
+        const match = pkg2.find(p => 
+          p.package_size_label?.toLowerCase() === volumeStr.toLowerCase()
+        );
+        if (match?.supplier_source_id) {
+          pkg = match;
+        }
+      }
+    }
+
+    if (pkg?.supplier_source_id) {
+      supplierPlanId = pkg.supplier_source_id;
+      // Extract network_id from source_metadata if available
+      const meta = (pkg.source_metadata || {}) as Record<string, unknown>;
+      const networkObj = meta.network as Record<string, unknown> | undefined;
+      if (networkObj?.id) {
+        supplierNetworkId = String(networkObj.id);
+      }
+    }
+  } catch (lookupErr) {
+    console.warn("Package lookup failed, using bundle_code:", lookupErr);
+  }
+
   const requestBody: Record<string, unknown> = {};
-  // Default mapping if not configured
   const phoneField = orderRequestMapping.phone || "phone";
   const productCodeField = orderRequestMapping.product_code || "product_code";
   const networkField = orderRequestMapping.network || "network";
@@ -117,8 +165,8 @@ async function submitToSupplierApi(
   const referenceField = orderRequestMapping.reference || "reference";
 
   requestBody[phoneField] = order.beneficiary_number;
-  requestBody[productCodeField] = order.bundle_code;
-  requestBody[networkField] = mappedNetwork;
+  requestBody[productCodeField] = supplierPlanId;
+  requestBody[networkField] = supplierNetworkId;
   requestBody[amountField] = order.amount_charged;
   requestBody[referenceField] = order.public_order_id;
 
@@ -142,7 +190,13 @@ async function submitToSupplierApi(
   });
   clearTimeout(timeout);
 
-  const responseData = await apiRes.json().catch(() => ({ raw: await apiRes.text() }));
+  let responseData: Record<string, unknown>;
+  try {
+    responseData = await apiRes.json();
+  } catch {
+    const rawText = await apiRes.text();
+    responseData = { raw: rawText };
+  }
 
   if (!apiRes.ok) {
     return {
@@ -290,7 +344,7 @@ Deno.serve(async (req) => {
 
       if (supportsSubmission && hasApiUrl && providerCode !== "stub") {
         // Real supplier API submission
-        result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>);
+        result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>, supabase);
       } else {
         // Fallback to stub
         result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);

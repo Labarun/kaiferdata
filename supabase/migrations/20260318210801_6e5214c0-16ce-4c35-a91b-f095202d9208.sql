@@ -1,0 +1,1 @@
+UPDATE public.orders SET status = 'paid', supplier_status = null, supplier_reference = null WHERE id = 'b38e43d7-c187-4939-ac09-3e3a337873b1';

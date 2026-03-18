@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
               packages_created: created,
               packages_updated: updated,
               packages_deactivated: deactivated,
-              raw_response: { total_products: productsArray.length },
+              raw_response: { total_products: productsArray.length, sample_products: productsArray.slice(0, 3) },
             })
             .eq("id", syncLog.id);
         }
