@@ -112,13 +112,38 @@ async function submitToSupplierApi(
   // Look up the supplier's plan_id from data_packages
   let supplierPlanId = order.bundle_code as string;
   try {
-    const { data: pkg } = await supabaseClient
+    // First try: exact match by package_code
+    let { data: pkg } = await supabaseClient
       .from("data_packages")
       .select("supplier_source_id")
       .eq("package_code", order.bundle_code)
       .eq("network", order.network)
       .eq("is_active", true)
+      .not("supplier_source_id", "is", null)
       .maybeSingle();
+
+    // Second try: match by network + volume/size from bundle_snapshot
+    if (!pkg?.supplier_source_id && snapshot.volume) {
+      const volumeStr = String(snapshot.volume);
+      const { data: pkg2 } = await supabaseClient
+        .from("data_packages")
+        .select("supplier_source_id, package_size_label")
+        .eq("network", order.network)
+        .eq("source_type", "supplier_api")
+        .eq("is_active", true)
+        .not("supplier_source_id", "is", null);
+
+      if (pkg2 && pkg2.length > 0) {
+        // Find a match by volume (e.g. "1GB" matches "1GB")
+        const match = pkg2.find(p => 
+          p.package_size_label?.toLowerCase() === volumeStr.toLowerCase()
+        );
+        if (match?.supplier_source_id) {
+          pkg = match;
+        }
+      }
+    }
+
     if (pkg?.supplier_source_id) {
       supplierPlanId = pkg.supplier_source_id;
     }
