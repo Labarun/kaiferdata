@@ -1,5 +1,5 @@
 /**
- * AdminSupplierPage — Supplier API configuration, product sync, status sync, and sync logs
+ * AdminSupplierPage — Supplier API configuration, product sync, status sync, diagnostics, and sync logs
  */
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   fetchSuppliers, updateSupplier, createSupplier, fetchSyncLogs,
-  triggerProductSync, triggerStatusSync,
+  triggerProductSync, triggerStatusSync, triggerHealthCheck,
   type Supplier, type SupplierSyncLog,
 } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Plus, RefreshCw, Server, Pencil, Clock, CheckCircle2, XCircle,
-  Package, ArrowDownToLine, Zap, Settings2,
+  Package, ArrowDownToLine, Zap, Settings2, Activity, Wallet, Link,
 } from "lucide-react";
 
 export default function AdminSupplierPage() {
