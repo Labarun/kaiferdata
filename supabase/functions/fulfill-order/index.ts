@@ -108,8 +108,28 @@ async function submitToSupplierApi(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
+  // Look up the supplier's plan_id from data_packages
+  let supplierPlanId = order.bundle_code as string;
+  try {
+    const supabaseForLookup = (await import("https://esm.sh/@supabase/supabase-js@2.49.1")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: pkg } = await supabaseForLookup
+      .from("data_packages")
+      .select("supplier_source_id")
+      .eq("package_code", order.bundle_code)
+      .eq("network", order.network)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (pkg?.supplier_source_id) {
+      supplierPlanId = pkg.supplier_source_id;
+    }
+  } catch (lookupErr) {
+    console.warn("Package lookup failed, using bundle_code:", lookupErr);
+  }
+
   const requestBody: Record<string, unknown> = {};
-  // Default mapping if not configured
   const phoneField = orderRequestMapping.phone || "phone";
   const productCodeField = orderRequestMapping.product_code || "product_code";
   const networkField = orderRequestMapping.network || "network";
@@ -117,7 +137,7 @@ async function submitToSupplierApi(
   const referenceField = orderRequestMapping.reference || "reference";
 
   requestBody[phoneField] = order.beneficiary_number;
-  requestBody[productCodeField] = order.bundle_code;
+  requestBody[productCodeField] = supplierPlanId;
   requestBody[networkField] = mappedNetwork;
   requestBody[amountField] = order.amount_charged;
   requestBody[referenceField] = order.public_order_id;
