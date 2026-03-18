@@ -77,7 +77,8 @@ async function submitToStubSupplier(
 /** ── Real Supplier API Implementation ── */
 async function submitToSupplierApi(
   order: Record<string, unknown>,
-  supplier: Record<string, unknown>
+  supplier: Record<string, unknown>,
+  supabaseClient: ReturnType<typeof createClient>
 ): Promise<SupplierResult> {
   const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
   const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
