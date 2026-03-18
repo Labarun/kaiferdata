@@ -191,7 +191,7 @@ export default function AdminSupplierPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-3"
+                    className="mt-3 mr-2"
                     disabled={syncing === "product"}
                     onClick={() => handleSync("product", s.id)}
                   >
@@ -199,6 +199,16 @@ export default function AdminSupplierPage() {
                     Sync This Supplier
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  disabled={diagLoading}
+                  onClick={() => handleDiagnostics(s.id)}
+                >
+                  {diagLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Activity className="h-3.5 w-3.5 mr-1.5" />}
+                  Diagnostics
+                </Button>
               </CardContent>
             </Card>
           ))}
