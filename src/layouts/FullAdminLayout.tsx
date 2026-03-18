@@ -4,12 +4,13 @@
 import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   LayoutDashboard, ShoppingCart, ArrowRightLeft, Scale, ArrowDownToLine,
-  Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield, FileText, Package,
+  Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield, FileText, Package, Server,
 } from "lucide-react";
 import type { AdminNavItem } from "@/layouts/AdminLayout";
 
 const navItems: AdminNavItem[] = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+  { label: "Supplier", path: "/admin/supplier", icon: Server },
   { label: "Packages", path: "/admin/packages", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Transactions", path: "/admin/transactions", icon: ArrowRightLeft },
