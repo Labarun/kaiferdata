@@ -118,6 +118,14 @@ export default function AdminOrderDetailPage() {
           <span className="text-[11px] text-muted-foreground">Supplier: {order.supplier_status as string}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSyncStatus} disabled={syncingStatus} className="gap-1.5">
+            {syncingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync Status
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setStatusDialogOpen(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />
+            Change Status
+          </Button>
           <RetryFulfillmentButton
             orderId={orderId!}
             orderStatus={order.status as string}
