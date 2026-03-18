@@ -1,26 +1,34 @@
 /**
- * Admin Orders Page — Searchable, filterable orders table
+ * Admin Orders Page — Searchable, filterable orders table with bulk status update
  */
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
+import { BulkStatusDialog } from "@/components/admin/BulkStatusDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
-import { Search, Loader2, ChevronRight, Filter, X } from "lucide-react";
+import { Search, Loader2, ChevronRight, Filter, X, RefreshCw, ListChecks } from "lucide-react";
+import { triggerStatusSync } from "@/services/supplierAdmin";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_OPTIONS = ["all", "paid", "queued", "processing", "delivered", "failed", "cancelled"];
 const NETWORK_OPTIONS = ["all", "MTN", "Telecel", "AirtelTigo"];
 
 export default function AdminOrdersPage() {
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [networkFilter, setNetworkFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -30,7 +38,7 @@ export default function AdminOrdersPage() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (statusFilter !== "all") query = query.eq("status", statusFilter as "paid" | "queued" | "processing" | "delivered" | "failed" | "cancelled" | "refunded");
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
     if (networkFilter !== "all") query = query.eq("network", networkFilter);
     if (search.trim()) {
       query = query.or(
@@ -40,14 +48,68 @@ export default function AdminOrdersPage() {
 
     const { data } = await query;
     setOrders(data || []);
+    setSelected(new Set());
     setLoading(false);
   }, [search, statusFilter, networkFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  // Realtime subscription for live updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new } : o))
+        );
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === orders.length) setSelected(new Set());
+    else setSelected(new Set(orders.map((o) => o.id as string)));
+  };
+
+  const handleStatusSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await triggerStatusSync();
+      toast({ title: "Status Sync", description: `${(result as any).orders_updated || 0} orders updated` });
+      fetchOrders();
+    } catch (err: any) {
+      toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-4">
-      <PageHeader title="Orders" description="Manage and inspect all orders" />
+      <div className="flex items-center justify-between">
+        <PageHeader title="Orders" description="Manage and inspect all orders" />
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} className="gap-1.5">
+              <ListChecks className="h-3.5 w-3.5" />
+              Bulk Update ({selected.size})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={handleStatusSync} disabled={syncing} className="gap-1.5">
+            {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync Statuses
+          </Button>
+        </div>
+      </div>
 
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row gap-2">
@@ -124,7 +186,13 @@ export default function AdminOrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/50">
-                {["Order ID", "Network", "Bundle", "Amount", "Phone", "Status", "Source", "Created", ""].map((h) => (
+                <th className="px-3 py-2.5 w-[40px]">
+                  <Checkbox
+                    checked={orders.length > 0 && selected.size === orders.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </th>
+                {["Order ID", "Network", "Bundle", "Amount", "Phone", "Status", "Supplier", "Created", ""].map((h) => (
                   <th key={h} className="text-left px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                     {h}
                   </th>
@@ -134,19 +202,25 @@ export default function AdminOrdersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8">
+                  <td colSpan={10} className="text-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-xs text-muted-foreground">No orders found.</td>
+                  <td colSpan={10} className="text-center py-8 text-xs text-muted-foreground">No orders found.</td>
                 </tr>
               ) : (
                 orders.map((o) => {
                   const snap = (o.bundle_snapshot || {}) as Record<string, unknown>;
                   return (
                     <tr key={o.id as string} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-2.5">
+                        <Checkbox
+                          checked={selected.has(o.id as string)}
+                          onCheckedChange={() => toggleSelect(o.id as string)}
+                        />
+                      </td>
                       <td className="px-3 py-2.5">
                         <Link to={`/admin/orders/${o.id}`} className="font-mono text-[12px] font-medium text-primary hover:underline">
                           {o.public_order_id as string}
@@ -157,7 +231,13 @@ export default function AdminOrdersPage() {
                       <td className="px-3 py-2.5 text-[12px] font-medium">GH₵{Number(o.amount_charged).toLocaleString()}</td>
                       <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">{o.beneficiary_number as string}</td>
                       <td className="px-3 py-2.5"><OperationsBadge status={o.status as string} /></td>
-                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground">{o.actor_type as string}</td>
+                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground">
+                        {o.supplier_status ? (
+                          <span className="font-mono text-[10px]">{o.supplier_status as string}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
                         {new Date(o.created_at as string).toLocaleDateString()}
                       </td>
@@ -174,6 +254,13 @@ export default function AdminOrdersPage() {
           </table>
         </div>
       </Card>
+
+      <BulkStatusDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        orderIds={Array.from(selected)}
+        onSuccess={fetchOrders}
+      />
     </div>
   );
 }

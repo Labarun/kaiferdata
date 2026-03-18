@@ -561,47 +561,124 @@ export type Database = {
           },
         ]
       }
+      supplier_sync_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          orders_updated: number | null
+          packages_created: number | null
+          packages_deactivated: number | null
+          packages_updated: number | null
+          raw_response: Json | null
+          started_at: string
+          status: string
+          supplier_id: string | null
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          orders_updated?: number | null
+          packages_created?: number | null
+          packages_deactivated?: number | null
+          packages_updated?: number | null
+          raw_response?: Json | null
+          started_at?: string
+          status?: string
+          supplier_id?: string | null
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          orders_updated?: number | null
+          packages_created?: number | null
+          packages_deactivated?: number | null
+          packages_updated?: number | null
+          raw_response?: Json | null
+          started_at?: string
+          status?: string
+          supplier_id?: string | null
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_sync_logs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           api_base_url: string | null
           auth_config: Json | null
           created_at: string
+          endpoint_config: Json
           id: string
           is_active: boolean
+          last_product_sync_at: string | null
           metadata: Json | null
           name: string
+          polling_interval_seconds: number
           priority: number
           provider_code: string
           request_timeout_ms: number
           supported_networks: Json
+          supports_order_submission: boolean
+          supports_product_sync: boolean
+          supports_status_sync: boolean
           updated_at: string
         }
         Insert: {
           api_base_url?: string | null
           auth_config?: Json | null
           created_at?: string
+          endpoint_config?: Json
           id?: string
           is_active?: boolean
+          last_product_sync_at?: string | null
           metadata?: Json | null
           name: string
+          polling_interval_seconds?: number
           priority?: number
           provider_code: string
           request_timeout_ms?: number
           supported_networks?: Json
+          supports_order_submission?: boolean
+          supports_product_sync?: boolean
+          supports_status_sync?: boolean
           updated_at?: string
         }
         Update: {
           api_base_url?: string | null
           auth_config?: Json | null
           created_at?: string
+          endpoint_config?: Json
           id?: string
           is_active?: boolean
+          last_product_sync_at?: string | null
           metadata?: Json | null
           name?: string
+          polling_interval_seconds?: number
           priority?: number
           provider_code?: string
           request_timeout_ms?: number
           supported_networks?: Json
+          supports_order_submission?: boolean
+          supports_product_sync?: boolean
+          supports_status_sync?: boolean
           updated_at?: string
         }
         Relationships: []

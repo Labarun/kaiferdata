@@ -53,6 +53,7 @@ const AdminReconciliationPage = lazy(() => import("@/pages/admin/AdminReconcilia
 const AdminIntentsPage = lazy(() => import("@/pages/admin/AdminIntentsPage"));
 const AdminIntentDetailPage = lazy(() => import("@/pages/admin/AdminIntentDetailPage"));
 const AdminPackagesPage = lazy(() => import("@/pages/admin/AdminPackagesPage"));
+const AdminSupplierPage = lazy(() => import("@/pages/admin/AdminSupplierPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => (
               {/* ====== ADMIN PANEL ====== */}
               <Route element={<ProtectedRoute allowedRoles={["admin"]}><FullAdminLayout /></ProtectedRoute>}>
                 <Route path="/admin" element={<AdminDashboardHome />} />
+                <Route path="/admin/supplier" element={<AdminSupplierPage />} />
                 <Route path="/admin/packages" element={<AdminPackagesPage />} />
                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
                 <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />

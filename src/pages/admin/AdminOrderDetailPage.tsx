@@ -1,5 +1,5 @@
 /**
- * Admin Order Detail Page — Full operational view with timeline, supplier logs, retry action
+ * Admin Order Detail Page — Full operational view with timeline, supplier logs, retry, manual status change, status sync
  */
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -7,11 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { RetryFulfillmentButton } from "@/components/admin/RetryFulfillmentButton";
+import { ManualStatusDialog } from "@/components/admin/ManualStatusDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Loader2, Copy, Clock, CheckCircle2, XCircle, Truck, Package,
-  CreditCard, FileText, ArrowRight, Server,
+  CreditCard, FileText, ArrowRight, Server, Pencil, RefreshCw,
 } from "lucide-react";
+import { triggerStatusSync } from "@/services/supplierAdmin";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_ICON: Record<string, typeof Clock> = {
   paid: Clock, queued: Clock, processing: Truck, delivered: CheckCircle2,
@@ -20,6 +24,7 @@ const STATUS_ICON: Record<string, typeof Clock> = {
 
 export default function AdminOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const { toast } = useToast();
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [timeline, setTimeline] = useState<Record<string, unknown>[]>([]);
   const [supplierLogs, setSupplierLogs] = useState<Record<string, unknown>[]>([]);
@@ -27,6 +32,8 @@ export default function AdminOrderDetailPage() {
   const [payment, setPayment] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [syncingStatus, setSyncingStatus] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!orderId) return;
@@ -53,6 +60,31 @@ export default function AdminOrderDetailPage() {
   }, [orderId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Realtime updates for this order
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`order-detail-${orderId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
+        fetchAll();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId, fetchAll]);
+
+  const handleSyncStatus = async () => {
+    setSyncingStatus(true);
+    try {
+      await triggerStatusSync(orderId);
+      toast({ title: "Status synced" });
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncingStatus(false);
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!order) return <div className="text-center py-16 text-sm text-muted-foreground">Order not found.</div>;
@@ -86,6 +118,14 @@ export default function AdminOrderDetailPage() {
           <span className="text-[11px] text-muted-foreground">Supplier: {order.supplier_status as string}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSyncStatus} disabled={syncingStatus} className="gap-1.5">
+            {syncingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync Status
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setStatusDialogOpen(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />
+            Change Status
+          </Button>
           <RetryFulfillmentButton
             orderId={orderId!}
             orderStatus={order.status as string}
