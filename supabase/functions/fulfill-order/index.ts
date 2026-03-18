@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
 
       if (supportsSubmission && hasApiUrl && providerCode !== "stub") {
         // Real supplier API submission
-        result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>);
+        result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>, supabase);
       } else {
         // Fallback to stub
         result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);
