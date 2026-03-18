@@ -33,6 +33,8 @@ export default function AdminSupplierPage() {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
