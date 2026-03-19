@@ -62,6 +62,7 @@ export default function UserWalletPage() {
 
   const parsedAmount = parseFloat(depositAmount);
   const validAmount = !isNaN(parsedAmount) && parsedAmount >= 1 && parsedAmount <= 10000;
+  const depositFee = useMemo(() => validAmount ? calculatePaystackFee(parsedAmount) : null, [parsedAmount, validAmount]);
 
   const handleDeposit = useCallback(async () => {
     if (!user || !validAmount) return;
