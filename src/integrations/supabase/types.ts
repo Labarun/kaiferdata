@@ -340,10 +340,13 @@ export type Database = {
       payment_records: {
         Row: {
           amount: number
+          base_amount: number | null
           created_at: string
           currency: string
           customer_email: string | null
           customer_identifier: string | null
+          fee_amount: number | null
+          fee_rate: number | null
           id: string
           intent_id: string | null
           internal_reference: string
@@ -351,15 +354,19 @@ export type Database = {
           provider_reference: string
           provider_response: Json | null
           status: Database["public"]["Enums"]["payment_status"]
+          total_amount: number | null
           updated_at: string
           verified_at: string | null
         }
         Insert: {
           amount: number
+          base_amount?: number | null
           created_at?: string
           currency?: string
           customer_email?: string | null
           customer_identifier?: string | null
+          fee_amount?: number | null
+          fee_rate?: number | null
           id?: string
           intent_id?: string | null
           internal_reference: string
@@ -367,15 +374,19 @@ export type Database = {
           provider_reference: string
           provider_response?: Json | null
           status?: Database["public"]["Enums"]["payment_status"]
+          total_amount?: number | null
           updated_at?: string
           verified_at?: string | null
         }
         Update: {
           amount?: number
+          base_amount?: number | null
           created_at?: string
           currency?: string
           customer_email?: string | null
           customer_identifier?: string | null
+          fee_amount?: number | null
+          fee_rate?: number | null
           id?: string
           intent_id?: string | null
           internal_reference?: string
@@ -383,6 +394,7 @@ export type Database = {
           provider_reference?: string
           provider_response?: Json | null
           status?: Database["public"]["Enums"]["payment_status"]
+          total_amount?: number | null
           updated_at?: string
           verified_at?: string | null
         }
@@ -440,10 +452,13 @@ export type Database = {
           actor_id: string | null
           actor_type: string
           amount_expected: number
+          base_amount: number | null
           created_at: string
           customer_email: string | null
           customer_name: string | null
           expires_at: string | null
+          fee_amount: number | null
+          fee_rate: number | null
           id: string
           intent_reference: string
           intent_type: string
@@ -455,16 +470,20 @@ export type Database = {
           plan_snapshot: Json
           source_channel: string
           status: Database["public"]["Enums"]["intent_status"]
+          total_amount: number | null
           updated_at: string
         }
         Insert: {
           actor_id?: string | null
           actor_type?: string
           amount_expected: number
+          base_amount?: number | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           expires_at?: string | null
+          fee_amount?: number | null
+          fee_rate?: number | null
           id?: string
           intent_reference: string
           intent_type?: string
@@ -476,16 +495,20 @@ export type Database = {
           plan_snapshot?: Json
           source_channel?: string
           status?: Database["public"]["Enums"]["intent_status"]
+          total_amount?: number | null
           updated_at?: string
         }
         Update: {
           actor_id?: string | null
           actor_type?: string
           amount_expected?: number
+          base_amount?: number | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
           expires_at?: string | null
+          fee_amount?: number | null
+          fee_rate?: number | null
           id?: string
           intent_reference?: string
           intent_type?: string
@@ -497,6 +520,7 @@ export type Database = {
           plan_snapshot?: Json
           source_channel?: string
           status?: Database["public"]["Enums"]["intent_status"]
+          total_amount?: number | null
           updated_at?: string
         }
         Relationships: []
