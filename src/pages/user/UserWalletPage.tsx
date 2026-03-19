@@ -268,14 +268,39 @@ export default function UserWalletPage() {
 
                 <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
+                {/* Fee breakdown */}
+                {depositFee && (
+                  <div className="rounded-xl glass-card overflow-hidden">
+                    <div className="flex items-center justify-between px-3.5 py-2.5">
+                      <span className="text-[11px] text-muted-foreground/55 font-medium">Deposit Amount</span>
+                      <span className="text-[12px] font-semibold text-foreground/70 tabular-nums">GH₵{formatGHS(depositFee.baseAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[hsl(215_40%_96%/0.2)]">
+                      <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
+                        Processing Fee <span className="text-[9px] text-muted-foreground/35">(3%)</span>
+                      </span>
+                      <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">GH₵{formatGHS(depositFee.feeAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-3.5 py-3 bg-[hsl(215_40%_96%/0.35)]">
+                      <span className="text-[10px] text-muted-foreground/55 font-semibold uppercase tracking-wider">Total Charge</span>
+                      <span className="text-[14px] font-bold text-foreground/80 tabular-nums">GH₵{formatGHS(depositFee.totalAmount)}</span>
+                    </div>
+                    <div className="px-3.5 py-2 bg-primary/5">
+                      <p className="text-[10px] text-primary/70 font-medium text-center">
+                        💰 GH₵{formatGHS(depositFee.baseAmount)} will be credited to your wallet
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleDeposit}
                   disabled={!validAmount}
                   className="w-full h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  {validAmount
-                    ? `Deposit GH₵${parsedAmount.toFixed(2)}`
+                  {depositFee
+                    ? `Pay GH₵${formatGHS(depositFee.totalAmount)}`
                     : "Enter Amount"
                   }
                   {validAmount && <ArrowRight className="ml-2 h-4 w-4" />}
