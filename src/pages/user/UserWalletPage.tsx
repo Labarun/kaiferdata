@@ -1,7 +1,8 @@
 /**
  * User Wallet Page — Premium liquid-glass wallet with real deposit flow
+ * Now with 3% Paystack fee display on deposits
  */
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { WalletCard } from "@/components/shared/WalletCard";
@@ -16,6 +17,7 @@ import {
   Drawer, DrawerContent,
 } from "@/components/ui/drawer";
 import { createDepositIntent, initializePayment } from "@/services/purchaseIntent";
+import { calculatePaystackFee, formatGHS } from "@/services/paystackFee";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
