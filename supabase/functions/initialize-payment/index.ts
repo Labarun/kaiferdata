@@ -1,9 +1,10 @@
 /**
  * Edge Function: initialize-payment
  * Supports both purchase intents (bundle buy) and deposit intents (wallet top-up).
- * Validates intent, initializes Paystack, returns authorization_url.
+ * Validates intent, applies 3% Paystack fee, initializes Paystack, returns authorization_url.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { calculatePaystackFee } from "../_shared/paystack-fee.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,7 +66,6 @@ Deno.serve(async (req) => {
     const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
 
     if (!isDeposit && snapshot.id) {
-      // Validate against data_packages (not data_plans)
       const { data: pkg } = await supabase
         .from("data_packages")
         .select("id, selling_price, is_active")
@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3. Build Paystack reference ──
+    // ── 3. Calculate Paystack fee (3%) ──
+    const baseAmount = Number(intent.amount_expected);
+    const breakdown = calculatePaystackFee(baseAmount);
+
+    // ── 4. Build Paystack reference ──
     const paystackReference = intent.intent_reference;
 
     // Determine callback URL
@@ -91,10 +95,12 @@ Deno.serve(async (req) => {
     const customerEmail =
       intent.customer_email || `guest+${intent.intent_reference.toLowerCase()}@kaiferdata.com`;
 
-    // ── 4. Build Paystack metadata ──
+    // ── 5. Build Paystack metadata ──
     const customFields = [
       { display_name: "Reference", variable_name: "intent_reference", value: intent.intent_reference },
       { display_name: "Type", variable_name: "intent_type", value: intent.intent_type },
+      { display_name: "Base Amount", variable_name: "base_amount", value: `GHS ${breakdown.baseAmount.toFixed(2)}` },
+      { display_name: "Processing Fee", variable_name: "fee_amount", value: `GHS ${breakdown.feeAmount.toFixed(2)}` },
     ];
 
     if (!isDeposit) {
@@ -107,7 +113,7 @@ Deno.serve(async (req) => {
 
     const paystackPayload = {
       email: customerEmail,
-      amount: Math.round(Number(intent.amount_expected) * 100), // pesewas
+      amount: Math.round(breakdown.totalAmount * 100), // pesewas — total including fee
       currency: "GHS",
       reference: paystackReference,
       callback_url: callbackUrl,
@@ -119,10 +125,14 @@ Deno.serve(async (req) => {
         intent_type: intent.intent_type,
         network: intent.network,
         phone_number: intent.phone_number,
+        base_amount: breakdown.baseAmount,
+        fee_amount: breakdown.feeAmount,
+        fee_rate: breakdown.feeRate,
+        total_amount: breakdown.totalAmount,
       },
     };
 
-    // ── 5. Initialize Paystack transaction ──
+    // ── 6. Initialize Paystack transaction ──
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -139,28 +149,45 @@ Deno.serve(async (req) => {
       return json({ error: "Payment initialization failed. Please try again." }, 502);
     }
 
-    // ── 6. Update intent status ──
+    // ── 7. Update intent with fee breakdown ──
     await supabase
       .from("purchase_intents")
       .update({
         status: "pending_payment",
         payment_method: "paystack",
+        base_amount: breakdown.baseAmount,
+        fee_amount: breakdown.feeAmount,
+        fee_rate: breakdown.feeRate,
+        total_amount: breakdown.totalAmount,
+        amount_expected: breakdown.totalAmount, // total is what we expect from Paystack
         order_context: {
           ...(intent.order_context as Record<string, unknown> || {}),
           paystack_reference: paystackReference,
           paystack_access_code: paystackData.data.access_code,
           payment_initialized_at: new Date().toISOString(),
+          fee_breakdown: {
+            base_amount: breakdown.baseAmount,
+            fee_amount: breakdown.feeAmount,
+            fee_rate: breakdown.feeRate,
+            total_amount: breakdown.totalAmount,
+          },
         },
       })
       .eq("id", intent_id);
 
-    // ── 7. Return authorization URL ──
+    // ── 8. Return authorization URL ──
     return json({
       success: true,
       authorization_url: paystackData.data.authorization_url,
       access_code: paystackData.data.access_code,
       reference: paystackReference,
       intent_reference: intent.intent_reference,
+      fee_breakdown: {
+        base_amount: breakdown.baseAmount,
+        fee_amount: breakdown.feeAmount,
+        fee_rate: breakdown.feeRate,
+        total_amount: breakdown.totalAmount,
+      },
     });
   } catch (err) {
     console.error("initialize-payment error:", err);

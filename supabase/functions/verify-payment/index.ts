@@ -3,9 +3,10 @@
  * 
  * Verifies a Paystack transaction. Handles two flows:
  * - Bundle purchase → creates payment record + order
- * - Wallet deposit → creates payment record + credits wallet
+ * - Wallet deposit → creates payment record + credits wallet (base amount only)
  * 
  * Idempotent: re-calling with an already-verified reference returns existing result.
+ * Fee-aware: stores base_amount, fee_amount, fee_rate, total_amount on payment records.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -57,7 +58,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingPayment?.status === "verified") {
-      // Find intent to determine type
       const { data: existingIntent } = await supabase
         .from("purchase_intents")
         .select("intent_type")
@@ -123,6 +123,12 @@ Deno.serve(async (req) => {
 
     const isDeposit = intent.intent_type === "wallet_deposit";
 
+    // Extract fee breakdown from intent (set during initialize-payment)
+    const intentBaseAmount = Number(intent.base_amount) || Number(intent.amount_expected);
+    const intentFeeAmount = Number(intent.fee_amount) || 0;
+    const intentFeeRate = Number(intent.fee_rate) || 0;
+    const intentTotalAmount = Number(intent.total_amount) || Number(intent.amount_expected);
+
     // ═══ 4. HANDLE NON-SUCCESS ═══
     if (paystackStatus !== "success") {
       const failStatus = paystackStatus === "abandoned" ? "expired" : "failed";
@@ -139,6 +145,10 @@ Deno.serve(async (req) => {
           internal_reference: intent.intent_reference,
           intent_id: intent.id,
           amount: amountPaidGhs,
+          base_amount: intentBaseAmount,
+          fee_amount: intentFeeAmount,
+          fee_rate: intentFeeRate,
+          total_amount: amountPaidGhs,
           currency: "GHS",
           customer_email: customerEmail,
           status: "failed",
@@ -159,10 +169,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ═══ 5. VERIFY AMOUNT ═══
-    const expectedAmount = Number(intent.amount_expected);
-    if (Math.abs(amountPaidGhs - expectedAmount) > 0.01) {
-      console.error(`Amount mismatch: expected ${expectedAmount}, got ${amountPaidGhs} for ${reference}`);
+    // ═══ 5. VERIFY AMOUNT (against total_amount which includes fee) ═══
+    const expectedTotal = intentTotalAmount;
+    if (Math.abs(amountPaidGhs - expectedTotal) > 0.50) {
+      console.error(`Amount mismatch: expected ${expectedTotal}, got ${amountPaidGhs} for ${reference}`);
 
       await supabase
         .from("purchase_intents")
@@ -172,7 +182,7 @@ Deno.serve(async (req) => {
             ...((intent.order_context as Record<string, unknown>) || {}),
             amount_mismatch: true,
             paid_amount: amountPaidGhs,
-            expected_amount: expectedAmount,
+            expected_amount: expectedTotal,
           },
         })
         .eq("id", intent.id);
@@ -180,7 +190,7 @@ Deno.serve(async (req) => {
       return json({ error: "Payment amount does not match. Contact support." }, 422);
     }
 
-    // ═══ 6. CREATE PAYMENT RECORD ═══
+    // ═══ 6. CREATE PAYMENT RECORD (with fee breakdown) ═══
     const { data: paymentRecord, error: prErr } = await supabase
       .from("payment_records")
       .upsert(
@@ -190,6 +200,10 @@ Deno.serve(async (req) => {
           internal_reference: intent.intent_reference,
           intent_id: intent.id,
           amount: amountPaidGhs,
+          base_amount: intentBaseAmount,
+          fee_amount: intentFeeAmount,
+          fee_rate: intentFeeRate,
+          total_amount: amountPaidGhs,
           currency: "GHS",
           customer_email: customerEmail,
           customer_identifier: txn.customer?.customer_code || null,
@@ -215,9 +229,11 @@ Deno.serve(async (req) => {
 
     // ═══ BRANCH: DEPOSIT vs PURCHASE ═══
     if (isDeposit) {
-      return await handleDeposit(supabase, intent, paymentRecord, amountPaidGhs, reference);
+      // For deposits, credit wallet with BASE amount only (not fee)
+      return await handleDeposit(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount);
     } else {
-      return await handlePurchase(supabase, intent, paymentRecord, amountPaidGhs, reference);
+      // For orders, amount_charged is the base amount (product price)
+      return await handlePurchase(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount);
     }
   } catch (err) {
     console.error("verify-payment error:", err);
@@ -225,17 +241,17 @@ Deno.serve(async (req) => {
   }
 });
 
-/** Handle wallet deposit: credit wallet, create transaction */
+/** Handle wallet deposit: credit wallet with BASE amount (not fee) */
 async function handleDeposit(
   supabase: ReturnType<typeof createClient>,
   intent: Record<string, unknown>,
   paymentRecord: Record<string, unknown>,
-  amount: number,
+  baseAmount: number,
   reference: string,
+  feeAmount: number,
 ) {
   const userId = intent.actor_id as string;
 
-  // Get wallet
   const { data: wallet, error: walletErr } = await supabase
     .from("wallets")
     .select("id, current_balance")
@@ -248,9 +264,9 @@ async function handleDeposit(
   }
 
   const openingBalance = Number(wallet.current_balance);
-  const closingBalance = openingBalance + amount;
+  // Credit only the base amount, NOT the fee
+  const closingBalance = openingBalance + baseAmount;
 
-  // Credit wallet
   const { error: updateErr } = await supabase
     .from("wallets")
     .update({ current_balance: closingBalance })
@@ -261,23 +277,21 @@ async function handleDeposit(
     return json({ error: "Payment verified but wallet credit failed. Contact support.", payment_verified: true }, 500);
   }
 
-  // Create wallet transaction
   await supabase.from("wallet_transactions").insert({
     wallet_id: wallet.id,
     transaction_type: "credit",
     direction: "inflow",
-    amount: amount,
+    amount: baseAmount,
     opening_balance: openingBalance,
     closing_balance: closingBalance,
     status: "completed",
-    narration: `Wallet deposit via Paystack — ${reference}`,
+    narration: `Wallet deposit via Paystack — ${reference} (Fee: GHS ${feeAmount.toFixed(2)})`,
     reference: reference,
     linked_record_id: paymentRecord.id as string,
     linked_record_type: "payment_record",
     created_by: userId,
   });
 
-  // Update intent → completed
   await supabase
     .from("purchase_intents")
     .update({
@@ -285,14 +299,15 @@ async function handleDeposit(
       order_context: {
         ...((intent.order_context as Record<string, unknown>) || {}),
         wallet_credited: true,
-        credited_amount: amount,
+        credited_amount: baseAmount,
+        fee_amount: feeAmount,
+        total_charged: baseAmount + feeAmount,
         new_balance: closingBalance,
         completed_at: new Date().toISOString(),
       },
     })
     .eq("id", intent.id);
 
-  // Audit log
   await supabase.from("audit_logs").insert({
     action: "wallet_deposit_completed",
     actor_id: userId,
@@ -300,7 +315,9 @@ async function handleDeposit(
     target_type: "wallet",
     target_id: wallet.id,
     metadata: {
-      amount,
+      base_amount: baseAmount,
+      fee_amount: feeAmount,
+      total_charged: baseAmount + feeAmount,
       reference,
       opening_balance: openingBalance,
       closing_balance: closingBalance,
@@ -312,20 +329,23 @@ async function handleDeposit(
     success: true,
     intent_type: "wallet_deposit",
     deposit: {
-      amount,
+      amount: baseAmount,
+      fee: feeAmount,
+      total_charged: baseAmount + feeAmount,
       new_balance: closingBalance,
       reference,
     },
   });
 }
 
-/** Handle bundle purchase: create order + trigger fulfillment */
+/** Handle bundle purchase: create order (amount_charged = base amount) */
 async function handlePurchase(
   supabase: ReturnType<typeof createClient>,
   intent: Record<string, unknown>,
   paymentRecord: Record<string, unknown>,
-  amountPaidGhs: number,
+  baseAmount: number,
   reference: string,
+  feeAmount: number,
 ) {
   const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
   const publicOrderId = generateOrderId();
@@ -343,7 +363,7 @@ async function handlePurchase(
       bundle_name: String(snapshot.plan_name || snapshot.package_name || ""),
       bundle_code: String(snapshot.plan_code || snapshot.package_code || ""),
       bundle_snapshot: intent.plan_snapshot,
-      amount_charged: amountPaidGhs,
+      amount_charged: baseAmount, // Order value = base amount (product price)
       currency: "GHS",
       intent_id: intent.id as string,
       payment_record_id: paymentRecord.id as string,
@@ -352,6 +372,8 @@ async function handlePurchase(
         customer_name: intent.customer_name,
         customer_email: intent.customer_email,
         paystack_reference: reference,
+        paystack_fee: feeAmount,
+        total_charged: baseAmount + feeAmount,
       },
     })
     .select()
@@ -362,7 +384,6 @@ async function handlePurchase(
     return json({ error: "Payment verified but order creation failed. Contact support.", payment_verified: true }, 500);
   }
 
-  // Update intent → completed
   await supabase
     .from("purchase_intents")
     .update({
@@ -376,7 +397,6 @@ async function handlePurchase(
     })
     .eq("id", intent.id);
 
-  // Audit log
   await supabase.from("audit_logs").insert({
     action: "order_created_from_payment",
     actor_role: "system",
@@ -386,20 +406,21 @@ async function handlePurchase(
       public_order_id: publicOrderId,
       intent_reference: intent.intent_reference,
       paystack_reference: reference,
-      amount: amountPaidGhs,
+      base_amount: baseAmount,
+      fee_amount: feeAmount,
+      total_charged: baseAmount + feeAmount,
       network: intent.network,
       phone: intent.phone_number,
     },
   });
 
-  // Status history
   await supabase.from("order_status_history").insert({
     order_id: order.id,
     old_status: null,
     new_status: "paid",
     source: "verify_payment",
-    note: "Order created from verified Paystack payment",
-    metadata: { paystack_reference: reference },
+    note: `Order created from verified Paystack payment (Base: GHS ${baseAmount.toFixed(2)}, Fee: GHS ${feeAmount.toFixed(2)})`,
+    metadata: { paystack_reference: reference, base_amount: baseAmount, fee_amount: feeAmount },
   });
 
   // Trigger fulfillment (fire-and-forget)
@@ -423,7 +444,6 @@ async function handlePurchase(
     console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
   }
 
-  // Refetch order for latest status
   const { data: updatedOrder } = await supabase
     .from("orders")
     .select("*")
