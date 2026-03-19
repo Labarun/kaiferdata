@@ -149,7 +149,13 @@ export default function AdminOrderDetailPage() {
             <Row label="Bundle" value={`${snap.volume || ""} — ${snap.plan_name || ""}`} />
             <Row label="Bundle Code" value={order.bundle_code as string} mono />
             <Row label="Recipient" value={order.beneficiary_number as string} mono />
-            <Row label="Amount" value={`GH₵${Number(order.amount_charged).toLocaleString()}`} bold />
+            <Row label="Order Amount" value={`GH₵${Number(order.amount_charged).toLocaleString()}`} bold />
+            {(order.metadata as Record<string, unknown>)?.paystack_fee && (
+              <>
+                <Row label="Paystack Fee" value={`GH₵${Number((order.metadata as Record<string, unknown>).paystack_fee).toFixed(2)}`} />
+                <Row label="Total Charged" value={`GH₵${Number((order.metadata as Record<string, unknown>).total_charged).toLocaleString()}`} bold />
+              </>
+            )}
             <Row label="Actor Type" value={order.actor_type as string} />
             <Row label="Source" value={order.source_channel as string} />
             <Row label="Created" value={new Date(order.created_at as string).toLocaleString()} />

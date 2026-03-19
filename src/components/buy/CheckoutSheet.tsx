@@ -1,13 +1,13 @@
 /**
  * CheckoutSheet — Premium liquid-glass checkout entry surface
- * Now with multi-step payment flow states & keyboard-safe mobile layout
+ * Now with Paystack fee breakdown display
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { DataPlan } from "@/services/purchaseIntent";
+import { calculatePaystackFee, formatGHS } from "@/services/paystackFee";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Drawer,
   DrawerContent,
@@ -48,11 +48,8 @@ interface CheckoutSheetProps {
   onCustomerEmailChange: (v: string) => void;
   onConfirm: () => void;
   loading: boolean;
-  /** Current processing sub-step label */
   processingLabel?: string;
-  /** Error message from payment flow */
   paymentError?: string | null;
-  /** Clear error and go back to review */
   onClearError?: () => void;
 }
 
@@ -76,13 +73,17 @@ export function CheckoutSheet({
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
 
-  // Sync processing/error states from parent
+  // Calculate fee breakdown
+  const feeBreakdown = useMemo(() => {
+    if (!plan) return null;
+    return calculatePaystackFee(Number(plan.amount));
+  }, [plan]);
+
   useEffect(() => {
     if (loading) setStep("processing");
     else if (paymentError) setStep("error");
   }, [loading, paymentError]);
 
-  // Reset step when sheet closes
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
@@ -93,7 +94,7 @@ export function CheckoutSheet({
     }
   }, [open]);
 
-  if (!network || !plan) return null;
+  if (!network || !plan || !feeBreakdown) return null;
 
   const dotHsl = NET_DOT[network] || "215 72% 42%";
 
@@ -123,7 +124,7 @@ export function CheckoutSheet({
   };
 
   const handleOpenChange = (v: boolean) => {
-    if (!v && step === "processing") return; // Don't dismiss during processing
+    if (!v && step === "processing") return;
     if (!v) setStep("details");
     onOpenChange(v);
   };
@@ -184,7 +185,7 @@ export function CheckoutSheet({
             </div>
           )}
 
-          {/* ── Selected plan summary card (always visible except processing) ── */}
+          {/* ── Selected plan summary card ── */}
           {step !== "processing" && step !== "error" && (
             <div className="glass-premium rounded-2xl overflow-hidden mb-6 shimmer-edge">
               <div
@@ -221,7 +222,7 @@ export function CheckoutSheet({
                 <div className="text-right shrink-0">
                   <p className="font-bold text-gradient-brand tracking-tight">
                     <span className="text-[14px]">GH₵</span>
-                    <span className="text-[20px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
+                    <span className="text-[20px] ml-[1px]">{formatGHS(feeBreakdown.baseAmount)}</span>
                   </p>
                 </div>
               </div>
@@ -256,7 +257,6 @@ export function CheckoutSheet({
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
                     )}
-                    
                     maxLength={11}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
@@ -347,13 +347,34 @@ export function CheckoutSheet({
                 {customerName && <ReviewRow label="Name" value={customerName} />}
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
+                {/* Fee breakdown */}
+                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.25)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground/55 font-medium">Amount</span>
+                    <span className="text-[12px] font-semibold text-foreground/70 tabular-nums">
+                      GH₵{formatGHS(feeBreakdown.baseAmount)}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.15)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
+                      Processing Fee
+                      <span className="text-[9px] text-muted-foreground/35 font-normal">(3%)</span>
+                    </span>
+                    <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">
+                      GH₵{formatGHS(feeBreakdown.feeAmount)}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>
                   <span className="font-bold text-gradient-brand tracking-tight">
                     <span className="text-[16px]">GH₵</span>
-                    <span className="text-[24px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
+                    <span className="text-[24px] ml-[1px]">{formatGHS(feeBreakdown.totalAmount)}</span>
                   </span>
                 </div>
               </div>
@@ -379,7 +400,7 @@ export function CheckoutSheet({
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵{Number(plan.amount).toFixed(2)}
+                  Pay GH₵{formatGHS(feeBreakdown.totalAmount)}
                 </Button>
               </div>
             </div>
@@ -399,7 +420,6 @@ export function CheckoutSheet({
                   Securing your order and connecting to Paystack. Please don't close this screen.
                 </p>
               </div>
-              {/* Progress dots */}
               <div className="flex items-center justify-center gap-2">
                 {["Order Created", "Initializing", "Redirecting"].map((label, i) => {
                   const active = processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
@@ -432,13 +452,13 @@ export function CheckoutSheet({
                   {paymentError || "Something went wrong. Please try again."}
                 </p>
               </div>
-              <div className="flex gap-2.5 max-w-xs mx-auto">
+              <div className="flex gap-2.5 px-2">
                 <Button
                   variant="glass"
                   onClick={() => { onClearError?.(); handleOpenChange(false); }}
                   className="flex-1 h-[48px] rounded-2xl text-[13px]"
                 >
-                  Cancel
+                  Close
                 </Button>
                 <Button
                   onClick={handleRetry}
@@ -455,7 +475,7 @@ export function CheckoutSheet({
   );
 }
 
-/* ── Review row sub-component ── */
+/* ── Shared row component ── */
 function ReviewRow({
   label,
   value,
@@ -468,12 +488,12 @@ function ReviewRow({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-border/15 last:border-b-0">
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 last:border-0">
       <span className="text-[11px] text-muted-foreground/55 font-medium">{label}</span>
       <span
         className={cn(
-          "text-[13px] text-foreground/75 text-right font-medium flex items-center",
-          mono && "font-mono tracking-wide"
+          "text-[12px] text-foreground/70 font-medium flex items-center",
+          mono && "font-mono tracking-wider"
         )}
       >
         {icon}
