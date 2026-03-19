@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { getDashboardPath } from "@/services/auth";
 import { Button } from "@/components/ui/button";
-import { Menu, X, MapPin, MessageCircle } from "lucide-react";
+import { Menu, X, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function PublicLayout() {
