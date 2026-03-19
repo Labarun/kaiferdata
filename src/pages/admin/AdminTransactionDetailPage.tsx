@@ -76,7 +76,13 @@ export default function AdminTransactionDetailPage() {
             <Row label="Internal Reference" value={record.internal_reference as string} mono />
             <Row label="Provider Reference" value={record.provider_reference as string} mono />
             <Row label="Provider" value={record.provider as string} />
-            <Row label="Amount" value={`GH₵${Number(record.amount).toLocaleString()}`} bold />
+            <Row label="Total Amount" value={`GH₵${Number(record.amount).toLocaleString()}`} bold />
+            {record.base_amount && (
+              <>
+                <Row label="Base Amount" value={`GH₵${Number(record.base_amount).toLocaleString()}`} />
+                <Row label="Paystack Fee" value={`GH₵${Number(record.fee_amount || 0).toFixed(2)} (${((Number(record.fee_rate) || 0) * 100).toFixed(0)}%)`} />
+              </>
+            )}
             <Row label="Currency" value={record.currency as string} />
             <Row label="Status" value={record.status as string} badge />
             <Row label="Customer Email" value={(record.customer_email as string) || "—"} />

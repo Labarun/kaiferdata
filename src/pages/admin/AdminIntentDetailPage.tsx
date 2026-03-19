@@ -60,7 +60,9 @@ export default function AdminIntentDetailPage() {
             <Row label="Status" value={intent.status as string} badge />
             <Row label="Network" value={intent.network as string} />
             <Row label="Plan" value={`${snap.volume || ""} — ${snap.plan_name || ""}`} />
-            <Row label="Amount" value={`GH₵${Number(intent.amount_expected).toLocaleString()}`} bold />
+            <Row label="Base Amount" value={intent.base_amount ? `GH₵${Number(intent.base_amount).toLocaleString()}` : `GH₵${Number(intent.amount_expected).toLocaleString()}`} bold />
+            <Row label="Paystack Fee" value={intent.fee_amount ? `GH₵${Number(intent.fee_amount).toFixed(2)} (${((Number(intent.fee_rate) || 0) * 100).toFixed(0)}%)` : "—"} />
+            <Row label="Total Charged" value={intent.total_amount ? `GH₵${Number(intent.total_amount).toLocaleString()}` : `GH₵${Number(intent.amount_expected).toLocaleString()}`} bold />
             <Row label="Phone" value={intent.phone_number as string} mono />
             <Row label="Customer Name" value={(intent.customer_name as string) || "—"} />
             <Row label="Customer Email" value={(intent.customer_email as string) || "—"} />
