@@ -1,11 +1,14 @@
 /**
- * Edge Function: fulfill-order
+ * Edge Function: fulfill-order (HARDENED)
  *
  * Reusable order fulfillment service.
- * Receives an order_id, selects a supplier, submits the request,
+ * Receives an order_id, validates payment, selects a supplier, submits the request,
  * logs everything, and updates order status through the pipeline.
  *
- * Supports: stub supplier + real supplier API via endpoint_config.
+ * SECURITY:
+ * - Verifies payment record exists and is verified before submission
+ * - Checks system toggle for order_submission_enabled
+ * - Validates order has not already been submitted
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -130,7 +133,7 @@ async function submitToSupplierApi(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
-  // Resolve supplier plan/network IDs with robust fallbacks for manual storefront packages.
+  // Resolve supplier plan/network IDs with robust fallbacks
   let supplierPlanId = order.bundle_code as string;
   let supplierNetworkId = mappedNetwork;
 
@@ -170,7 +173,6 @@ async function submitToSupplierApi(
         });
       }
 
-      // Safe fallback only when exactly one supplier package exists for this network.
       if (!pkg && supplierPackages.length === 1) {
         pkg = supplierPackages[0];
       }
@@ -187,7 +189,6 @@ async function submitToSupplierApi(
         else if (isUuid(meta.network)) supplierNetworkId = String(meta.network);
       }
 
-      // If network UUID still unresolved, borrow it from any recent synced package for same network.
       if (!isUuid(supplierNetworkId)) {
         const networkCarrier = supplierPackages.find((p) => {
           const meta = (p.source_metadata || {}) as Record<string, unknown>;
@@ -216,7 +217,6 @@ async function submitToSupplierApi(
   const amountField = orderRequestMapping.amount || "amount";
   const referenceField = orderRequestMapping.reference || "reference";
 
-  // Guardrails: if endpoint expects *_id fields, enforce UUID resolution before sending request.
   const expectsPlanUuid = /_id$/i.test(productCodeField);
   const expectsNetworkUuid = /_id$/i.test(networkField);
 
@@ -233,11 +233,9 @@ async function submitToSupplierApi(
   requestBody[amountField] = order.amount_charged;
   requestBody[referenceField] = order.public_order_id;
 
-  // Add any extra static fields from config
   const extraFields = (submitEndpoint.extra_fields || {}) as Record<string, unknown>;
   Object.assign(requestBody, extraFields);
 
-  // Make the API call
   const apiUrl = `${supplier.api_base_url}${submitPath}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), (supplier.request_timeout_ms as number) || 30000);
@@ -267,20 +265,18 @@ async function submitToSupplierApi(
       supplier_reference: null,
       delivery_message: null,
       error_message: `Supplier API returned ${apiRes.status}: ${JSON.stringify(responseData).slice(0, 300)}`,
-      raw_response: responseData as Record<string, unknown>,
+      raw_response: responseData,
     };
   }
 
-  // Parse response using mapping
   const respStatusField = orderResponseMapping.status || "status";
   const respReferenceField = orderResponseMapping.reference || "reference";
   const respMessageField = orderResponseMapping.message || "message";
 
-  const rawStatus = String(getNestedValue(responseData as Record<string, unknown>, respStatusField) || "unknown");
-  const supplierRef = String(getNestedValue(responseData as Record<string, unknown>, respReferenceField) || "");
-  const supplierMsg = String(getNestedValue(responseData as Record<string, unknown>, respMessageField) || "");
+  const rawStatus = String(getNestedValue(responseData, respStatusField) || "unknown");
+  const supplierRef = String(getNestedValue(responseData, respReferenceField) || "");
+  const supplierMsg = String(getNestedValue(responseData, respMessageField) || "");
 
-  // Normalize supplier status to outcome
   let outcome: SupplierOutcome;
   const mappedStatus = statusMapping[rawStatus] || statusMapping[rawStatus.toLowerCase()];
 
@@ -304,7 +300,7 @@ async function submitToSupplierApi(
     supplier_reference: supplierRef || null,
     delivery_message: safeMessage || null,
     error_message: outcome === "failed" ? (safeMessage || rawStatus) : null,
-    raw_response: responseData as Record<string, unknown>,
+    raw_response: responseData,
   };
 }
 
@@ -350,6 +346,17 @@ Deno.serve(async (req) => {
 
     if (!order_id) return json({ error: "Missing order_id" }, 400);
 
+    // ═══ 0. CHECK SYSTEM TOGGLE ═══
+    const { data: toggleData } = await supabase
+      .from("system_settings")
+      .select("setting_value")
+      .eq("setting_key", "order_submission_enabled")
+      .maybeSingle();
+
+    if (toggleData?.setting_value === "false") {
+      return json({ error: "Order submission is temporarily disabled by admin.", blocked: true }, 503);
+    }
+
     // ═══ 1. FETCH ORDER ═══
     const { data: order, error: orderErr } = await supabase
       .from("orders")
@@ -364,6 +371,77 @@ Deno.serve(async (req) => {
         error: `Order is in '${order.status}' state and cannot be submitted`,
         order_id: order.id,
       }, 409);
+    }
+
+    // ═══ 1b. VERIFY PAYMENT RECORD EXISTS AND IS VERIFIED ═══
+    if (order.payment_record_id) {
+      const { data: paymentRec } = await supabase
+        .from("payment_records")
+        .select("id, status, amount, base_amount, total_amount")
+        .eq("id", order.payment_record_id)
+        .single();
+
+      if (!paymentRec) {
+        console.error(`SECURITY: Order ${order_id} has no valid payment record`);
+        await supabase.from("audit_logs").insert({
+          action: "fulfillment_blocked_no_payment",
+          actor_role: "system",
+          target_type: "order",
+          target_id: order_id,
+          metadata: { payment_record_id: order.payment_record_id, public_order_id: order.public_order_id },
+        });
+        return json({ error: "Payment verification required before fulfillment" }, 403);
+      }
+
+      if (paymentRec.status !== "verified") {
+        console.error(`SECURITY: Order ${order_id} payment not verified. Status: ${paymentRec.status}`);
+        await supabase.from("audit_logs").insert({
+          action: "fulfillment_blocked_payment_unverified",
+          actor_role: "system",
+          target_type: "order",
+          target_id: order_id,
+          metadata: { payment_status: paymentRec.status, public_order_id: order.public_order_id },
+        });
+        return json({ error: "Payment has not been verified" }, 403);
+      }
+
+      // Verify payment amount covers the order amount
+      const paidBase = Number(paymentRec.base_amount) || Number(paymentRec.amount);
+      const orderAmount = Number(order.amount_charged);
+      if (paidBase < orderAmount - 0.02) {
+        console.error(`SECURITY: Underpayment! Paid base: ${paidBase}, order amount: ${orderAmount}. Order: ${order_id}`);
+        await supabase.from("audit_logs").insert({
+          action: "fulfillment_blocked_underpayment",
+          actor_role: "system",
+          target_type: "order",
+          target_id: order_id,
+          metadata: {
+            paid_base: paidBase,
+            order_amount: orderAmount,
+            difference: orderAmount - paidBase,
+            public_order_id: order.public_order_id,
+          },
+        });
+        return json({ error: "Payment amount insufficient for this order" }, 403);
+      }
+    }
+
+    // ═══ 1c. CHECK FOR DUPLICATE SUPPLIER SUBMISSION ═══
+    if (order.supplier_reference && order.status !== "failed") {
+      const { data: existingLogs } = await supabase
+        .from("supplier_request_logs")
+        .select("id, is_success, normalized_result")
+        .eq("order_id", order_id)
+        .eq("is_success", true)
+        .limit(1);
+
+      if (existingLogs && existingLogs.length > 0) {
+        return json({
+          error: "Order already submitted to supplier",
+          order_id: order.id,
+          supplier_reference: order.supplier_reference,
+        }, 409);
+      }
     }
 
     // ═══ 2. SELECT SUPPLIER ═══
@@ -408,10 +486,8 @@ Deno.serve(async (req) => {
       const hasApiUrl = (selectedSupplier as Record<string, unknown>).api_base_url;
 
       if (supportsSubmission && hasApiUrl && providerCode !== "stub") {
-        // Real supplier API submission
         result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>, supabase);
       } else {
-        // Fallback to stub
         result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);
       }
     } catch (err) {
