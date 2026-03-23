@@ -4,6 +4,7 @@
  * Supports purchase intents (bundle buy) and deposit intents (wallet top-up).
  * Server-side price resolution — NEVER trusts frontend amounts for packages.
  * Applies 3% Paystack fee. Initializes Paystack. Returns authorization_url.
+ * Rate-limited per intent_id.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { calculatePaystackFee } from "../_shared/paystack-fee.ts";
@@ -19,6 +20,25 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+// ── Simple in-memory rate limiter ──
+const recentRequests = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const timestamps = (recentRequests.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  timestamps.push(now);
+  recentRequests.set(key, timestamps);
+  if (recentRequests.size > 1000) {
+    for (const [k, v] of recentRequests) {
+      if (v.every(t => now - t > RATE_LIMIT_WINDOW_MS)) recentRequests.delete(k);
+    }
+  }
+  return true;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -37,6 +57,11 @@ Deno.serve(async (req) => {
     const { intent_id } = body;
 
     if (!intent_id) return json({ error: "Missing intent_id" }, 400);
+
+    // ═══ RATE LIMIT CHECK ═══
+    if (!checkRateLimit(`init:${intent_id}`)) {
+      return json({ error: "Too many payment initialization attempts. Please wait." }, 429);
+    }
 
     // ── 0. CHECK SYSTEM SAFETY TOGGLES ──
     const { data: safetySettings } = await supabase
@@ -90,22 +115,18 @@ Deno.serve(async (req) => {
     let authoritative_base_amount: number;
 
     if (isDeposit) {
-      // For deposits, the user chooses the amount — use intent.amount_expected
-      // But enforce a minimum and maximum
       const depositAmount = Number(intent.amount_expected);
       if (!depositAmount || depositAmount < 1 || depositAmount > 50000) {
         return json({ error: "Invalid deposit amount" }, 422);
       }
       authoritative_base_amount = Math.round(depositAmount * 100) / 100;
     } else {
-      // For package purchases: RESOLVE PRICE FROM DATABASE, NEVER TRUST FRONTEND
       const packageId = snapshot.id as string;
       
       if (!packageId) {
         return json({ error: "Invalid package reference. Please start a new order." }, 422);
       }
 
-      // Try data_packages first (primary catalog)
       let resolvedPrice: number | null = null;
       let packageValid = false;
 
@@ -119,7 +140,6 @@ Deno.serve(async (req) => {
         if (!pkg.is_active) {
           return json({ error: "This package is no longer available." }, 422);
         }
-        // Verify visibility based on actor type
         if (intent.actor_type === "guest" && !pkg.visible_on_public) {
           return json({ error: "This package is not available for guest purchase." }, 422);
         }
@@ -127,7 +147,6 @@ Deno.serve(async (req) => {
         packageValid = true;
       }
 
-      // Fallback: try data_plans table
       if (!packageValid) {
         const { data: plan } = await supabase
           .from("data_plans")
@@ -160,7 +179,6 @@ Deno.serve(async (req) => {
         return json({ error: "Package not found. Please start a new order." }, 422);
       }
 
-      // CRITICAL: Check if frontend amount matches server price
       const frontendAmount = Number(intent.amount_expected);
       if (Math.abs(frontendAmount - resolvedPrice) > 0.01) {
         console.error(`SECURITY: Price manipulation detected! Frontend sent ${frontendAmount}, server price is ${resolvedPrice}. Intent: ${intent.intent_reference}`);
@@ -198,10 +216,8 @@ Deno.serve(async (req) => {
         return json({ error: "Price has changed. Please start a new order." }, 422);
       }
 
-      // Use the SERVER-RESOLVED price as authoritative
       authoritative_base_amount = resolvedPrice;
 
-      // Update intent with corrected server price (in case of tiny rounding differences)
       if (Math.abs(frontendAmount - resolvedPrice) > 0) {
         await supabase
           .from("purchase_intents")
@@ -240,7 +256,7 @@ Deno.serve(async (req) => {
 
     const paystackPayload = {
       email: customerEmail,
-      amount: Math.round(breakdown.totalAmount * 100), // pesewas
+      amount: Math.round(breakdown.totalAmount * 100),
       currency: "GHS",
       reference: paystackReference,
       callback_url: callbackUrl,
@@ -286,7 +302,7 @@ Deno.serve(async (req) => {
         fee_amount: breakdown.feeAmount,
         fee_rate: breakdown.feeRate,
         total_amount: breakdown.totalAmount,
-        amount_expected: breakdown.totalAmount, // total is what Paystack will collect
+        amount_expected: breakdown.totalAmount,
         order_context: {
           ...(intent.order_context as Record<string, unknown> || {}),
           paystack_reference: paystackReference,

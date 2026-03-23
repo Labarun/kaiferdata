@@ -1,15 +1,18 @@
 /**
- * Edge Function: verify-payment (HARDENED)
+ * Edge Function: verify-payment (HARDENED + ATOMIC)
  *
  * Verifies a Paystack transaction with STRICT amount matching.
  * - Bundle purchase → creates payment record + order
  * - Wallet deposit → creates payment record + credits wallet (base amount only)
  *
  * SECURITY:
- * - Exact amount match required (0.01 GHS tolerance)
+ * - Atomic intent claiming prevents duplicate processing
+ * - Exact amount match required (0.02 GHS tolerance)
+ * - Atomic wallet credit via DB function (prevents race conditions)
  * - Idempotent: re-calling with verified reference returns existing result
  * - Server re-resolves package price before order creation
  * - Suspicious payments are flagged and blocked
+ * - In-memory rate limiting per reference
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -30,6 +33,26 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+// ── Simple in-memory rate limiter ──
+const recentRequests = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 5; // max 5 verify calls per reference per minute
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const timestamps = (recentRequests.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  timestamps.push(now);
+  recentRequests.set(key, timestamps);
+  // Cleanup old keys periodically
+  if (recentRequests.size > 1000) {
+    for (const [k, v] of recentRequests) {
+      if (v.every(t => now - t > RATE_LIMIT_WINDOW_MS)) recentRequests.delete(k);
+    }
+  }
+  return true;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -52,7 +75,19 @@ Deno.serve(async (req) => {
       return json({ error: "Missing payment reference" }, 400);
     }
 
-    // ═══ 1. IDEMPOTENCY CHECK ═══
+    // ═══ RATE LIMIT CHECK ═══
+    if (!checkRateLimit(`verify:${reference}`)) {
+      await supabase.from("audit_logs").insert({
+        action: "rate_limit_verify_payment",
+        actor_role: "system",
+        target_type: "payment_reference",
+        target_id: reference,
+        metadata: { reason: "too_many_requests", reference },
+      });
+      return json({ error: "Too many verification attempts. Please wait and try again." }, 429);
+    }
+
+    // ═══ 1. IDEMPOTENCY CHECK — already verified payment? ═══
     const { data: existingPayment } = await supabase
       .from("payment_records")
       .select("id, status, intent_id")
@@ -99,37 +134,77 @@ Deno.serve(async (req) => {
     const amountPaidGhs = txn.amount / 100;
     const customerEmail = txn.customer?.email || null;
 
-    // ═══ 3. FIND THE INTENT ═══
-    const { data: intent, error: intentErr } = await supabase
+    // ═══ 3. FIND INTENT BY REFERENCE, THEN ATOMICALLY CLAIM ═══
+    const { data: intentLookup, error: lookupErr } = await supabase
       .from("purchase_intents")
-      .select("*")
+      .select("id, status")
       .eq("intent_reference", reference)
       .maybeSingle();
 
-    if (intentErr || !intent) {
+    if (lookupErr || !intentLookup) {
       return json({ error: "Intent not found for this reference" }, 404);
     }
 
-    // Block if intent is already completed (prevent replay)
-    if (intent.status === "completed") {
-      if (intent.intent_type === "wallet_deposit") {
+    // If already completed, return idempotent response
+    if (intentLookup.status === "completed") {
+      const { data: existingIntent } = await supabase
+        .from("purchase_intents")
+        .select("intent_type")
+        .eq("id", intentLookup.id)
+        .single();
+
+      if (existingIntent?.intent_type === "wallet_deposit") {
         return json({ success: true, already_processed: true, intent_type: "wallet_deposit" });
       }
       const { data: existingOrder } = await supabase
         .from("orders")
         .select("*")
-        .eq("intent_id", intent.id)
+        .eq("intent_id", intentLookup.id)
         .maybeSingle();
       if (existingOrder) {
         return json({ success: true, already_processed: true, order: existingOrder });
       }
     }
 
-    // Block if intent is in a terminal failure state (prevent re-processing)
-    if (["failed", "cancelled", "expired"].includes(intent.status)) {
-      return json({ error: "This payment request is no longer valid. Please create a new order.", intent_reference: intent.intent_reference }, 410);
+    // Block terminal failure states
+    if (["failed", "cancelled", "expired"].includes(intentLookup.status)) {
+      return json({ error: "This payment request is no longer valid. Please create a new order.", intent_reference: reference }, 410);
     }
 
+    // Block if already being processed by another request (payment_confirmed means another verify already succeeded)
+    if (intentLookup.status === "payment_confirmed" || intentLookup.status === "fulfilling") {
+      // Check if order/deposit already exists
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("intent_id", intentLookup.id)
+        .maybeSingle();
+      if (existingOrder) {
+        return json({ success: true, already_processed: true, order: existingOrder });
+      }
+      // If payment_confirmed but no order yet, it's mid-processing — wait
+      return json({ error: "This payment is currently being processed. Please wait.", processing: true }, 409);
+    }
+
+    // ═══ ATOMIC CLAIM: only one caller wins ═══
+    const { data: claimedRows } = await supabase.rpc("claim_intent_for_verification", {
+      _intent_id: intentLookup.id,
+    });
+
+    const claimed = Array.isArray(claimedRows) ? claimedRows[0] : claimedRows;
+    if (!claimed) {
+      // Another request already claimed it
+      await supabase.from("audit_logs").insert({
+        action: "verify_payment_concurrent_blocked",
+        actor_role: "system",
+        target_type: "purchase_intent",
+        target_id: intentLookup.id,
+        metadata: { reference, current_status: intentLookup.status },
+      });
+      return json({ error: "This payment is already being processed.", processing: true }, 409);
+    }
+
+    const intent = claimed;
     const isDeposit = intent.intent_type === "wallet_deposit";
 
     // Extract fee breakdown from intent (set during initialize-payment by SERVER)
@@ -178,14 +253,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ═══ 5. STRICT AMOUNT VERIFICATION (0.01 GHS tolerance) ═══
+    // ═══ 5. STRICT AMOUNT VERIFICATION (0.02 GHS tolerance) ═══
     const expectedTotal = intentTotalAmount;
     const amountDiff = Math.abs(amountPaidGhs - expectedTotal);
     
     if (amountDiff > 0.02) {
       console.error(`SECURITY: Amount mismatch! Expected ${expectedTotal}, got ${amountPaidGhs} for ${reference}. Diff: ${amountDiff}`);
 
-      // Record the suspicious payment
       await supabase.from("payment_records").upsert(
         {
           provider: "paystack",
@@ -222,7 +296,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", intent.id);
 
-      // Audit log for admin visibility
       await supabase.from("audit_logs").insert({
         action: "payment_blocked_amount_mismatch",
         actor_role: "system",
@@ -252,7 +325,6 @@ Deno.serve(async (req) => {
       if (packageId) {
         let serverPrice: number | null = null;
 
-        // Check data_packages first
         const { data: pkg } = await supabase
           .from("data_packages")
           .select("selling_price, is_active")
@@ -262,7 +334,6 @@ Deno.serve(async (req) => {
         if (pkg && pkg.is_active) {
           serverPrice = Number(pkg.selling_price);
         } else {
-          // Fallback to data_plans
           const { data: plan } = await supabase
             .from("data_plans")
             .select("amount, is_active")
@@ -289,9 +360,6 @@ Deno.serve(async (req) => {
               paid_amount: amountPaidGhs,
             },
           });
-
-          // Still allow if they paid the correct total — price change is informational
-          // The critical check is the amount match above
         }
       }
     }
@@ -324,6 +392,8 @@ Deno.serve(async (req) => {
 
     if (prErr) {
       console.error("Failed to create payment record:", prErr);
+      // Release the intent back so it can be retried
+      await supabase.from("purchase_intents").update({ status: "pending_payment" }).eq("id", intent.id);
       return json({ error: "Failed to record payment" }, 500);
     }
 
@@ -345,7 +415,7 @@ Deno.serve(async (req) => {
   }
 });
 
-/** Handle wallet deposit: credit wallet with BASE amount (not fee) */
+/** Handle wallet deposit: credit wallet with BASE amount using ATOMIC DB function */
 async function handleDeposit(
   supabase: ReturnType<typeof createClient>,
   intent: Record<string, unknown>,
@@ -360,9 +430,10 @@ async function handleDeposit(
     return json({ error: "Invalid deposit: no user associated", payment_verified: true }, 422);
   }
 
+  // Get wallet ID
   const { data: wallet, error: walletErr } = await supabase
     .from("wallets")
-    .select("id, current_balance")
+    .select("id")
     .eq("user_id", userId)
     .single();
 
@@ -371,33 +442,35 @@ async function handleDeposit(
     return json({ error: "Wallet not found. Contact support.", payment_verified: true }, 500);
   }
 
-  const openingBalance = Number(wallet.current_balance);
-  const closingBalance = openingBalance + baseAmount;
+  // ═══ ATOMIC WALLET CREDIT via DB function ═══
+  // This uses SELECT FOR UPDATE internally to prevent race conditions
+  const { data: creditResult, error: creditErr } = await supabase.rpc("credit_wallet_atomic", {
+    _wallet_id: wallet.id,
+    _amount: baseAmount,
+    _narration: `Wallet deposit via Paystack — ${reference} (Fee: GHS ${feeAmount.toFixed(2)})`,
+    _reference: reference,
+    _linked_record_id: paymentRecord.id as string,
+    _linked_record_type: "payment_record",
+    _created_by: userId,
+  });
 
-  const { error: updateErr } = await supabase
-    .from("wallets")
-    .update({ current_balance: closingBalance })
-    .eq("id", wallet.id);
-
-  if (updateErr) {
-    console.error("Failed to credit wallet:", updateErr);
+  if (creditErr) {
+    console.error("Atomic wallet credit failed:", creditErr);
+    // Don't release intent — payment is verified, admin can resolve
+    await supabase.from("audit_logs").insert({
+      action: "wallet_credit_failed",
+      actor_id: userId,
+      actor_role: "system",
+      target_type: "wallet",
+      target_id: wallet.id,
+      metadata: { error: creditErr.message, reference, base_amount: baseAmount },
+    });
     return json({ error: "Payment verified but wallet credit failed. Contact support.", payment_verified: true }, 500);
   }
 
-  await supabase.from("wallet_transactions").insert({
-    wallet_id: wallet.id,
-    transaction_type: "credit",
-    direction: "inflow",
-    amount: baseAmount,
-    opening_balance: openingBalance,
-    closing_balance: closingBalance,
-    status: "completed",
-    narration: `Wallet deposit via Paystack — ${reference} (Fee: GHS ${feeAmount.toFixed(2)})`,
-    reference: reference,
-    linked_record_id: paymentRecord.id as string,
-    linked_record_type: "payment_record",
-    created_by: userId,
-  });
+  const creditRow = Array.isArray(creditResult) ? creditResult[0] : creditResult;
+  const closingBalance = Number(creditRow?.new_balance || 0);
+  const openingBalance = Number(creditRow?.opening_bal || 0);
 
   await supabase
     .from("purchase_intents")
@@ -463,6 +536,17 @@ async function handlePurchase(
 
   const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
   const publicOrderId = generateOrderId();
+
+  // ═══ DUPLICATE ORDER CHECK before insert ═══
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("intent_id", intent.id as string)
+    .maybeSingle();
+
+  if (existingOrder) {
+    return json({ success: true, already_processed: true, order: existingOrder });
+  }
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")

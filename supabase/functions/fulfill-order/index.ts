@@ -1,14 +1,15 @@
 /**
- * Edge Function: fulfill-order (HARDENED)
+ * Edge Function: fulfill-order (HARDENED + ATOMIC)
  *
  * Reusable order fulfillment service.
  * Receives an order_id, validates payment, selects a supplier, submits the request,
  * logs everything, and updates order status through the pipeline.
  *
  * SECURITY:
+ * - Atomic order claiming via DB function (prevents duplicate supplier submission)
  * - Verifies payment record exists and is verified before submission
  * - Checks system toggle for order_submission_enabled
- * - Validates order has not already been submitted
+ * - In-memory rate limiting per order_id
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -81,6 +82,25 @@ function looksLikeMachineId(value: string): boolean {
   return isUuid(v) || /^ORD-[A-Z0-9-]+$/i.test(v);
 }
 
+// ── Simple in-memory rate limiter ──
+const recentRequests = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 3; // max 3 fulfill calls per order per minute
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const timestamps = (recentRequests.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= RATE_LIMIT_MAX) return false;
+  timestamps.push(now);
+  recentRequests.set(key, timestamps);
+  if (recentRequests.size > 1000) {
+    for (const [k, v] of recentRequests) {
+      if (v.every(t => now - t > RATE_LIMIT_WINDOW_MS)) recentRequests.delete(k);
+    }
+  }
+  return true;
+}
+
 /** ── Stub Supplier Implementation ── */
 async function submitToStubSupplier(
   order: Record<string, unknown>,
@@ -115,7 +135,6 @@ async function submitToSupplierApi(
   const submitPath = (submitEndpoint.path as string) || "/v1/orders";
   const submitMethod = (submitEndpoint.method as string) || "POST";
 
-  // Build auth headers
   const secretName = (authConfig.secret_name as string) || "SUPPLIER_API_KEY";
   const apiKey = Deno.env.get(secretName);
   if (!apiKey) throw new Error(`Missing supplier secret: ${secretName}`);
@@ -129,11 +148,9 @@ async function submitToSupplierApi(
     default: authHeaderValue = apiKey;
   }
 
-  // Build request body using field mapping
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const mappedNetwork = reverseNetworkMapping[order.network as string] || (order.network as string);
 
-  // Resolve supplier plan/network IDs with robust fallbacks
   let supplierPlanId = order.bundle_code as string;
   let supplierNetworkId = mappedNetwork;
 
@@ -346,6 +363,18 @@ Deno.serve(async (req) => {
 
     if (!order_id) return json({ error: "Missing order_id" }, 400);
 
+    // ═══ RATE LIMIT CHECK ═══
+    if (!checkRateLimit(`fulfill:${order_id}`)) {
+      await supabase.from("audit_logs").insert({
+        action: "rate_limit_fulfill_order",
+        actor_role: "system",
+        target_type: "order",
+        target_id: order_id,
+        metadata: { reason: "too_many_requests" },
+      });
+      return json({ error: "Too many fulfillment attempts. Please wait." }, 429);
+    }
+
     // ═══ 0. CHECK SYSTEM TOGGLE ═══
     const { data: toggleData } = await supabase
       .from("system_settings")
@@ -357,20 +386,45 @@ Deno.serve(async (req) => {
       return json({ error: "Order submission is temporarily disabled by admin.", blocked: true }, 503);
     }
 
-    // ═══ 1. FETCH ORDER ═══
-    const { data: order, error: orderErr } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", order_id)
-      .single();
+    // ═══ 1. ATOMIC ORDER CLAIM ═══
+    // This atomically sets status to 'processing' only if currently in 'paid'/'queued'/'failed'
+    // Prevents two concurrent fulfill calls from both submitting to supplier
+    const { data: claimedRows, error: claimErr } = await supabase.rpc("claim_order_for_fulfillment", {
+      _order_id: order_id,
+    });
 
-    if (orderErr || !order) return json({ error: "Order not found" }, 404);
+    const order = Array.isArray(claimedRows) ? claimedRows[0] : claimedRows;
 
-    if (!["paid", "queued", "failed"].includes(order.status)) {
-      return json({
-        error: `Order is in '${order.status}' state and cannot be submitted`,
-        order_id: order.id,
-      }, 409);
+    if (claimErr || !order) {
+      // Could not claim — either order doesn't exist or is already processing/delivered
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id, status, supplier_reference, public_order_id")
+        .eq("id", order_id)
+        .single();
+
+      if (!existingOrder) return json({ error: "Order not found" }, 404);
+
+      if (existingOrder.status === "processing") {
+        await supabase.from("audit_logs").insert({
+          action: "fulfill_concurrent_blocked",
+          actor_role: "system",
+          target_type: "order",
+          target_id: order_id,
+          metadata: { current_status: existingOrder.status, public_order_id: existingOrder.public_order_id },
+        });
+        return json({ error: "Order is already being processed by another request.", order_id, processing: true }, 409);
+      }
+
+      if (["delivered", "cancelled", "refunded"].includes(existingOrder.status)) {
+        return json({
+          error: `Order is in '${existingOrder.status}' state and cannot be resubmitted`,
+          order_id: existingOrder.id,
+          supplier_reference: existingOrder.supplier_reference,
+        }, 409);
+      }
+
+      return json({ error: `Order cannot be claimed for fulfillment (status: ${existingOrder.status})` }, 409);
     }
 
     // ═══ 1b. VERIFY PAYMENT RECORD EXISTS AND IS VERIFIED ═══
@@ -383,6 +437,8 @@ Deno.serve(async (req) => {
 
       if (!paymentRec) {
         console.error(`SECURITY: Order ${order_id} has no valid payment record`);
+        // Revert order status since we claimed it
+        await supabase.from("orders").update({ status: "paid" }).eq("id", order_id);
         await supabase.from("audit_logs").insert({
           action: "fulfillment_blocked_no_payment",
           actor_role: "system",
@@ -395,6 +451,7 @@ Deno.serve(async (req) => {
 
       if (paymentRec.status !== "verified") {
         console.error(`SECURITY: Order ${order_id} payment not verified. Status: ${paymentRec.status}`);
+        await supabase.from("orders").update({ status: "paid" }).eq("id", order_id);
         await supabase.from("audit_logs").insert({
           action: "fulfillment_blocked_payment_unverified",
           actor_role: "system",
@@ -405,11 +462,11 @@ Deno.serve(async (req) => {
         return json({ error: "Payment has not been verified" }, 403);
       }
 
-      // Verify payment amount covers the order amount
       const paidBase = Number(paymentRec.base_amount) || Number(paymentRec.amount);
       const orderAmount = Number(order.amount_charged);
       if (paidBase < orderAmount - 0.02) {
         console.error(`SECURITY: Underpayment! Paid base: ${paidBase}, order amount: ${orderAmount}. Order: ${order_id}`);
+        await supabase.from("orders").update({ status: "paid" }).eq("id", order_id);
         await supabase.from("audit_logs").insert({
           action: "fulfillment_blocked_underpayment",
           actor_role: "system",
@@ -426,8 +483,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ═══ 1c. CHECK FOR DUPLICATE SUPPLIER SUBMISSION ═══
-    if (order.supplier_reference && order.status !== "failed") {
+    // ═══ 1c. CHECK FOR DUPLICATE SUPPLIER SUBMISSION (belt + suspenders) ═══
+    if (order.supplier_reference) {
       const { data: existingLogs } = await supabase
         .from("supplier_request_logs")
         .select("id, is_success, normalized_result")
@@ -443,6 +500,9 @@ Deno.serve(async (req) => {
         }, 409);
       }
     }
+
+    // Log the claim
+    await logStatusChange(supabase, order_id, order.status, "processing", "fulfillment_service", "Atomically claimed for supplier submission");
 
     // ═══ 2. SELECT SUPPLIER ═══
     const { data: suppliers } = await supabase
@@ -466,15 +526,6 @@ Deno.serve(async (req) => {
     if (!selectedSupplier) {
       selectedSupplier = { id: null, provider_code: "stub", name: "Stub Supplier" };
     }
-
-    // ═══ 3. UPDATE ORDER → submitting ═══
-    const oldStatus = order.status;
-    await supabase
-      .from("orders")
-      .update({ status: "processing", supplier_status: "submitting" })
-      .eq("id", order_id);
-
-    await logStatusChange(supabase, order_id, oldStatus, "processing", "fulfillment_service", "Submitting to supplier");
 
     // ═══ 4. SUBMIT TO SUPPLIER ═══
     const requestStarted = new Date().toISOString();
