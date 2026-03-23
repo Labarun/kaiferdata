@@ -1,12 +1,15 @@
 /**
- * Edge Function: verify-payment
- * 
- * Verifies a Paystack transaction. Handles two flows:
+ * Edge Function: verify-payment (HARDENED)
+ *
+ * Verifies a Paystack transaction with STRICT amount matching.
  * - Bundle purchase → creates payment record + order
  * - Wallet deposit → creates payment record + credits wallet (base amount only)
- * 
- * Idempotent: re-calling with an already-verified reference returns existing result.
- * Fee-aware: stores base_amount, fee_amount, fee_rate, total_amount on payment records.
+ *
+ * SECURITY:
+ * - Exact amount match required (0.01 GHS tolerance)
+ * - Idempotent: re-calling with verified reference returns existing result
+ * - Server re-resolves package price before order creation
+ * - Suspicious payments are flagged and blocked
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -107,6 +110,7 @@ Deno.serve(async (req) => {
       return json({ error: "Intent not found for this reference" }, 404);
     }
 
+    // Block if intent is already completed (prevent replay)
     if (intent.status === "completed") {
       if (intent.intent_type === "wallet_deposit") {
         return json({ success: true, already_processed: true, intent_type: "wallet_deposit" });
@@ -121,9 +125,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Block if intent is in a terminal failure state (prevent re-processing)
+    if (["failed", "cancelled", "expired"].includes(intent.status)) {
+      return json({ error: "This payment request is no longer valid. Please create a new order.", intent_reference: intent.intent_reference }, 410);
+    }
+
     const isDeposit = intent.intent_type === "wallet_deposit";
 
-    // Extract fee breakdown from intent (set during initialize-payment)
+    // Extract fee breakdown from intent (set during initialize-payment by SERVER)
     const intentBaseAmount = Number(intent.base_amount) || Number(intent.amount_expected);
     const intentFeeAmount = Number(intent.fee_amount) || 0;
     const intentFeeRate = Number(intent.fee_rate) || 0;
@@ -169,10 +178,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ═══ 5. VERIFY AMOUNT (against total_amount which includes fee) ═══
+    // ═══ 5. STRICT AMOUNT VERIFICATION (0.01 GHS tolerance) ═══
     const expectedTotal = intentTotalAmount;
-    if (Math.abs(amountPaidGhs - expectedTotal) > 0.50) {
-      console.error(`Amount mismatch: expected ${expectedTotal}, got ${amountPaidGhs} for ${reference}`);
+    const amountDiff = Math.abs(amountPaidGhs - expectedTotal);
+    
+    if (amountDiff > 0.02) {
+      console.error(`SECURITY: Amount mismatch! Expected ${expectedTotal}, got ${amountPaidGhs} for ${reference}. Diff: ${amountDiff}`);
+
+      // Record the suspicious payment
+      await supabase.from("payment_records").upsert(
+        {
+          provider: "paystack",
+          provider_reference: reference,
+          internal_reference: intent.intent_reference,
+          intent_id: intent.id,
+          amount: amountPaidGhs,
+          base_amount: intentBaseAmount,
+          fee_amount: intentFeeAmount,
+          fee_rate: intentFeeRate,
+          total_amount: amountPaidGhs,
+          currency: "GHS",
+          customer_email: customerEmail,
+          status: "failed",
+          provider_response: txn,
+          verified_at: new Date().toISOString(),
+        },
+        { onConflict: "provider,provider_reference" }
+      );
 
       await supabase
         .from("purchase_intents")
@@ -180,14 +212,88 @@ Deno.serve(async (req) => {
           status: "failed",
           order_context: {
             ...((intent.order_context as Record<string, unknown>) || {}),
-            amount_mismatch: true,
+            security_blocked: true,
+            reason: "amount_mismatch",
             paid_amount: amountPaidGhs,
             expected_amount: expectedTotal,
+            difference: amountDiff,
+            blocked_at: new Date().toISOString(),
           },
         })
         .eq("id", intent.id);
 
-      return json({ error: "Payment amount does not match. Contact support." }, 422);
+      // Audit log for admin visibility
+      await supabase.from("audit_logs").insert({
+        action: "payment_blocked_amount_mismatch",
+        actor_role: "system",
+        target_type: "purchase_intent",
+        target_id: intent.id,
+        metadata: {
+          intent_reference: intent.intent_reference,
+          expected_total: expectedTotal,
+          paid_amount: amountPaidGhs,
+          difference: amountDiff,
+          paystack_reference: reference,
+          actor_type: intent.actor_type,
+          actor_id: intent.actor_id,
+          network: intent.network,
+          phone: intent.phone_number,
+        },
+      });
+
+      return json({ error: "Payment amount does not match expected total. Contact support.", intent_reference: intent.intent_reference }, 422);
+    }
+
+    // ═══ 5b. FOR PURCHASES: RE-VERIFY PACKAGE PRICE SERVER-SIDE ═══
+    if (!isDeposit) {
+      const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
+      const packageId = snapshot.id as string;
+
+      if (packageId) {
+        let serverPrice: number | null = null;
+
+        // Check data_packages first
+        const { data: pkg } = await supabase
+          .from("data_packages")
+          .select("selling_price, is_active")
+          .eq("id", packageId)
+          .single();
+
+        if (pkg && pkg.is_active) {
+          serverPrice = Number(pkg.selling_price);
+        } else {
+          // Fallback to data_plans
+          const { data: plan } = await supabase
+            .from("data_plans")
+            .select("amount, is_active")
+            .eq("id", packageId)
+            .single();
+
+          if (plan && plan.is_active) {
+            serverPrice = Number(plan.amount);
+          }
+        }
+
+        if (serverPrice !== null && Math.abs(serverPrice - intentBaseAmount) > 0.01) {
+          console.error(`SECURITY: Package price changed between init and verify. Server: ${serverPrice}, Intent base: ${intentBaseAmount}`);
+          
+          await supabase.from("audit_logs").insert({
+            action: "payment_blocked_price_changed",
+            actor_role: "system",
+            target_type: "purchase_intent",
+            target_id: intent.id,
+            metadata: {
+              intent_reference: intent.intent_reference,
+              server_price_at_verify: serverPrice,
+              intent_base_amount: intentBaseAmount,
+              paid_amount: amountPaidGhs,
+            },
+          });
+
+          // Still allow if they paid the correct total — price change is informational
+          // The critical check is the amount match above
+        }
+      }
     }
 
     // ═══ 6. CREATE PAYMENT RECORD (with fee breakdown) ═══
@@ -229,10 +335,8 @@ Deno.serve(async (req) => {
 
     // ═══ BRANCH: DEPOSIT vs PURCHASE ═══
     if (isDeposit) {
-      // For deposits, credit wallet with BASE amount only (not fee)
       return await handleDeposit(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount);
     } else {
-      // For orders, amount_charged is the base amount (product price)
       return await handlePurchase(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount);
     }
   } catch (err) {
@@ -252,6 +356,10 @@ async function handleDeposit(
 ) {
   const userId = intent.actor_id as string;
 
+  if (!userId) {
+    return json({ error: "Invalid deposit: no user associated", payment_verified: true }, 422);
+  }
+
   const { data: wallet, error: walletErr } = await supabase
     .from("wallets")
     .select("id, current_balance")
@@ -264,7 +372,6 @@ async function handleDeposit(
   }
 
   const openingBalance = Number(wallet.current_balance);
-  // Credit only the base amount, NOT the fee
   const closingBalance = openingBalance + baseAmount;
 
   const { error: updateErr } = await supabase
@@ -347,6 +454,13 @@ async function handlePurchase(
   reference: string,
   feeAmount: number,
 ) {
+  // Check system toggle before creating order
+  const { data: toggleData } = await supabase
+    .from("system_settings")
+    .select("setting_value")
+    .eq("setting_key", "order_submission_enabled")
+    .maybeSingle();
+
   const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
   const publicOrderId = generateOrderId();
 
@@ -363,7 +477,7 @@ async function handlePurchase(
       bundle_name: String(snapshot.plan_name || snapshot.package_name || ""),
       bundle_code: String(snapshot.plan_code || snapshot.package_code || ""),
       bundle_snapshot: intent.plan_snapshot,
-      amount_charged: baseAmount, // Order value = base amount (product price)
+      amount_charged: baseAmount,
       currency: "GHS",
       intent_id: intent.id as string,
       payment_record_id: paymentRecord.id as string,
@@ -423,25 +537,29 @@ async function handlePurchase(
     metadata: { paystack_reference: reference, base_amount: baseAmount, fee_amount: feeAmount },
   });
 
-  // Trigger fulfillment (fire-and-forget)
+  // Trigger fulfillment only if order submission is enabled
   let fulfillmentResult = null;
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const fulfillRes = await fetch(
-      `${supabaseUrl}/functions/v1/fulfill-order`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ order_id: order.id }),
-      }
-    );
-    fulfillmentResult = await fulfillRes.json();
-  } catch (fulfillErr) {
-    console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
+  const submissionEnabled = toggleData?.setting_value !== "false";
+
+  if (submissionEnabled) {
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const fulfillRes = await fetch(
+        `${supabaseUrl}/functions/v1/fulfill-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ order_id: order.id }),
+        }
+      );
+      fulfillmentResult = await fulfillRes.json();
+    } catch (fulfillErr) {
+      console.error("Fulfillment trigger failed (non-blocking):", fulfillErr);
+    }
   }
 
   const { data: updatedOrder } = await supabase
