@@ -885,6 +885,90 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_intent_for_verification: {
+        Args: { _intent_id: string }
+        Returns: {
+          actor_id: string | null
+          actor_type: string
+          amount_expected: number
+          base_amount: number | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          expires_at: string | null
+          fee_amount: number | null
+          fee_rate: number | null
+          id: string
+          intent_reference: string
+          intent_type: string
+          network: string
+          order_context: Json | null
+          payment_method: string | null
+          phone_number: string
+          plan_id: string | null
+          plan_snapshot: Json
+          source_channel: string
+          status: Database["public"]["Enums"]["intent_status"]
+          total_amount: number | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "purchase_intents"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_order_for_fulfillment: {
+        Args: { _order_id: string }
+        Returns: {
+          actor_id: string | null
+          actor_type: string
+          amount_charged: number
+          beneficiary_number: string
+          bundle_code: string
+          bundle_name: string
+          bundle_snapshot: Json
+          created_at: string
+          currency: string
+          delivery_message: string | null
+          id: string
+          intent_id: string | null
+          metadata: Json | null
+          network: string
+          origin_type: string
+          payment_record_id: string | null
+          public_order_id: string
+          source_channel: string
+          status: Database["public"]["Enums"]["order_status"]
+          supplier_reference: string | null
+          supplier_status: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      credit_wallet_atomic: {
+        Args: {
+          _amount: number
+          _created_by?: string
+          _linked_record_id?: string
+          _linked_record_type?: string
+          _narration: string
+          _reference: string
+          _wallet_id: string
+        }
+        Returns: {
+          closing_bal: number
+          new_balance: number
+          opening_bal: number
+          txn_id: string
+        }[]
+      }
       get_account_status: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["account_status"]
