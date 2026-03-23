@@ -134,13 +134,7 @@ Deno.serve(async (req) => {
     const amountPaidGhs = txn.amount / 100;
     const customerEmail = txn.customer?.email || null;
 
-    // ═══ 3. ATOMICALLY CLAIM THE INTENT ═══
-    // This prevents two concurrent verify calls from both processing
-    const { data: claimedIntents, error: claimErr } = await supabase
-      .rpc("claim_intent_for_verification", { _intent_id: undefined as unknown as string })
-      // We need to find the intent first by reference
-    ;
-    // Actually we need to find by reference first, then claim by id
+    // ═══ 3. FIND INTENT BY REFERENCE, THEN ATOMICALLY CLAIM ═══
     const { data: intentLookup, error: lookupErr } = await supabase
       .from("purchase_intents")
       .select("id, status")
