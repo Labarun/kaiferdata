@@ -5,7 +5,7 @@
  * HMAC-SHA256 signature verification, safe status transitions, full audit trail.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
