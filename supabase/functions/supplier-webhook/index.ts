@@ -37,10 +37,11 @@ function normalizeStatus(rawStatus: string, statusMapping: Record<string, string
 async function verifySignature(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
   if (!signatureHeader) return false;
   try {
-    // Support "sha256=XXXX" or plain hex
     const sig = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
-    const expected = hmac("sha256", secret, rawBody, "utf8", "hex") as string;
-    // Constant-time comparison
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const mac = await crypto.subtle.sign("HMAC", key, enc.encode(rawBody));
+    const expected = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, "0")).join("");
     if (sig.length !== expected.length) return false;
     let mismatch = 0;
     for (let i = 0; i < sig.length; i++) {
