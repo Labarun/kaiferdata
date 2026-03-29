@@ -2,15 +2,15 @@
  * Edge Function: supplier-webhook
  *
  * Receives order status update webhooks from AfroHubGH.
- * HMAC-SHA256 signature verification, safe status transitions, full audit trail.
+ * HMAC-SHA256 signature verification (primary header: X-AHG-Signature),
+ * safe status transitions, full audit trail, secure-by-default.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-webhook-secret, x-webhook-signature, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-webhook-secret, x-webhook-signature, x-ahg-signature, x-hub-signature-256, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const FINAL_STATUSES = ["delivered", "failed", "cancelled", "refunded"];
@@ -34,8 +34,7 @@ function normalizeStatus(rawStatus: string, statusMapping: Record<string, string
   return "processing";
 }
 
-async function verifySignature(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
-  if (!signatureHeader) return false;
+async function verifySignature(rawBody: string, signatureHeader: string, secret: string): Promise<boolean> {
   try {
     const sig = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
     const enc = new TextEncoder();
@@ -75,80 +74,102 @@ Deno.serve(async (req) => {
     console.log("Webhook received:", rawBody.slice(0, 500));
 
     // ── Signature / Secret Verification ──
-    const webhookSecret = Deno.env.get("SUPPLIER_WEBHOOK_SECRET") || "";
-    
-    // Also check DB-stored secret as fallback
+    // Priority: env secret > DB secret
+    const envSecret = Deno.env.get("SUPPLIER_WEBHOOK_SECRET") || "";
     let dbSecret = "";
-    const { data: webhookSecretSetting } = await supabase
-      .from("system_settings")
-      .select("setting_value")
-      .eq("setting_key", "supplier_webhook_secret")
-      .maybeSingle();
-    if (webhookSecretSetting?.setting_value) {
-      dbSecret = webhookSecretSetting.setting_value;
+    try {
+      const { data: webhookSecretSetting } = await supabase
+        .from("system_settings")
+        .select("setting_value")
+        .eq("setting_key", "supplier_webhook_secret")
+        .maybeSingle();
+      if (webhookSecretSetting?.setting_value) {
+        dbSecret = webhookSecretSetting.setting_value;
+      }
+    } catch { /* DB lookup failure is non-fatal */ }
+
+    const activeSecret = envSecret || dbSecret;
+
+    if (!activeSecret) {
+      // SECURE-BY-DEFAULT: reject when no secret is configured
+      console.error("SECURITY: No webhook secret configured — rejecting webhook request");
+      await supabase.from("audit_logs").insert({
+        action: "webhook_rejected_no_secret",
+        actor_role: "system",
+        target_type: "webhook",
+        metadata: { reason: "no_webhook_secret_configured" },
+      });
+      return json({ error: "Webhook verification not configured" }, 503);
     }
 
-    const activeSecret = webhookSecret || dbSecret;
+    // Read signature from headers — AfroHubGH primary header first
+    const sigHeader =
+      req.headers.get("x-ahg-signature") ||
+      req.headers.get("x-webhook-signature") ||
+      req.headers.get("x-hub-signature-256");
 
-    if (activeSecret) {
-      const sigHeader = req.headers.get("x-webhook-signature") || req.headers.get("x-hub-signature-256");
+    let verified = false;
+
+    if (sigHeader) {
+      verified = await verifySignature(rawBody, sigHeader, activeSecret);
+    }
+
+    // Legacy fallback: simple secret match
+    if (!verified) {
       const legacyHeader = req.headers.get("x-webhook-secret") || req.headers.get("authorization");
-
-      let verified = false;
-
-      // Try HMAC signature first
-      if (sigHeader) {
-        verified = await verifySignature(rawBody, sigHeader, activeSecret);
-      }
-
-      // Fallback: simple secret match (legacy)
-      if (!verified && legacyHeader) {
+      if (legacyHeader) {
         const received = legacyHeader.replace("Bearer ", "");
         verified = received === activeSecret;
       }
-
-      if (!verified) {
-        console.warn("Webhook auth failed — signature/secret mismatch");
-        await supabase.from("audit_logs").insert({
-          action: "webhook_auth_failed",
-          actor_role: "system",
-          target_type: "webhook",
-          metadata: { has_sig: !!sigHeader, has_legacy: !!legacyHeader },
-        });
-        return json({ error: "Unauthorized" }, 401);
-      }
-    } else {
-      console.warn("No webhook secret configured — accepting without verification");
     }
+
+    if (!verified) {
+      console.warn("Webhook auth failed — signature/secret mismatch");
+      await supabase.from("audit_logs").insert({
+        action: "webhook_auth_failed",
+        actor_role: "system",
+        target_type: "webhook",
+        metadata: {
+          has_ahg_sig: !!req.headers.get("x-ahg-signature"),
+          has_webhook_sig: !!req.headers.get("x-webhook-signature"),
+          has_hub_sig: !!req.headers.get("x-hub-signature-256"),
+          has_legacy: !!(req.headers.get("x-webhook-secret") || req.headers.get("authorization")),
+        },
+      });
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    console.log("Webhook signature verified successfully");
 
     // ── Extract fields ──
     const data = (payload.data || payload) as Record<string, unknown>;
-    const supplierRef = String(data.reference || data.ref || data.order_ref || data.order_id || "");
-    const rawStatus = String(data.status || data.order_status || "");
-    const rawMessage = String(data.message || data.delivery_message || "");
+    const supplierRef = String(data.reference || data.ref || data.order_ref || data.order_id || "").trim();
+    const rawStatus = String(data.status || data.order_status || "").trim();
+    const rawMessage = String(data.message || data.delivery_message || "").trim();
 
     if (!supplierRef) {
       await supabase.from("audit_logs").insert({
         action: "webhook_invalid_payload",
         actor_role: "system",
         target_type: "webhook",
-        metadata: { payload },
+        metadata: { payload_keys: Object.keys(payload), data_keys: Object.keys(data) },
       });
       return json({ error: "Missing order reference" }, 400);
     }
 
-    // ── Find order ──
+    // ── Find order (supplier_reference first, then public_order_id) ──
     let order = await findOrder(supabase, "supplier_reference", supplierRef);
     if (!order) {
       order = await findOrder(supabase, "public_order_id", supplierRef);
     }
 
     if (!order) {
+      console.warn(`Webhook order not found: ${supplierRef}`);
       await supabase.from("audit_logs").insert({
         action: "webhook_order_not_found",
         actor_role: "system",
         target_type: "webhook",
-        metadata: { supplier_ref: supplierRef },
+        metadata: { supplier_ref: supplierRef, event: payload.event },
       });
       return json({ error: "Order not found", reference: supplierRef }, 404);
     }
@@ -161,10 +182,13 @@ Deno.serve(async (req) => {
 });
 
 async function findOrder(supabase: ReturnType<typeof createClient>, field: string, value: string) {
+  if (!value) return null;
   const { data } = await supabase
     .from("orders")
     .select("id, public_order_id, status, supplier_reference, supplier_status, network, bundle_snapshot")
     .eq(field, value)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   return data;
 }
@@ -208,7 +232,7 @@ async function processUpdate(
     return json({ success: true, message: "Status unchanged" });
   }
 
-  // Safe transitions: don't downgrade final statuses
+  // Don't downgrade final statuses
   if (FINAL_STATUSES.includes(currentStatus) && !FINAL_STATUSES.includes(normalizedStatus)) {
     await supabase.from("audit_logs").insert({
       action: "webhook_transition_blocked",

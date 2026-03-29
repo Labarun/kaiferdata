@@ -200,6 +200,12 @@ Deno.serve(async (req) => {
         if (normalizedStatus !== order.status || rawStatus !== order.supplier_status) {
           const oldStatus = order.status;
 
+          // Don't downgrade final statuses
+          if (FINAL_STATUSES.includes(oldStatus) && !FINAL_STATUSES.includes(normalizedStatus)) {
+            console.log(`Skipping poll downgrade for ${order.public_order_id}: ${oldStatus} → ${normalizedStatus}`);
+            continue;
+          }
+
           const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
           let deliveryMessage: string | null = null;
           if (normalizedStatus === "delivered") {
