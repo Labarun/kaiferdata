@@ -9,7 +9,7 @@ import {
 const faqs = [
   {
     question: "What is Kaifer Data?",
-    answer: "Kaifer Data is a modern, reliable platform designed to provide seamless data services, airtime top-ups, and utility payments at competitive rates."
+    answer: "Kaifer Data, is a modern platform designed to help customers stay connected by offering affordable data packages. We literally coined our name from an ancient hebrew word which means to cover, and that is exactly what we do. "
   },
   {
     question: "How do I purchase data?",
@@ -22,6 +22,18 @@ const faqs = [
   {
     question: "Can I become a reseller or agent?",
     answer: "Yes! Our team is currently optimizing the platform to support an Agent tier, this will allow you to access wholesale prices and earn commissions on your sales. The update will be live soon."
+  },
+  {
+    question: "Why do my orders not go through sometimes even after payment?",
+    answer: "Most of the time, this is due to system delays or temporary issues. But a relevant quick fix is that you wait on the website until your order is processed and you are assigned a tracking number. Sometimes it just doesn't go through and when that persists we recommend contacting our support team."
+  },
+  {
+    question: "How long does it take for order to be delivered?",
+    answer: "Most orders are processed within the first hour of placement, but in rare cases, it could take longer, and this is dependent on the network provider most of the time. Sometimes it is just a case of an unfulfilled order and we recomment you reach out to our support if you do not receive your  order within the first 10-24 hours of purchase."
+  },
+  {
+    question: "What is the refund policy?",
+    answer: "We do not offer a refund policy as the data services are non-refundable on the supplier side once activated, if you enter a wrong number as recipient, we cannot be held responsible. Therefore, we recommend being careful when entering your recipient information."
   }
 ];
 
@@ -35,7 +47,10 @@ const About = () => {
             About Kaifer Data
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Empowering your digital lifestyle with lightning-fast, secure, and affordable data services. We bridge the gap between you and the connectivity you need.
+            At Kaifer Data, we understand the need to stay connected, either for communication, entertainment or work.
+            That is why we have curated a range of services to empower your digital lifestyle with lightning-fast, secure, and affordable data offers.
+            We bridge the gap between you and the connectivity you need while helping you do that at a low cost.
+            We thought to ourselves - "Would you rather buy 400mb for 3ghc or 1,000MB for Ghc4.4" and with that we set out to create a platform that offers you the best value for your money, without compromising on quality or security.
           </p>
         </div>
 
