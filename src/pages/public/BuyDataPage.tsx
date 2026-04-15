@@ -176,6 +176,11 @@ export default function BuyDataPage() {
             >
               Pick a network, choose your bundle, receive data in minutes.
             </p>
+          <div className="mt-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+            <Button variant="outline" size="sm" className="rounded-full glass-subtle border-border/50 text-foreground/80 hover:text-foreground" asChild>
+              <Link to="/about">About Kaifer Data</Link>
+            </Button>
+          </div>
           </div>
         </div>
 
