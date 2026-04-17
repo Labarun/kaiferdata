@@ -26,6 +26,9 @@ import Index from "@/pages/Index";
 const TrackOrderPage = lazy(() => import("@/pages/public/TrackOrderPage"));
 const PaymentCallbackPage = lazy(() => import("@/pages/public/PaymentCallbackPage"));
 const AgentStorefrontPage = lazy(() => import("@/pages/public/AgentStorefrontPage"));
+const GetAppPage = lazy(() => import("@/pages/public/GetAppPage"));
+const GetAppAndroidPage = lazy(() => import("@/pages/public/GetAppAndroidPage"));
+const GetAppIosPage = lazy(() => import("@/pages/public/GetAppIosPage"));
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
@@ -105,6 +108,9 @@ const App = () => (
                 <Route path="/buy" element={<BuyDataPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/track" element={<TrackOrderPage />} />
+                <Route path="/get-app" element={<GetAppPage />} />
+                <Route path="/get-app/android" element={<GetAppAndroidPage />} />
+                <Route path="/get-app/ios" element={<GetAppIosPage />} />
                 <Route path="/store/:slug" element={<AgentStorefrontPage />} />
                 <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                 <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
