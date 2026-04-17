@@ -43,7 +43,8 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [subscriptions, setSubscriptions] = useState<AgentSubscription[]>([]);
   const [note, setNote] = useState("");
-  const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | null>(null);
+  const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | "activate" | null>(null);
+  const [activatePlan, setActivatePlan] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     let cancelled = false;
@@ -145,6 +146,28 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleManualActivate = async () => {
+    if (!user?.id || !application?.user_id) return;
+    setBusy(true);
+    try {
+      const res = await adminActivateAgent({
+        targetUserId: application.user_id,
+        adminId: user.id,
+        plan: activatePlan,
+        note: note.trim() || undefined,
+      });
+      const expires = new Date(res.expiresAt).toLocaleDateString();
+      toast.success(
+        `Activated for ${activatePlan === "monthly" ? "1 month" : "1 year"} — expires ${expires}`,
+      );
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Activation failed");
     } finally {
       setBusy(false);
     }
