@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { PageLoader } from "@/components/shared/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
