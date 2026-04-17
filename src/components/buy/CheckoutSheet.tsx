@@ -534,10 +534,18 @@ export function CheckoutSheet({
                 </Button>
                 <Button
                   onClick={onConfirm}
+                  disabled={
+                    paymentMethod === "wallet" &&
+                    typeof walletBalance === "number" &&
+                    walletBalance < feeBreakdown.baseAmount
+                  }
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵{formatGHS(feeBreakdown.totalAmount)}
+                  Pay GH₵
+                  {formatGHS(
+                    paymentMethod === "wallet" ? feeBreakdown.baseAmount : feeBreakdown.totalAmount
+                  )}
                 </Button>
               </div>
             </div>
