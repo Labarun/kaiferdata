@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type PageState = "verifying" | "success" | "deposit_success" | "failed" | "error";
+type PageState = "verifying" | "success" | "deposit_success" | "failed" | "error" | "generic_success";
 
 export default function PaymentCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -27,19 +27,22 @@ export default function PaymentCallbackPage() {
   const [deposit, setDeposit] = useState<Record<string, unknown> | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
-  const verifiedRef = useRef(false);
+  const promiseRef = useRef<Promise<any> | null>(null);
 
   useEffect(() => {
-    if (!ref || verifiedRef.current) {
-      if (!ref) {
-        setState("error");
-        setErrorMsg("No payment reference found.");
-      }
+    if (!ref) {
+      setState("error");
+      setErrorMsg("No payment reference found.");
       return;
     }
-    verifiedRef.current = true;
 
-    verifyPayment(ref)
+    // Caching the promise in a ref prevents double-fetching in React 18 Strict Mode
+    // while still allowing the remounted component to successfully attach to the state update
+    if (!promiseRef.current) {
+      promiseRef.current = verifyPayment(ref);
+    }
+
+    promiseRef.current
       .then((result) => {
         if (result.success) {
           if (result.intent_type === "wallet_deposit") {
@@ -49,7 +52,7 @@ export default function PaymentCallbackPage() {
             setOrder(result.order);
             setState("success");
           } else {
-            setState("deposit_success"); // already_processed deposit
+            setState("generic_success"); // already_processed fallback
           }
         } else {
           setErrorMsg(result.error || "Payment was not successful.");
@@ -241,6 +244,41 @@ export default function PaymentCallbackPage() {
             </Button>
             <Button asChild className="flex-[2] h-12">
               <Link to={`/track?ref=${publicOrderId}`}>
+                Track Order
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Generic Success ── */
+  if (state === "generic_success") {
+    return (
+      <div className="container py-8 sm:py-12">
+        <div className="max-w-md mx-auto space-y-6 animate-fade-in">
+          <div className="text-center">
+            <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
+              Payment Successful!
+            </h2>
+            <p className="text-[12.5px] text-muted-foreground/55 mt-1.5 leading-relaxed max-w-[280px] mx-auto">
+              Your transaction has been processed successfully.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" asChild className="flex-1 h-12">
+              <Link to="/dashboard/wallet">
+                <Wallet className="mr-1.5 h-3.5 w-3.5" />
+                Dashboard
+              </Link>
+            </Button>
+            <Button asChild className="flex-[2] h-12">
+              <Link to="/track">
                 Track Order
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
