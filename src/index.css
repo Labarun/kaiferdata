@@ -523,6 +523,16 @@
   50% { background-position: -50% 0; }
 }
 
+/* Translate-based shimmer for skeleton overlays (Phase 1 loading polish) */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 1.6s ease-in-out infinite;
+  will-change: transform;
+}
+
 @keyframes summary-enter {
   0% {
     opacity: 0;
