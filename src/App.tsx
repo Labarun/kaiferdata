@@ -45,6 +45,11 @@ const AgentEarningsPage = lazy(() => import("@/pages/agent/AgentEarningsPage"));
 const AgentStorePage = lazy(() => import("@/pages/agent/AgentStorePage"));
 const AgentOrdersPage = lazy(() => import("@/pages/agent/AgentOrdersPage"));
 const AgentWithdrawPage = lazy(() => import("@/pages/agent/AgentWithdrawPage"));
+const AgentPricingPage = lazy(() => import("@/pages/agent/AgentPricingPage"));
+const AgentMarketingPage = lazy(() => import("@/pages/agent/AgentMarketingPage"));
+const AgentCustomersPage = lazy(() => import("@/pages/agent/AgentCustomersPage"));
+const AgentTransactionsPage = lazy(() => import("@/pages/agent/AgentTransactionsPage"));
+const AgentBulkOrdersPage = lazy(() => import("@/pages/agent/AgentBulkOrdersPage"));
 const AdminDashboardHome = lazy(() => import("@/pages/admin/AdminDashboardHome"));
 const StaffDashboardHome = lazy(() => import("@/pages/staff/StaffDashboardHome"));
 const StaffOrdersPage = lazy(() => import("@/pages/staff/StaffOrdersPage"));
@@ -130,6 +135,11 @@ const App = () => (
                 <Route path="/agent/orders" element={<AgentOrdersPage />} />
                 <Route path="/agent/earnings" element={<AgentEarningsPage />} />
                 <Route path="/agent/withdraw" element={<AgentWithdrawPage />} />
+                <Route path="/agent/pricing" element={<AgentPricingPage />} />
+                <Route path="/agent/marketing" element={<AgentMarketingPage />} />
+                <Route path="/agent/customers" element={<AgentCustomersPage />} />
+                <Route path="/agent/transactions" element={<AgentTransactionsPage />} />
+                <Route path="/agent/bulk" element={<AgentBulkOrdersPage />} />
               </Route>
 
               {/* ====== ADMIN PANEL ====== */}

@@ -50,6 +50,8 @@ const emptyForm = {
   visible_for_logged_in: true,
   display_order: "0",
   source_type: "manual",
+  agent_base_price: "",
+  is_agent_resaleable: true,
 };
 
 export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: PackageFormDialogProps) {
@@ -76,6 +78,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
         visible_for_logged_in: pkg.visible_for_logged_in,
         display_order: String(pkg.display_order),
         source_type: pkg.source_type,
+        agent_base_price: String(pkg.agent_base_price ?? 0),
+        is_agent_resaleable: pkg.is_agent_resaleable ?? true,
       });
     } else {
       setForm(emptyForm);
@@ -117,6 +121,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
         visible_for_logged_in: form.visible_for_logged_in,
         display_order: parseInt(form.display_order) || 0,
         source_type: form.source_type,
+        agent_base_price: parseFloat(form.agent_base_price) || 0,
+        is_agent_resaleable: form.is_agent_resaleable,
       };
 
       if (isEdit) {
@@ -242,6 +248,29 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
                 </span>
               </div>
               {profit < 0 && <AlertCircle className="h-4 w-4 text-destructive" />}
+            </div>
+          </div>
+
+          {/* ── Agent Reseller Pricing ── */}
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <p className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">Agent Reseller</p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Agent Base Price (GH₵)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.agent_base_price}
+                onChange={(e) => set("agent_base_price", e.target.value)}
+                placeholder="0.00"
+              />
+              <p className="text-[10px] text-muted-foreground/60">
+                Cost charged to agents who resell this bundle. Agents set their own selling price above this.
+              </p>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Available for agent resale</Label>
+              <Switch checked={form.is_agent_resaleable} onCheckedChange={(v) => set("is_agent_resaleable", v)} />
             </div>
           </div>
 
