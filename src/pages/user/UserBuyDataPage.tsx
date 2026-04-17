@@ -129,7 +129,12 @@ export default function UserBuyDataPage() {
     if (!network || !selectedPkg) return;
 
     if (paymentMethod === "wallet") {
-      toast({ title: "Coming Soon", description: "Wallet payments will be available soon." });
+      // Wallet checkout edge function ships in Phase 2 — keep guard so the
+      // anti-manipulation/payment logic stays untouched in Phase 1.
+      toast({
+        title: "Coming soon",
+        description: "Wallet checkout for bundles ships in the next update. Use Paystack for now.",
+      });
       return;
     }
 
@@ -143,6 +148,10 @@ export default function UserBuyDataPage() {
         plan: planBridge!,
         customerEmail: customerEmail || undefined,
         customerName: customerName || undefined,
+        actorType: "user",
+        actorId: user?.id,
+        sourceChannel: "user_dashboard",
+        intentType: "user_buy",
       });
       setProcessingLabel("Initializing payment…");
       const payment = await initializePayment(result.id);
@@ -183,54 +192,10 @@ export default function UserBuyDataPage() {
 
       <NoticeBanner audience="users" />
 
-      {/* Wallet + Payment Method */}
-      <div className="grid gap-3 sm:grid-cols-2 animate-fade-in animate-stagger-1">
+      {/* Wallet hero — payment method picker now lives inside CheckoutSheet */}
+      <div className="animate-fade-in animate-stagger-1">
         <WalletCard compact />
-
-        {/* Payment Method Selector */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPaymentMethod("paystack")}
-            className={cn(
-              "flex-1 flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all duration-200",
-              paymentMethod === "paystack"
-                ? "glass-elevated ring-2 ring-primary/20"
-                : "glass-card hover:glass-elevated"
-            )}
-          >
-            <CreditCard className={cn("h-4 w-4", paymentMethod === "paystack" ? "text-primary" : "text-muted-foreground/50")} />
-            <div className="text-left">
-              <p className={cn("text-xs font-semibold", paymentMethod === "paystack" ? "text-foreground" : "text-muted-foreground")}>Paystack</p>
-              <p className="text-[10px] text-muted-foreground/50">MoMo / Card</p>
-            </div>
-          </button>
-          <button
-            onClick={() => setPaymentMethod("wallet")}
-            className={cn(
-              "flex-1 flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all duration-200",
-              paymentMethod === "wallet"
-                ? "glass-elevated ring-2 ring-primary/20"
-                : "glass-card hover:glass-elevated"
-            )}
-          >
-            <Wallet className={cn("h-4 w-4", paymentMethod === "wallet" ? "text-primary" : "text-muted-foreground/50")} />
-            <div className="text-left">
-              <p className={cn("text-xs font-semibold", paymentMethod === "wallet" ? "text-foreground" : "text-muted-foreground")}>Wallet</p>
-              <p className="text-[10px] text-muted-foreground/50">
-                GH₵{walletBalance.toFixed(2)}
-              </p>
-            </div>
-          </button>
-        </div>
       </div>
-
-      {/* Wallet insufficiency notice */}
-      {paymentMethod === "wallet" && selectedPkg && !canAfford && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 text-warning text-xs animate-fade-in">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          Insufficient wallet balance for this package. Top up or switch to Paystack.
-        </div>
-      )}
 
       {/* Network Selector */}
       <section className="animate-fade-in animate-stagger-2">
