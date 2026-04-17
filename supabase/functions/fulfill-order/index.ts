@@ -161,7 +161,7 @@ async function submitToSupplierApi(
     const { data: supplierPackages } = await supabaseClient
       .from("data_packages")
       .select("supplier_source_id, package_code, package_name, package_size_label, package_volume_value, source_metadata, updated_at")
-      .eq("network", order.network)
+      .eq("network", order.network as string)
       .eq("source_type", "supplier_api")
       .not("supplier_source_id", "is", null)
       .order("updated_at", { ascending: false });
