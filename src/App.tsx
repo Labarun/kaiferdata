@@ -67,6 +67,7 @@ const AdminPackagesPage = lazy(() => import("@/pages/admin/AdminPackagesPage"));
 const AdminSupplierPage = lazy(() => import("@/pages/admin/AdminSupplierPage"));
 const AdminAgentsPage = lazy(() => import("@/pages/admin/AdminAgentsPage"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
+const AdminWithdrawalsPage = lazy(() => import("@/pages/admin/AdminWithdrawalsPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Tuned defaults: cut needless refetches on tab focus, keep cached data warm
@@ -146,6 +147,7 @@ const App = () => (
                 <Route path="/admin/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/admin/agents" element={<AdminAgentsPage />} />
+                <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
                 <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
                 <Route path="/admin/analytics" element={<ScaffoldPage title="Analytics" description="Platform analytics" />} />
                 <Route path="/admin/notices" element={<AdminNoticesPage />} />

@@ -20,6 +20,7 @@ import { User, LogOut, ChevronDown, PanelLeftClose, PanelLeft, Search, Bell } fr
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
 
 export interface AdminNavItem {
   label: string;
@@ -152,7 +153,10 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
           <div className="container py-4 sm:py-6">
             <NoticeBanner audience={audienceFilter} />
             <Outlet />
@@ -169,8 +173,8 @@ function MobileSidebar({ navItems, title }: { navItems: AdminNavItem[]; title: s
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // Close on route change
-  const prevPath = location.pathname;
+  // Auto-close drawer on route change (handles links + browser back)
+  useCloseOnRouteChange(setOpen);
 
   return (
     <>
