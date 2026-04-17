@@ -283,7 +283,53 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
             <Separator />
 
             {/* Action area */}
-            {activeForm && (
+            {activeForm === "activate" && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Manual activation</p>
+                  <p className="text-xs text-muted-foreground">
+                    Activates this agent's store immediately, even without a Paystack payment.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={activatePlan === "monthly" ? "default" : "outline"}
+                    onClick={() => setActivatePlan("monthly")}
+                    disabled={busy}
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={activatePlan === "yearly" ? "default" : "outline"}
+                    onClick={() => setActivatePlan("yearly")}
+                    disabled={busy}
+                  >
+                    1 Year
+                  </Button>
+                </div>
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  placeholder="Optional internal note (audit log)"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" disabled={busy} onClick={handleManualActivate}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    {busy ? "Activating…" : `Activate ${activatePlan === "monthly" ? "1 Month" : "1 Year"}`}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeForm && activeForm !== "activate" && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">
                   {activeForm === "approve" ? "Optional internal note" : "Note (required)"}
@@ -345,6 +391,23 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
                       Approve
                     </Button>
                   </>
+                )}
+
+                {/* Manual admin activation — available for approved agents
+                    that aren't currently 'active' (and aren't suspended). */}
+                {profile && profile.status !== "active" && profile.status !== "suspended" && (
+                  <Button size="sm" variant="default" onClick={() => setActiveForm("activate")}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    Manually activate
+                  </Button>
+                )}
+
+                {/* Allow extending an already-active agent too */}
+                {profile && profile.status === "active" && (
+                  <Button size="sm" variant="outline" onClick={() => setActiveForm("activate")}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    Extend activation
+                  </Button>
                 )}
 
                 {/* Profile-level actions */}
