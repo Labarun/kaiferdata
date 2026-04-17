@@ -161,8 +161,8 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
           </div>
         </aside>
 
-        <main className="flex-1 pb-24 md:pb-6">
-          <div className="container py-5 sm:py-6 max-w-2xl">
+        <main className="flex-1 min-w-0 pb-24 md:pb-6 overflow-x-clip">
+          <div className="container py-5 sm:py-6 max-w-2xl min-w-0">
             <NoticeBanner audience={audienceFilter} />
             <Suspense fallback={<PageLoader />}>
               <Outlet />

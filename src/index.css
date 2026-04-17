@@ -143,8 +143,28 @@
   * {
     @apply border-border;
   }
+
+  /* ═══════════════════════════════════════════════
+   *  GLOBAL MOBILE OVERFLOW GUARD
+   *  Locks the document to viewport width so the
+   *  page can never be dragged sideways on iOS.
+   *  Root cause prevention: any decorative blur,
+   *  shadow, translated element, or oversized child
+   *  is clipped at the document root instead of
+   *  expanding the page.
+   * ═══════════════════════════════════════════════ */
+  html, body {
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+  html {
+    /* Prevent horizontal pan/drag on touch devices */
+    touch-action: pan-y;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    position: relative;
     background-image:
       radial-gradient(ellipse 100% 60% at 50% -20%, hsl(213 55% 88% / 0.55) 0%, transparent 60%),
       radial-gradient(ellipse 50% 45% at 95% 90%, hsl(192 50% 86% / 0.3) 0%, transparent 50%),
@@ -152,6 +172,15 @@
       radial-gradient(ellipse 80% 50% at 50% 105%, hsl(213 35% 92% / 0.4) 0%, transparent 55%),
       radial-gradient(ellipse 35% 25% at 50% 50%, hsl(214 30% 96% / 0.5) 0%, transparent 50%);
     /* background-attachment: fixed removed — causes full repaint on every scroll on mobile */
+  }
+
+  /* Allow horizontal panning only inside explicit scroll containers
+     (e.g. tables, carousels, code blocks). */
+  .allow-x-scroll { touch-action: pan-x pan-y; }
+
+  /* Media never breaks layout width */
+  img, video, canvas, svg, iframe {
+    max-width: 100%;
   }
 }
 
