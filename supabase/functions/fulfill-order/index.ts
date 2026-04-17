@@ -182,10 +182,10 @@ async function submitToSupplierApi(
       const codeVolumeMatch = String(order.bundle_code || "").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
       if (codeVolumeMatch) addHint(codeVolumeMatch[1]);
 
-      let pkg = supplierPackages.find((p) => normalizeToken(p.package_code) === codeNeedle);
+      let pkg = supplierPackages.find((p: Record<string, unknown>) => normalizeToken(p.package_code) === codeNeedle);
 
       if (!pkg && sizeHints.size > 0) {
-        pkg = supplierPackages.find((p) => {
+        pkg = supplierPackages.find((p: Record<string, unknown>) => {
           const packageValues = [p.package_size_label, p.package_volume_value, p.package_name, p.package_code]
             .map((v) => normalizeSize(v))
             .filter(Boolean);
@@ -210,7 +210,7 @@ async function submitToSupplierApi(
       }
 
       if (!isUuid(supplierNetworkId)) {
-        const networkCarrier = supplierPackages.find((p) => {
+        const networkCarrier = supplierPackages.find((p: Record<string, unknown>) => {
           const meta = (p.source_metadata || {}) as Record<string, unknown>;
           const networkObj = meta.network as Record<string, unknown> | undefined;
           return Boolean(networkObj?.id || meta.network_id || meta.networkId || isUuid(meta.network));
