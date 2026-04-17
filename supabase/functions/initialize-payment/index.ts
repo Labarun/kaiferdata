@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
     }
 
     const isDeposit = intent.intent_type === "wallet_deposit";
+    const isAgentSubscription = intent.intent_type === "agent_subscription";
     const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
 
     // ── 2. SERVER-SIDE PRICE RESOLUTION (CRITICAL SECURITY) ──
@@ -120,6 +121,46 @@ Deno.serve(async (req) => {
         return json({ error: "Invalid deposit amount" }, 422);
       }
       authoritative_base_amount = Math.round(depositAmount * 100) / 100;
+    } else if (isAgentSubscription) {
+      // Agent subscription: server-authoritative pricing (50/mo, 400/yr).
+      const plan = String(snapshot.plan || "");
+      const expected = plan === "monthly" ? 50 : plan === "yearly" ? 400 : null;
+      if (expected === null) {
+        return json({ error: "Invalid agent plan." }, 422);
+      }
+      const frontendAmount = Number(intent.amount_expected);
+      if (Math.abs(frontendAmount - expected) > 0.01) {
+        await supabase
+          .from("purchase_intents")
+          .update({
+            status: "failed",
+            order_context: {
+              ...((intent.order_context as Record<string, unknown>) || {}),
+              security_blocked: true,
+              reason: "agent_subscription_price_manipulation",
+              frontend_amount: frontendAmount,
+              server_price: expected,
+              blocked_at: new Date().toISOString(),
+            },
+          })
+          .eq("id", intent_id);
+
+        await supabase.from("audit_logs").insert({
+          action: "payment_blocked_price_manipulation",
+          actor_role: "system",
+          target_type: "purchase_intent",
+          target_id: intent.id,
+          metadata: {
+            intent_type: "agent_subscription",
+            plan,
+            frontend_amount: frontendAmount,
+            server_price: expected,
+            actor_id: intent.actor_id,
+          },
+        });
+        return json({ error: "Subscription price has changed. Please retry." }, 422);
+      }
+      authoritative_base_amount = expected;
     } else {
       const packageId = snapshot.id as string;
       
