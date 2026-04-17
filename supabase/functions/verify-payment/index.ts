@@ -417,7 +417,7 @@ Deno.serve(async (req) => {
 
 /** Handle wallet deposit: credit wallet with BASE amount using ATOMIC DB function */
 async function handleDeposit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   intent: Record<string, unknown>,
   paymentRecord: Record<string, unknown>,
   baseAmount: number,
@@ -520,7 +520,7 @@ async function handleDeposit(
 
 /** Handle bundle purchase: create order (amount_charged = base amount) */
 async function handlePurchase(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   intent: Record<string, unknown>,
   paymentRecord: Record<string, unknown>,
   baseAmount: number,

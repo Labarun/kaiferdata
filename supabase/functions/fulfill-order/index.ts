@@ -125,7 +125,7 @@ async function submitToStubSupplier(
 async function submitToSupplierApi(
   order: Record<string, unknown>,
   supplier: Record<string, unknown>,
-  supabaseClient: ReturnType<typeof createClient>
+  supabaseClient: any
 ): Promise<SupplierResult> {
   const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
   const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
@@ -326,7 +326,7 @@ async function submitToSupplierApi(
 
 /** ── Status history helper ── */
 async function logStatusChange(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   orderId: string,
   oldStatus: string | null,
   newStatus: string,

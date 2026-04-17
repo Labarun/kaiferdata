@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function findOrder(supabase: ReturnType<typeof createClient>, field: string, value: string) {
+async function findOrder(supabase: any, field: string, value: string) {
   if (!value) return null;
   const { data } = await supabase
     .from("orders")
@@ -194,7 +194,7 @@ async function findOrder(supabase: ReturnType<typeof createClient>, field: strin
 }
 
 async function processUpdate(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   order: Record<string, unknown>,
   rawStatus: string,
   rawMessage: string,
