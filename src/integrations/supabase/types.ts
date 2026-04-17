@@ -125,6 +125,44 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_bundle_prices: {
+        Row: {
+          agent_profile_id: string
+          created_at: string
+          id: string
+          is_published: boolean
+          package_id: string
+          selling_price: number
+          updated_at: string
+        }
+        Insert: {
+          agent_profile_id: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          package_id: string
+          selling_price: number
+          updated_at?: string
+        }
+        Update: {
+          agent_profile_id?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          package_id?: string
+          selling_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_bundle_prices_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "data_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_earnings: {
         Row: {
           agent_profile_id: string
@@ -171,6 +209,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_earnings_wallets: {
+        Row: {
+          agent_profile_id: string
+          created_at: string
+          current_balance: number
+          id: string
+          status: string
+          total_earned: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_profile_id: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          status?: string
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_profile_id?: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          status?: string
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       agent_profiles: {
         Row: {
@@ -313,6 +387,68 @@ export type Database = {
           },
         ]
       }
+      agent_wallet_transactions: {
+        Row: {
+          agent_wallet_id: string
+          amount: number
+          closing_balance: number
+          created_at: string
+          created_by: string | null
+          direction: string
+          id: string
+          linked_record_id: string | null
+          linked_record_type: string | null
+          narration: string | null
+          opening_balance: number
+          reference: string | null
+          status: string
+          txn_type: string
+          user_id: string
+        }
+        Insert: {
+          agent_wallet_id: string
+          amount: number
+          closing_balance: number
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          id?: string
+          linked_record_id?: string | null
+          linked_record_type?: string | null
+          narration?: string | null
+          opening_balance: number
+          reference?: string | null
+          status?: string
+          txn_type: string
+          user_id: string
+        }
+        Update: {
+          agent_wallet_id?: string
+          amount?: number
+          closing_balance?: number
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          id?: string
+          linked_record_id?: string | null
+          linked_record_type?: string | null
+          narration?: string | null
+          opening_balance?: number
+          reference?: string | null
+          status?: string
+          txn_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_wallet_transactions_agent_wallet_id_fkey"
+            columns: ["agent_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "agent_earnings_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -348,11 +484,13 @@ export type Database = {
       }
       data_packages: {
         Row: {
+          agent_base_price: number
           created_at: string
           currency: string
           display_order: number
           id: string
           is_active: boolean
+          is_agent_resaleable: boolean
           network: string
           package_code: string
           package_name: string
@@ -370,11 +508,13 @@ export type Database = {
           visible_on_public: boolean
         }
         Insert: {
+          agent_base_price?: number
           created_at?: string
           currency?: string
           display_order?: number
           id?: string
           is_active?: boolean
+          is_agent_resaleable?: boolean
           network: string
           package_code: string
           package_name: string
@@ -392,11 +532,13 @@ export type Database = {
           visible_on_public?: boolean
         }
         Update: {
+          agent_base_price?: number
           created_at?: string
           currency?: string
           display_order?: number
           id?: string
           is_active?: boolean
+          is_agent_resaleable?: boolean
           network?: string
           package_code?: string
           package_name?: string
@@ -1196,6 +1338,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          wallet_kind: string
           wallet_transaction_id: string | null
         }
         Insert: {
@@ -1214,6 +1357,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          wallet_kind?: string
           wallet_transaction_id?: string | null
         }
         Update: {
@@ -1232,6 +1376,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          wallet_kind?: string
           wallet_transaction_id?: string | null
         }
         Relationships: []
@@ -1300,6 +1445,13 @@ export type Database = {
         Returns: undefined
       }
       approve_agent_withdrawal_atomic: {
+        Args: { _admin_id: string; _note?: string; _request_id: string }
+        Returns: {
+          request_id: string
+          status: string
+        }[]
+      }
+      approve_agent_withdrawal_v2_atomic: {
         Args: { _admin_id: string; _note?: string; _request_id: string }
         Returns: {
           request_id: string
@@ -1387,6 +1539,25 @@ export type Database = {
           earning_id: string
         }[]
       }
+      credit_agent_earnings_wallet_atomic: {
+        Args: {
+          _agent_wallet_id: string
+          _amount: number
+          _created_by?: string
+          _linked_record_id?: string
+          _linked_record_type?: string
+          _narration: string
+          _reference: string
+          _txn_type?: string
+        }
+        Returns: {
+          already_processed: boolean
+          closing_bal: number
+          new_balance: number
+          opening_bal: number
+          txn_id: string
+        }[]
+      }
       credit_wallet_atomic: {
         Args: {
           _amount: number
@@ -1396,6 +1567,24 @@ export type Database = {
           _narration: string
           _reference: string
           _wallet_id: string
+        }
+        Returns: {
+          closing_bal: number
+          new_balance: number
+          opening_bal: number
+          txn_id: string
+        }[]
+      }
+      debit_agent_earnings_wallet_atomic: {
+        Args: {
+          _agent_wallet_id: string
+          _amount: number
+          _created_by?: string
+          _linked_record_id?: string
+          _linked_record_type?: string
+          _narration: string
+          _reference: string
+          _txn_type?: string
         }
         Returns: {
           closing_bal: number
@@ -1444,7 +1633,29 @@ export type Database = {
           status: string
         }[]
       }
+      reject_agent_withdrawal_v2_atomic: {
+        Args: { _admin_id: string; _note?: string; _request_id: string }
+        Returns: {
+          refunded_amount: number
+          request_id: string
+          status: string
+        }[]
+      }
       request_agent_withdrawal_atomic: {
+        Args: {
+          _amount: number
+          _momo_name: string
+          _momo_network: string
+          _momo_number: string
+          _user_id: string
+        }
+        Returns: {
+          new_balance: number
+          request_id: string
+          txn_id: string
+        }[]
+      }
+      request_agent_withdrawal_v2_atomic: {
         Args: {
           _amount: number
           _momo_name: string
@@ -1461,6 +1672,15 @@ export type Database = {
       resolve_login_identifier: {
         Args: { _identifier: string }
         Returns: string
+      }
+      upsert_agent_bundle_price: {
+        Args: { _package_id: string; _selling_price: number }
+        Returns: {
+          agent_base_price: number
+          id: string
+          profit: number
+          selling_price: number
+        }[]
       }
     }
     Enums: {
