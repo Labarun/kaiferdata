@@ -102,12 +102,12 @@ export async function fetchPublishedAgentBundles(agentProfileId: string) {
   if (!prices || (prices as any[]).length === 0) return [];
 
   const ids = (prices as any[]).map((p) => p.package_id);
-  const { data: pkgs } = await supabase
-    .from("data_packages")
+  const { data: pkgs } = await (supabase
+    .from("data_packages") as any)
     .select("*")
     .in("id", ids)
     .eq("is_active", true)
-    .eq("is_agent_resaleable" as any, true);
+    .eq("is_agent_resaleable", true);
 
   const priceMap = new Map<string, number>();
   const baseMap = new Map<string, number>();
