@@ -204,6 +204,7 @@ export async function finalizePaystackPayment(
   }
 
   const isDeposit = intent.intent_type === "wallet_deposit";
+  const isAgentSubscription = intent.intent_type === "agent_subscription";
 
   const intentBaseAmount = Number(intent.base_amount) || Number(intent.amount_expected);
   const intentFeeAmount = Number(intent.fee_amount) || 0;
@@ -314,7 +315,7 @@ export async function finalizePaystackPayment(
   }
 
   // ── 5b. PURCHASE: re-verify package price server-side ──
-  if (!isDeposit) {
+  if (!isDeposit && !isAgentSubscription) {
     const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
     const packageId = snapshot.id as string;
 
@@ -404,9 +405,119 @@ export async function finalizePaystackPayment(
   // ── 8. BRANCH ──
   if (isDeposit) {
     return await handleDeposit(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount, source);
+  } else if (isAgentSubscription) {
+    return await handleAgentSubscription(supabase, intent, paymentRecord, intentBaseAmount, reference, source);
   } else {
     return await handlePurchase(supabase, intent, paymentRecord, intentBaseAmount, reference, intentFeeAmount, source);
   }
+}
+
+/**
+ * Agent subscription finalization.
+ * Calls the atomic activation function which:
+ *   - inserts active subscription row
+ *   - flips agent_profile to 'active'
+ *   - grants 'agent' role
+ * All idempotent on intent_id.
+ */
+async function handleAgentSubscription(
+  supabase: any,
+  intent: Record<string, unknown>,
+  paymentRecord: Record<string, unknown>,
+  baseAmount: number,
+  reference: string,
+  source: FinalizationSource,
+): Promise<FinalizationResult> {
+  const userId = intent.actor_id as string;
+  if (!userId) {
+    return { success: false, status: 422, payment_verified: true, error: "Invalid agent subscription: no user associated" };
+  }
+
+  const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
+  const plan = String(snapshot.plan || "");
+  if (plan !== "monthly" && plan !== "yearly") {
+    return { success: false, status: 422, payment_verified: true, error: `Invalid agent plan: ${plan}` };
+  }
+
+  // Server-side authoritative pricing (50/month, 400/year).
+  const expectedPrice = plan === "monthly" ? 50 : 400;
+  if (Math.abs(baseAmount - expectedPrice) > 0.01) {
+    await supabase.from("audit_logs").insert({
+      action: "agent_subscription_price_mismatch",
+      actor_id: userId,
+      actor_role: "system",
+      target_type: "purchase_intent",
+      target_id: intent.id,
+      metadata: { source, plan, paid: baseAmount, expected: expectedPrice, reference },
+    });
+    return { success: false, status: 422, blocked: true, payment_verified: true, error: "Agent subscription price mismatch." };
+  }
+
+  const { data: activation, error: actErr } = await supabase.rpc("activate_agent_subscription_atomic", {
+    _intent_id: intent.id,
+    _user_id: userId,
+    _plan: plan,
+    _amount_paid: baseAmount,
+    _payment_record_id: paymentRecord.id,
+  });
+
+  if (actErr) {
+    console.error(`[finalize:${source}] agent activation failed:`, actErr);
+    await supabase.from("audit_logs").insert({
+      action: "agent_subscription_activation_failed",
+      actor_id: userId,
+      actor_role: "system",
+      target_type: "purchase_intent",
+      target_id: intent.id,
+      metadata: { source, error: actErr.message, reference },
+    });
+    return { success: false, status: 500, payment_verified: true, error: "Subscription payment received but activation failed. Support has been notified." };
+  }
+
+  const row = Array.isArray(activation) ? activation[0] : activation;
+
+  await supabase
+    .from("purchase_intents")
+    .update({
+      status: "completed",
+      order_context: {
+        ...((intent.order_context as Record<string, unknown>) || {}),
+        agent_subscription: {
+          plan,
+          subscription_id: row?.subscription_id,
+          agent_profile_id: row?.agent_profile_id,
+          starts_at: row?.starts_at,
+          expires_at: row?.expires_at,
+          already_processed: row?.already_processed || false,
+        },
+        completed_at: new Date().toISOString(),
+        finalized_via: source,
+      },
+    })
+    .eq("id", intent.id as string);
+
+  await supabase.from("audit_logs").insert({
+    action: row?.already_processed ? "agent_subscription_already_active" : "agent_subscription_activated",
+    actor_id: userId,
+    actor_role: "system",
+    target_type: "agent_subscription",
+    target_id: row?.subscription_id || null,
+    metadata: {
+      source,
+      plan,
+      amount_paid: baseAmount,
+      reference,
+      starts_at: row?.starts_at,
+      expires_at: row?.expires_at,
+    },
+  });
+
+  return {
+    success: true,
+    intent_type: "agent_subscription",
+    intent_reference: intent.intent_reference as string,
+    already_processed: !!row?.already_processed,
+  };
 }
 
 /** Wallet deposit finalization (idempotent via reference unique check). */
