@@ -5,10 +5,11 @@
  * across the logged-in experience. Replaces ugly generic spinners.
  *
  * Components:
- *   <PageLoader />      — Suspense fallback for route transitions
- *   <ListSkeleton />    — Stacked rows skeleton (orders, transactions)
- *   <DashboardSkeleton/>— Wallet hero + quick actions + list combo
- *   <Shimmer />         — Low-level shimmer block (custom layouts)
+ *   <PageLoader />         — Suspense fallback for route transitions (content-only, no full-screen bg)
+ *   <RoutePageLoader />    — Centered loader for inside layout content slot (no background)
+ *   <ListSkeleton />       — Stacked rows skeleton (orders, transactions)
+ *   <DashboardSkeleton/>   — Wallet hero + quick actions + list combo
+ *   <Shimmer />            — Low-level shimmer block (custom layouts)
  */
 import { cn } from "@/lib/utils";
 
@@ -31,26 +32,35 @@ export function Shimmer({ className }: ShimmerProps) {
   );
 }
 
-/** Suspense fallback used by App.tsx route boundaries. Stays minimal & premium. */
+/**
+ * Suspense fallback used INSIDE layout content slots.
+ * No full-screen background — the surrounding layout owns its surface,
+ * preventing the duplicated-shell flash when routes lazy-load.
+ */
 export function PageLoader() {
   return (
     <div
-      className="min-h-[40vh] flex flex-col items-center justify-center gap-3 animate-fade-in"
+      className="min-h-[60vh] grid place-items-center gap-3 animate-fade-in"
       role="status"
       aria-label="Loading"
     >
-      <div className="relative h-9 w-9">
-        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-        <div className="relative h-9 w-9 rounded-full glass-elevated flex items-center justify-center">
-          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative h-9 w-9">
+          <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+          <div className="relative h-9 w-9 rounded-full glass-elevated flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          </div>
         </div>
+        <span className="text-[10px] tracking-[0.18em] uppercase text-muted-foreground/55 font-medium">
+          Loading
+        </span>
       </div>
-      <span className="text-[10px] tracking-[0.18em] uppercase text-muted-foreground/55 font-medium">
-        Loading
-      </span>
     </div>
   );
 }
+
+/** Alias kept for clarity — same content-only loader. */
+export const RoutePageLoader = PageLoader;
 
 interface ListSkeletonProps {
   rows?: number;
