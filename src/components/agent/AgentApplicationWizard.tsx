@@ -196,7 +196,7 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
 
   /* ── Render ──────────────────────────────────────────── */
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-32 md:pb-12">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <button
