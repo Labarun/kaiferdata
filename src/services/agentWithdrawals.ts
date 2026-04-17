@@ -1,7 +1,7 @@
 /**
  * Agent withdrawals service — wraps atomic RPCs.
- * All financial operations go through SECURITY DEFINER functions
- * that lock the agent's wallet row before debiting/refunding.
+ * v2 path uses the SEPARATE agent earnings wallet.
+ * Legacy v1 functions kept exported for backwards-compat with admin pages.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +17,7 @@ export interface WithdrawalRequest {
   momo_name: string;
   status: WithdrawalStatus;
   admin_note: string | null;
+  wallet_kind: "personal" | "agent_earnings";
   wallet_transaction_id: string | null;
   refund_transaction_id: string | null;
   requested_at: string;
@@ -26,6 +27,7 @@ export interface WithdrawalRequest {
   updated_at: string;
 }
 
+/** v2 — debits the agent earnings wallet (preferred). */
 export async function requestWithdrawal(params: {
   userId: string;
   amount: number;
@@ -33,7 +35,7 @@ export async function requestWithdrawal(params: {
   momoNetwork: string;
   momoName: string;
 }) {
-  const { data, error } = await supabase.rpc("request_agent_withdrawal_atomic", {
+  const { data, error } = await supabase.rpc("request_agent_withdrawal_v2_atomic", {
     _user_id: params.userId,
     _amount: params.amount,
     _momo_number: params.momoNumber,
@@ -64,8 +66,9 @@ export async function listAllWithdrawals(filter?: WithdrawalStatus) {
   return { data: (data ?? []) as unknown as WithdrawalRequest[], error };
 }
 
+/** v2 admin approve — handles both wallet kinds via routing in the SQL. */
 export async function approveWithdrawal(requestId: string, adminId: string, note?: string) {
-  const { data, error } = await supabase.rpc("approve_agent_withdrawal_atomic", {
+  const { data, error } = await supabase.rpc("approve_agent_withdrawal_v2_atomic", {
     _request_id: requestId,
     _admin_id: adminId,
     _note: note ?? null,
@@ -73,8 +76,9 @@ export async function approveWithdrawal(requestId: string, adminId: string, note
   return { data: data?.[0] ?? null, error };
 }
 
+/** v2 admin reject — refunds the correct wallet. */
 export async function rejectWithdrawal(requestId: string, adminId: string, note?: string) {
-  const { data, error } = await supabase.rpc("reject_agent_withdrawal_atomic", {
+  const { data, error } = await supabase.rpc("reject_agent_withdrawal_v2_atomic", {
     _request_id: requestId,
     _admin_id: adminId,
     _note: note ?? null,
