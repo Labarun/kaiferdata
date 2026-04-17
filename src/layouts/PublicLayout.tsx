@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 
 export function PublicLayout() {
@@ -82,6 +83,7 @@ export function PublicLayout() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2 shrink-0">
+            <ThemeToggle />
             {user ? (
               <Button asChild size="sm" className="h-9 text-xs">
                 <Link to={getDashboardPath(user.role)}>Dashboard</Link>
@@ -99,6 +101,7 @@ export function PublicLayout() {
           </div>
 
           <div className="flex md:hidden items-center gap-1.5">
+            <ThemeToggle />
             {user && (
               <Button size="sm" asChild className="h-8 px-3 text-xs">
                 <Link to={getDashboardPath(user.role)}>Dashboard</Link>

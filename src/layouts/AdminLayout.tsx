@@ -19,6 +19,7 @@ import {
 import { User, LogOut, ChevronDown, PanelLeftClose, PanelLeft, Search, Bell } from "lucide-react";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export interface AdminNavItem {
   label: string;
@@ -124,6 +125,8 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-4 w-4" />
           </Button>
+
+          <ThemeToggle />
 
           {/* Profile */}
           <DropdownMenu>

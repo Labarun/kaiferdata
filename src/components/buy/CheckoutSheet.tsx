@@ -141,13 +141,14 @@ export function CheckoutSheet({
       <DrawerContent
         className={cn(
           "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
-          "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
+          "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
           "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+          "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
         )}
       >
         {/* ── Premium handle ── */}
         <div className="flex justify-center pt-3.5 pb-2 shrink-0">
-          <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
+          <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)] dark:bg-[hsl(213_25%_40%/0.35)]" />
         </div>
 
         {/* ── Top edge accent ── */}
@@ -250,9 +251,9 @@ export function CheckoutSheet({
                     onChange={(e) => handlePhoneInput(e.target.value)}
                     className={cn(
                       "h-14 text-base font-semibold tracking-widest rounded-2xl pl-4 pr-12",
-                      "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
-                      "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
-                      "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)]",
+                      "bg-[hsl(0_0%_100%/0.6)] dark:bg-[hsl(213_30%_16%/0.6)] border-[hsl(228_20%_84%/0.5)] dark:border-[hsl(213_30%_26%/0.5)]",
+                      "focus:bg-[hsl(0_0%_100%/0.75)] dark:focus:bg-[hsl(213_30%_16%/0.8)] focus:border-primary/25",
+                      "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)] dark:focus:shadow-[0_0_0_4px_hsl(213_73%_50%/0.15)]",
                       "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-base",
                       "transition-all duration-200",
                       phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
@@ -289,7 +290,7 @@ export function CheckoutSheet({
                       placeholder="Optional"
                       value={customerName}
                       onChange={(e) => onCustomerNameChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
                       maxLength={100}
                     />
                   </div>
@@ -306,7 +307,7 @@ export function CheckoutSheet({
                       placeholder="For receipt"
                       value={customerEmail}
                       onChange={(e) => onCustomerEmailChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] border-[hsl(228_20%_86%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
                       maxLength={255}
                     />
                   </div>
@@ -348,7 +349,7 @@ export function CheckoutSheet({
                 {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
                 {/* Fee breakdown */}
-                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.25)]">
+                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.25)] dark:bg-[hsl(213_30%_20%/0.3)]">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground/55 font-medium">Amount</span>
                     <span className="text-[12px] font-semibold text-foreground/70 tabular-nums">
@@ -356,7 +357,7 @@ export function CheckoutSheet({
                     </span>
                   </div>
                 </div>
-                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.15)]">
+                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.15)] dark:bg-[hsl(213_30%_20%/0.15)]">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
                       Processing Fee
@@ -368,7 +369,7 @@ export function CheckoutSheet({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)]">
+                <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)] dark:bg-[hsl(213_30%_20%/0.5)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
                     Total
                   </span>

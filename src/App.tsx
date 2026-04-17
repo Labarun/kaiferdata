@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 import { ScaffoldPage } from "@/components/shared/ScaffoldPage";
@@ -70,12 +71,13 @@ function PageLoader() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+      <ThemeProvider defaultTheme="system" storageKey="kaifer-theme">
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* ====== PUBLIC AREA ====== */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<BuyDataPage />} />
@@ -146,9 +148,10 @@ const App = () => (
               {/* ====== CATCH-ALL ====== */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </AuthProvider>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

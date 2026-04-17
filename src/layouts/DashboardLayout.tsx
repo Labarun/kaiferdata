@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User, LogOut, ChevronDown, UserCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export interface NavItem {
   label: string;
@@ -60,34 +61,37 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
             <span className="hidden sm:inline text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{title}</span>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 rounded-xl">
-                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shadow-[0_0_8px_-3px_hsl(213_73%_40%/0.12)]">
-                  <User className="h-3.5 w-3.5 text-primary" />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-xl">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shadow-[0_0_8px_-3px_hsl(213_73%_40%/0.12)]">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium">{user?.fullName?.split(" ")[0] || "Account"}</span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl border-border/30">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold text-foreground">{user?.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  <div className="mt-1.5"><RoleBadge role={user?.role || "user"} /></div>
                 </div>
-                <span className="hidden sm:inline text-sm font-medium">{user?.fullName?.split(" ")[0] || "Account"}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl border-border/30">
-              <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-foreground">{user?.fullName}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-                <div className="mt-1.5"><RoleBadge role={user?.role || "user"} /></div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
-                <UserCircle className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
