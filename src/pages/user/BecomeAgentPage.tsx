@@ -30,6 +30,11 @@ export default function BecomeAgentPage() {
   const navigate = useNavigate();
   const [state, setState] = useState<AgentState | null>(null);
   const [loading, setLoading] = useState(true);
+  // Local switch — when the user explicitly chooses "Resume application"
+  // (or starts a new one) we open the wizard. Otherwise drafts show the
+  // onboarding overview first so they re-see the value prop & subscription
+  // requirement, matching the live-platform UX spec.
+  const [openWizard, setOpenWizard] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -52,14 +57,39 @@ export default function BecomeAgentPage() {
 
   switch (state.kind) {
     case "no_application":
-      return <AgentOnboardingHero onStarted={refresh} />;
+      // Onboarding hero already creates a draft when "Start my application"
+      // is tapped, so we open the wizard immediately after.
+      return (
+        <AgentOnboardingHero
+          onStarted={async () => {
+            setOpenWizard(true);
+            await refresh();
+          }}
+        />
+      );
 
     case "draft":
     case "needs_changes":
+      // Show onboarding overview with a "Resume application" CTA. Once the
+      // user explicitly chooses to resume, we open the wizard with their
+      // saved draft prefilled.
+      if (!openWizard) {
+        return (
+          <AgentOnboardingHero
+            resumeMode
+            adminNote={state.kind === "needs_changes" ? state.application.admin_note : undefined}
+            onStarted={() => setOpenWizard(true)}
+          />
+        );
+      }
       return (
         <AgentApplicationWizard
           application={state.application}
-          onSubmitted={refresh}
+          onSubmitted={async () => {
+            setOpenWizard(false);
+            await refresh();
+          }}
+          onExit={() => setOpenWizard(false)}
         />
       );
 
