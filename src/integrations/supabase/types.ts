@@ -1625,6 +1625,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_with_wallet_atomic: {
+        Args: {
+          _customer_email?: string
+          _customer_name?: string
+          _network: string
+          _package_id: string
+          _phone_number: string
+          _source_channel?: string
+          _user_id: string
+        }
+        Returns: {
+          amount_charged: number
+          new_balance: number
+          order_id: string
+          public_order_id: string
+          txn_id: string
+        }[]
+      }
       reject_agent_withdrawal_atomic: {
         Args: { _admin_id: string; _note?: string; _request_id: string }
         Returns: {

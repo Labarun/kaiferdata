@@ -16,13 +16,17 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   onStarted: () => void;
+  /** When true, the CTA reads "Resume application" and the existing draft is reused instead of creating a new one. */
+  resumeMode?: boolean;
+  /** Optional admin note to surface above the CTA (used in `needs_changes` flow). */
+  adminNote?: string | null;
 }
 
 const BENEFITS = [
   {
     icon: Tag,
-    title: "Lower agent prices",
-    desc: "Buy bundles at reseller pricing set by Kaiferdata, then add your own markup.",
+    title: "Set your own prices",
+    desc: "Choose your selling price for every bundle and earn the markup on every sale.",
   },
   {
     icon: Store,
@@ -31,8 +35,8 @@ const BENEFITS = [
   },
   {
     icon: Wallet,
-    title: "Profit tracking",
-    desc: "Every sale credits your earnings automatically. View profit per order.",
+    title: "Earnings wallet",
+    desc: "Profit from every sale lands in your dedicated earnings wallet — withdraw to MoMo.",
   },
   {
     icon: Share2,
@@ -42,7 +46,7 @@ const BENEFITS = [
   {
     icon: BarChart3,
     title: "Performance dashboard",
-    desc: "Daily, weekly and monthly views of your sales and profits.",
+    desc: "Daily, weekly and monthly views of your sales, orders and customers.",
   },
   {
     icon: ShieldCheck,
@@ -58,7 +62,7 @@ const HOW = [
   "Your storefront goes live instantly",
 ];
 
-export function AgentOnboardingHero({ onStarted }: Props) {
+export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [starting, setStarting] = useState(false);
@@ -67,6 +71,7 @@ export function AgentOnboardingHero({ onStarted }: Props) {
     if (!user) return;
     setStarting(true);
     try {
+      // getOrCreateDraft is idempotent, so resume re-uses the same row.
       await getOrCreateDraft(user.id);
       onStarted();
     } catch (e: any) {
@@ -76,7 +81,7 @@ export function AgentOnboardingHero({ onStarted }: Props) {
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-40 md:pb-32">
       {/* Hero */}
       <div className="animate-fade-in">
         <div className="flex items-center gap-2 mb-2">
@@ -105,13 +110,11 @@ export function AgentOnboardingHero({ onStarted }: Props) {
           </div>
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
-              Example earnings
+              Build a real reseller business
             </p>
             <p className="text-[13px] text-foreground mt-1 leading-relaxed">
-              Sell <span className="font-semibold">100 bundles / month</span> with
-              a <span className="font-semibold">GH₵2 markup</span> →
-              <span className="text-primary font-bold"> GH₵200 profit</span>.
-              Subscription pays for itself in days.
+              Set your own prices, share your store, and earn the markup on every
+              bundle you sell. Your subscription pays for itself fast.
             </p>
           </div>
         </div>
@@ -163,8 +166,11 @@ export function AgentOnboardingHero({ onStarted }: Props) {
         <p className="text-[10.5px] text-muted-foreground/55">Manual renewal · Cancel anytime</p>
       </div>
 
-      {/* CTA — sticky */}
-      <div className="sticky bottom-20 md:bottom-2 z-30 pt-2 animate-fade-in animate-stagger-4">
+      {/* CTA — sticky, sits clear of the mobile bottom dock and safe area */}
+      <div
+        className="sticky z-30 pt-2 animate-fade-in animate-stagger-4"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)" }}
+      >
         <Button
           className="w-full h-12 rounded-xl text-[14px] font-semibold gap-2 shadow-[0_8px_20px_-6px_hsl(213_73%_40%/0.45)]"
           disabled={starting}

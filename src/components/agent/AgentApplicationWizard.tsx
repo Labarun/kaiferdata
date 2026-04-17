@@ -38,6 +38,8 @@ interface Props {
   application: AgentApplication;
   /** Called after successful submit so the parent can refetch state. */
   onSubmitted: () => void;
+  /** Optional — invoked when the user taps the back arrow to leave the wizard. Defaults to navigate("/dashboard"). */
+  onExit?: () => void;
 }
 
 const STEPS = [
@@ -46,7 +48,7 @@ const STEPS = [
   { key: "store",    label: "Your store", icon: Store },
 ] as const;
 
-export function AgentApplicationWizard({ application, onSubmitted }: Props) {
+export function AgentApplicationWizard({ application, onSubmitted, onExit }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -129,7 +131,7 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
   }, [stepIdx, form, slugError, slugChecking]);
 
   /* ── Save draft helper ───────────────────────────────── */
-  const persist = async () => {
+  const persist = async (): Promise<boolean> => {
     setSaving(true);
     try {
       await saveApplicationDraft(application.id, {
@@ -137,14 +139,20 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
         // any edits during needs_changes flip back to draft
         status: isReturning && stepIdx > 0 ? "draft" : undefined,
       });
+      return true;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Couldn't save your progress.";
+      toast({ title: "Save failed", description: message, variant: "destructive" });
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
   const goNext = async () => {
-    if (!stepValid) return;
-    await persist();
+    if (!stepValid || saving) return;
+    const ok = await persist();
+    if (!ok) return;
     setStepIdx((i) => Math.min(i + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -190,14 +198,14 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
 
   /* ── Render ──────────────────────────────────────────── */
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-32 md:pb-12">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => (onExit ? onExit() : navigate("/dashboard"))}
           className="text-[12px] text-muted-foreground/70 flex items-center gap-1 hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
+          <ArrowLeft className="h-3.5 w-3.5" /> {onExit ? "Overview" : "Dashboard"}
         </button>
         {saving && (
           <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
