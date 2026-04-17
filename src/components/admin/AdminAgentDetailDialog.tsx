@@ -160,7 +160,7 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
         </DialogHeader>
 
         {loading || !application ? (
-          <LoadingState message="Loading…" />
+          <PageLoader />
         ) : (
           <div className="space-y-5">
             {/* Store header */}

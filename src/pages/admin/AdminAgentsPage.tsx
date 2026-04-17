@@ -76,7 +76,7 @@ export default function AdminAgentsPage() {
   }, [rows, tab]);
 
   if (!user || user.role !== "admin") {
-    return <LoadingState message="Checking access..." />;
+    return <PageLoader />;
   }
 
   return (
@@ -117,7 +117,7 @@ export default function AdminAgentsPage() {
 
       {/* Results */}
       {loading ? (
-        <LoadingState message="Loading agents…" />
+        <PageLoader />
       ) : visibleRows.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
