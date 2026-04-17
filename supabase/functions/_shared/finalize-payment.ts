@@ -440,7 +440,7 @@ async function handleAgentSubscription(
   }
 
   // Server-side authoritative pricing (50/month, 400/year).
-  const expectedPrice = plan === "monthly" ? 50 : 400;
+  const expectedPrice = plan === "monthly" ? 30 : 300;
   if (Math.abs(baseAmount - expectedPrice) > 0.01) {
     await supabase.from("audit_logs").insert({
       action: "agent_subscription_price_mismatch",

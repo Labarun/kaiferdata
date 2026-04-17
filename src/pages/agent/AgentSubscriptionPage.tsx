@@ -234,7 +234,9 @@ function PlanPicker({
           const plan = AGENT_PLANS[code];
           const isSel = selected === code;
           const monthlyEq = code === "yearly" ? plan.price / 12 : plan.price;
-          const savings = code === "yearly" ? Math.round((1 - 400 / (50 * 12)) * 100) : 0;
+          const savings = code === "yearly"
+            ? Math.round((1 - AGENT_PLANS.yearly.price / (AGENT_PLANS.monthly.price * 12)) * 100)
+            : 0;
 
           return (
             <button
