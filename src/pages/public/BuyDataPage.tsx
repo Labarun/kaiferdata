@@ -4,13 +4,14 @@
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, Zap, Shield, Clock, Search, Wifi } from "lucide-react";
+import { Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { AgentPromoModal } from "@/components/marketing/AgentPromoModal";
 import {
   fetchPublicPackages,
   getPackageNetworks,
@@ -241,17 +242,26 @@ export default function BuyDataPage() {
             </section>
           )}
 
-          <div className="flex items-center justify-center pt-2 pb-2">
+          <div className="flex items-center justify-center gap-2 pt-2 pb-2">
             <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/45 h-8 font-medium">
               <Link to="/track">
                 <Search className="h-3 w-3 mr-1.5" />
                 Track Order
               </Link>
             </Button>
+            <span className="h-3 w-px bg-border/40" />
+            <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/45 h-8 font-medium">
+              <Link to="/get-app">
+                <Smartphone className="h-3 w-3 mr-1.5" />
+                Get the App
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
 
+      {/* Premium agent promo — smart display rules handled internally */}
+      <AgentPromoModal />
 
       <CheckoutSheet
         open={checkoutOpen}
