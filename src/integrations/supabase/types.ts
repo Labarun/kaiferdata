@@ -1113,6 +1113,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_agent_subscription_atomic: {
+        Args: {
+          _amount_paid: number
+          _intent_id: string
+          _payment_record_id: string
+          _plan: Database["public"]["Enums"]["agent_subscription_plan"]
+          _user_id: string
+        }
+        Returns: {
+          agent_profile_id: string
+          already_processed: boolean
+          expires_at: string
+          starts_at: string
+          subscription_id: string
+        }[]
+      }
       claim_intent_for_verification: {
         Args: { _intent_id: string }
         Returns: {
