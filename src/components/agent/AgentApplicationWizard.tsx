@@ -129,7 +129,7 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
   }, [stepIdx, form, slugError, slugChecking]);
 
   /* ── Save draft helper ───────────────────────────────── */
-  const persist = async () => {
+  const persist = async (): Promise<boolean> => {
     setSaving(true);
     try {
       await saveApplicationDraft(application.id, {
@@ -137,14 +137,20 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
         // any edits during needs_changes flip back to draft
         status: isReturning && stepIdx > 0 ? "draft" : undefined,
       });
+      return true;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Couldn't save your progress.";
+      toast({ title: "Save failed", description: message, variant: "destructive" });
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
   const goNext = async () => {
-    if (!stepValid) return;
-    await persist();
+    if (!stepValid || saving) return;
+    const ok = await persist();
+    if (!ok) return;
     setStepIdx((i) => Math.min(i + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

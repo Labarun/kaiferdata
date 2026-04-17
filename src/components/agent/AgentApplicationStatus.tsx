@@ -138,7 +138,7 @@ export function AgentApplicationStatus({ application, profile, variant }: Props)
 
       {/* CTAs */}
       {variant === "approved_pending_subscription" && (
-        <Link to="/dashboard/become-agent/subscribe" className="block animate-fade-in animate-stagger-2">
+        <Link to="/agent/subscription" className="block animate-fade-in animate-stagger-2">
           <Button className="w-full h-12 rounded-xl gap-2">
             <CreditCard className="h-4 w-4" />
             Choose a subscription plan
