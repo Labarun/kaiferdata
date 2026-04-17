@@ -1,12 +1,11 @@
 /**
  * Public Agent Storefront — /store/:slug
  *
- * Lets buyers shop bundles through an agent's branded page. Orders/intents
- * created here carry order_context.referral_agent_slug so we can attribute
- * sales to the agent (Phase 5 will turn that into commission/profit).
- *
- * Strict additive: re-uses the existing CheckoutSheet + purchaseIntent
- * pipeline. Only adds an extra `referral` field passed into the intent.
+ * Uses the agent's *published* selling prices (from agent_bundle_prices)
+ * — falls back to admin-defined selling_price for any bundle the agent
+ * hasn't priced yet. Snapshots both the agent_selling_price AND
+ * agent_base_price into purchase_intents.order_context.referral so the
+ * commission trigger can compute exact profit on delivery.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -24,6 +23,7 @@ import {
   filterPackagesByNetwork,
   type DataPackage,
 } from "@/services/packageCatalog";
+import { fetchPublishedAgentBundles } from "@/services/agentPricing";
 import {
   createPurchaseIntent,
   initializePayment,
@@ -56,7 +56,7 @@ export default function AgentStorefrontPage() {
 
   const [store, setStore] = useState<AgentProfile | null>(null);
   const [storeStatus, setStoreStatus] = useState<"loading" | "found" | "not_found">("loading");
-  const [packages, setPackages] = useState<DataPackage[]>([]);
+  const [packages, setPackages] = useState<(DataPackage & { _agent_base_price?: number })[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(null);
@@ -83,14 +83,32 @@ export default function AgentStorefrontPage() {
     return () => { cancelled = true; };
   }, [slug]);
 
-  // Load packages
+  // Load packages — prefer agent-priced ones, fall back to public catalog.
   useEffect(() => {
-    fetchPublicPackages()
-      .then(setPackages)
-      .catch(() => toast({ title: "Error", description: "Failed to load plans", variant: "destructive" }))
-      .finally(() => setLoadingPackages(false));
+    if (!store) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [agentPriced, publicPkgs] = await Promise.all([
+          fetchPublishedAgentBundles(store.id),
+          fetchPublicPackages(),
+        ]);
+        if (cancelled) return;
+
+        // Merge: prefer agent-priced for any matching id; fill the rest from public.
+        const map = new Map<string, DataPackage & { _agent_base_price?: number }>();
+        publicPkgs.forEach((p) => map.set(p.id, p as any));
+        agentPriced.forEach((p) => map.set(p.id, p as any));
+        setPackages(Array.from(map.values()));
+      } catch {
+        toast({ title: "Error", description: "Failed to load plans", variant: "destructive" });
+      } finally {
+        if (!cancelled) setLoadingPackages(false);
+      }
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [store?.id]);
 
   const networks = useMemo(() => {
     const available = getPackageNetworks(packages);
@@ -122,6 +140,10 @@ export default function AgentStorefrontPage() {
     setSubmitting(true);
     setPaymentError(null);
     try {
+      // Locate the package row to capture base price
+      const pkgRow = packages.find((p) => p.id === plan.id);
+      const agentBase = pkgRow ? Number(pkgRow._agent_base_price ?? (pkgRow as any).agent_base_price ?? 0) : 0;
+
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
@@ -129,13 +151,15 @@ export default function AgentStorefrontPage() {
         plan,
         customerEmail: customerEmail || undefined,
         customerName: customerName || undefined,
-        // Attribution metadata — picked up downstream in Phase 5.
         referral: {
           agent_profile_id: store.id,
           agent_user_id: store.user_id,
           store_slug: store.store_slug,
           store_name: store.store_name,
-        },
+          // Pricing snapshot used by handle_order_delivered_commission
+          agent_selling_price: Number(plan.amount),
+          agent_base_price: agentBase,
+        } as any,
       } as any);
       setProcessingLabel("Initializing payment…");
       const payment = await initializePayment(result.id);
@@ -185,17 +209,10 @@ export default function AgentStorefrontPage() {
   }
 
   const pageTitle = `${store.store_name} · Buy Data on Kaiferdata`;
-  const pageDesc = store.store_tagline || `Shop MTN, Telecel and AirtelTigo data bundles from ${store.store_name}. Fast delivery, secure payments.`;
-
-  // SEO: set document title (no helmet dep)
-  if (typeof document !== "undefined") {
-    document.title = pageTitle;
-  }
+  if (typeof document !== "undefined") document.title = pageTitle;
 
   return (
     <div className="min-h-[70vh] pb-6">
-
-      {/* ── Storefront hero ── */}
       <section className="bg-hero-gradient relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
           <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[650px] h-[380px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[80px]" />
@@ -204,13 +221,11 @@ export default function AgentStorefrontPage() {
 
         <div className="container relative pt-10 pb-7 sm:pt-14 sm:pb-9">
           <div className="max-w-md mx-auto text-center">
-            {/* Store badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-premium text-[10px] mb-5 refraction-rim overflow-hidden">
               <StoreIcon className="h-3 w-3 text-primary" />
               <span className="font-semibold text-foreground/65 tracking-wide uppercase">Agent Store</span>
             </div>
 
-            {/* Logo */}
             <div className="mx-auto mb-4 h-20 w-20 rounded-2xl glass-elevated flex items-center justify-center overflow-hidden">
               {store.store_logo_url ? (
                 <img src={store.store_logo_url} alt={`${store.store_name} logo`} className="h-full w-full object-cover" />
@@ -235,7 +250,6 @@ export default function AgentStorefrontPage() {
           </div>
         </div>
 
-        {/* Trust strip */}
         <div className="relative">
           <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
           <div className="container py-3.5">
@@ -259,7 +273,6 @@ export default function AgentStorefrontPage() {
         </div>
       </section>
 
-      {/* ── Buy flow ── */}
       <div className="container pt-7 sm:pt-9">
         <div className="max-w-lg mx-auto">
           <NoticeBanner audience="public" />

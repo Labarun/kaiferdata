@@ -1,11 +1,9 @@
 /**
- * Agent Withdraw Page — request mobile money payouts from the agent wallet.
- * Funds are debited from the wallet immediately at request time and
- * refunded automatically if an admin rejects the request.
+ * Agent Withdraw Page — request mobile money payouts from the
+ * SEPARATE agent earnings balance (not the personal wallet).
  */
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowDownToLine, Wallet } from "lucide-react";
+import { Loader2, ArrowDownToLine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   listMyWithdrawals, requestWithdrawal, getMinWithdrawal,
   type WithdrawalRequest, type WithdrawalStatus,
 } from "@/services/agentWithdrawals";
+import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentEarningsWallet";
+import { EarningsBalanceCard } from "@/components/agent/EarningsBalanceCard";
+import { SubscriptionGate } from "@/components/agent/SubscriptionGate";
 
 const statusStyle: Record<WithdrawalStatus, string> = {
   pending: "bg-warning/10 text-warning border-warning/20",
@@ -34,9 +35,20 @@ const NETWORKS = [
 ];
 
 export default function AgentWithdrawPage() {
+  return (
+    <div className="animate-fade-in pb-8 space-y-4">
+      <PageHeader title="Withdraw" description="Cash out your earnings to mobile money." />
+      <SubscriptionGate message="Subscribe to enable withdrawals.">
+        <WithdrawInner />
+      </SubscriptionGate>
+    </div>
+  );
+}
+
+function WithdrawInner() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [balance, setBalance] = useState(0);
+  const [wallet, setWallet] = useState<AgentEarningsWallet | null>(null);
   const [minAmount, setMinAmount] = useState(10);
   const [history, setHistory] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,19 +61,20 @@ export default function AgentWithdrawPage() {
 
   const refresh = async () => {
     if (!user) return;
-    const [{ data: wallet }, { data: minA }, { data: hist }] = await Promise.all([
-      supabase.from("wallets").select("current_balance").eq("user_id", user.id).maybeSingle(),
-      Promise.resolve({ data: await getMinWithdrawal() }),
+    const [w, minA, hist] = await Promise.all([
+      fetchEarningsWallet(user.id),
+      getMinWithdrawal(),
       listMyWithdrawals(user.id),
     ]);
-    setBalance(Number(wallet?.current_balance ?? 0));
+    setWallet(w);
     setMinAmount(minA);
-    setHistory(hist ?? []);
+    setHistory(hist.data ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { refresh(); }, [user?.id]);
+  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user?.id]);
 
+  const balance = Number(wallet?.current_balance ?? 0);
   const numericAmount = useMemo(() => Number(amount), [amount]);
   const canSubmit =
     !!user && numericAmount >= minAmount && numericAmount <= balance &&
@@ -82,33 +95,15 @@ export default function AgentWithdrawPage() {
       toast({ title: "Request failed", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Withdrawal requested", description: `GH₵ ${numericAmount.toFixed(2)} held from your wallet.` });
+    toast({ title: "Withdrawal requested", description: `GH₵ ${numericAmount.toFixed(2)} held from your earnings.` });
     setAmount(""); setMomoNumber(""); setMomoName("");
     refresh();
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <PageHeader title="Withdraw" description="Cash out your earnings to mobile money" />
+    <div className="space-y-5">
+      <EarningsBalanceCard wallet={wallet} loading={loading} />
 
-      {/* Balance hero */}
-      <div className="glass-wallet-hero rounded-2xl p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10.5px] uppercase tracking-[0.15em] text-muted-foreground/70 font-semibold">Available balance</p>
-            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight">
-              <span className="text-base text-muted-foreground mr-1">GH₵</span>
-              {balance.toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Min withdrawal: GH₵ {minAmount.toFixed(2)}</p>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Wallet className="h-6 w-6 text-primary" />
-          </div>
-        </div>
-      </div>
-
-      {/* Form */}
       <Card className="glass-card rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -122,7 +117,9 @@ export default function AgentWithdrawPage() {
             <Input
               id="amount" type="number" inputMode="decimal" min={minAmount} max={balance} step="0.01"
               value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={`${minAmount.toFixed(2)} or more`}
+              className="text-base md:text-sm"
             />
+            <p className="text-[10px] text-muted-foreground/60">Min: GH₵ {minAmount.toFixed(2)} · Available: GH₵ {balance.toFixed(2)}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -137,24 +134,25 @@ export default function AgentWithdrawPage() {
             <div className="space-y-2">
               <Label htmlFor="momoNumber">MoMo number</Label>
               <Input id="momoNumber" inputMode="numeric" value={momoNumber}
-                onChange={(e) => setMomoNumber(e.target.value.replace(/\D/g, ""))} placeholder="0244123456" />
+                onChange={(e) => setMomoNumber(e.target.value.replace(/\D/g, ""))} placeholder="0244123456"
+                className="text-base md:text-sm" />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="momoName">Account name</Label>
-            <Input id="momoName" value={momoName} onChange={(e) => setMomoName(e.target.value)} placeholder="As registered on MoMo" />
+            <Input id="momoName" value={momoName} onChange={(e) => setMomoName(e.target.value)} placeholder="As registered on MoMo"
+              className="text-base md:text-sm" />
           </div>
           <Button onClick={handleSubmit} disabled={!canSubmit || submitting} className="w-full h-11">
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Request payout
           </Button>
           {numericAmount > 0 && numericAmount > balance && (
-            <p className="text-xs text-destructive">Amount exceeds your balance.</p>
+            <p className="text-xs text-destructive">Amount exceeds your earnings balance.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* History */}
       <div>
         <p className="text-[10.5px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/70 mb-2">Recent requests</p>
         {loading ? (

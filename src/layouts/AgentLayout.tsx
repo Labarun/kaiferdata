@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, ShoppingCart, DollarSign, ArrowDownToLine, Store, CreditCard, Bell } from "lucide-react";
+import { Home, ShoppingCart, DollarSign, ArrowDownToLine, Store, CreditCard, Tag, Megaphone, Users, ListChecks, Layers } from "lucide-react";
 import type { NavItem } from "@/layouts/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,11 @@ const navItems: NavItem[] = [
 ];
 
 const desktopExtra: NavItem[] = [
+  { label: "Pricing", path: "/agent/pricing", icon: Tag },
+  { label: "Marketing", path: "/agent/marketing", icon: Megaphone },
+  { label: "Customers", path: "/agent/customers", icon: Users },
+  { label: "Transactions", path: "/agent/transactions", icon: ListChecks },
+  { label: "Bulk Orders", path: "/agent/bulk", icon: Layers },
   { label: "Store", path: "/agent/store", icon: Store },
   { label: "Subscription", path: "/agent/subscription", icon: CreditCard },
 ];

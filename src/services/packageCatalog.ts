@@ -23,6 +23,8 @@ export interface DataPackage {
   source_type: string;
   supplier_source_id: string | null;
   source_metadata: Record<string, unknown> | null;
+  agent_base_price: number;
+  is_agent_resaleable: boolean;
   created_at: string;
   updated_at: string;
 }
