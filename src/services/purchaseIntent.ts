@@ -51,6 +51,13 @@ export async function createPurchaseIntent(params: {
   actorId?: string;
   sourceChannel?: string;
   intentType?: string;
+  /** Optional referral attribution (agent storefront sales). Stored in order_context. */
+  referral?: {
+    agent_profile_id: string;
+    agent_user_id: string;
+    store_slug: string;
+    store_name: string;
+  };
 }): Promise<PurchaseIntent> {
   const intentRef = generateIntentRef("KD");
 
@@ -64,6 +71,11 @@ export async function createPurchaseIntent(params: {
     description: params.plan.description,
   };
 
+  const orderContext: Record<string, unknown> = {};
+  if (params.referral) {
+    orderContext.referral = params.referral;
+  }
+
   const { data, error } = await supabase
     .from("purchase_intents")
     .insert({
@@ -71,7 +83,7 @@ export async function createPurchaseIntent(params: {
       intent_type: params.intentType || "guest_buy",
       actor_type: params.actorType || "guest",
       actor_id: params.actorId || null,
-      source_channel: params.sourceChannel || "public_guest_checkout",
+      source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
       phone_number: params.phoneNumber,
       network: params.network,
       plan_id: null, // FK removed — we rely on plan_snapshot
@@ -79,6 +91,7 @@ export async function createPurchaseIntent(params: {
       amount_expected: Number(params.plan.amount),
       customer_email: params.customerEmail || null,
       customer_name: params.customerName || null,
+      order_context: orderContext,
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     })
     .select()
