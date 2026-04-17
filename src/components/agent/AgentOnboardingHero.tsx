@@ -56,10 +56,11 @@ const BENEFITS = [
 ];
 
 const HOW = [
-  "Apply in 3 short steps",
-  "Get reviewed within 24-48 hours",
-  "Subscribe (GH₵50/mo or GH₵400/yr)",
-  "Your storefront goes live instantly",
+  "Apply in a few minutes",
+  "Our team reviews your application",
+  "Get approved within ~24 hours",
+  "Activate your store",
+  "Start selling and earning",
 ];
 
 export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props) {
