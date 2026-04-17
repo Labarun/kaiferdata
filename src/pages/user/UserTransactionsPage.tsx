@@ -4,7 +4,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowRightLeft, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { ArrowRightLeft, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { ListSkeleton } from "@/components/shared/LoadingState";
 
 export default function UserTransactionsPage() {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ export default function UserTransactionsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-14"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <ListSkeleton rows={5} />
       ) : transactions.length === 0 ? (
         <div className="glass-card rounded-xl py-14 text-center animate-fade-in">
           <ArrowRightLeft className="h-10 w-10 text-muted-foreground/15 mx-auto mb-3" />

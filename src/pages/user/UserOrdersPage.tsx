@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { Search, Loader2, ShoppingCart, Clock, ChevronRight } from "lucide-react";
+import { Search, ShoppingCart, Clock, ChevronRight } from "lucide-react";
+import { ListSkeleton } from "@/components/shared/LoadingState";
 
 export default function UserOrdersPage() {
   const { user } = useAuth();
@@ -57,7 +58,7 @@ export default function UserOrdersPage() {
 
       {/* Orders list */}
       {loading ? (
-        <div className="flex justify-center py-14"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <ListSkeleton rows={4} />
       ) : orders.length === 0 ? (
         <div className="glass-card rounded-xl py-14 text-center animate-fade-in">
           <ShoppingCart className="h-10 w-10 text-muted-foreground/15 mx-auto mb-3" />

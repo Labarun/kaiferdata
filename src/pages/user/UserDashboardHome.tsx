@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { WalletCard } from "@/components/shared/WalletCard";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Link } from "react-router-dom";
-import { Wifi, ArrowDownToLine, ShoppingCart, ArrowRight, Clock, Loader2, Sparkles } from "lucide-react";
+import { Wifi, ArrowDownToLine, ShoppingCart, ArrowRight, Clock, Sparkles } from "lucide-react";
+import { ListSkeleton } from "@/components/shared/LoadingState";
 
 export default function UserDashboardHome() {
   const { user } = useAuth();
@@ -84,9 +85,7 @@ export default function UserDashboardHome() {
 
         <div className="glass-card rounded-xl overflow-hidden">
           {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
+            <ListSkeleton rows={3} connected />
           ) : recentOrders.length === 0 ? (
             <div className="py-10 text-center">
               <Clock className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />

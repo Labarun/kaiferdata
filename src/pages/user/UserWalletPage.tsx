@@ -13,6 +13,7 @@ import {
   ArrowDownToLine, Wifi, ArrowRightLeft, Loader2, Clock,
   ShieldCheck, X, Sparkles, ArrowRight,
 } from "lucide-react";
+import { ListSkeleton } from "@/components/shared/LoadingState";
 import {
   Drawer, DrawerContent,
 } from "@/components/ui/drawer";
@@ -153,7 +154,7 @@ export default function UserWalletPage() {
 
         <div className="glass-card rounded-xl overflow-hidden">
           {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            <ListSkeleton rows={3} connected />
           ) : transactions.length === 0 ? (
             <div className="py-10 text-center">
               <Clock className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
