@@ -269,3 +269,32 @@ export async function reactivateAgent(opts: { profileId: string; adminId: string
     target_id: opts.profileId,
   });
 }
+
+/**
+ * Admin manual activation — directly activates an approved agent's store
+ * for either 1 month or 1 year, even if the agent has not paid through Paystack.
+ * Backed by the SECURITY DEFINER function `admin_activate_agent_subscription`,
+ * which validates admin role, creates the subscription, sets the profile to
+ * 'active', grants the agent role, and writes an audit log.
+ */
+export async function adminActivateAgent(opts: {
+  targetUserId: string;
+  adminId: string;
+  plan: "monthly" | "yearly";
+  note?: string;
+}): Promise<{ subscriptionId: string; startsAt: string; expiresAt: string }> {
+  const { data, error } = await supabase.rpc("admin_activate_agent_subscription", {
+    _admin_id: opts.adminId,
+    _target_user_id: opts.targetUserId,
+    _plan: opts.plan,
+    _note: opts.note ?? null,
+  });
+  if (error) throw new Error(error.message);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("Activation did not return a result");
+  return {
+    subscriptionId: row.subscription_id,
+    startsAt: row.starts_at,
+    expiresAt: row.expires_at,
+  };
+}
