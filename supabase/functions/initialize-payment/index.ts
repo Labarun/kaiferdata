@@ -267,8 +267,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3. Calculate Paystack fee (3%) using SERVER price ──
-    const breakdown = calculatePaystackFee(authoritative_base_amount);
+    // ── 3. Calculate Paystack fee — 3% on bundles & deposits, 0% on agent subscriptions
+    //    (subscription is flat-priced: GHS 50/mo, GHS 400/yr).
+    const breakdown = isAgentSubscription
+      ? {
+          baseAmount: authoritative_base_amount,
+          feeAmount: 0,
+          feeRate: 0,
+          totalAmount: authoritative_base_amount,
+        }
+      : calculatePaystackFee(authoritative_base_amount);
 
     // ── 4. Build Paystack reference ──
     const paystackReference = intent.intent_reference;
