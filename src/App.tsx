@@ -44,6 +44,7 @@ const AgentSubscriptionPage = lazy(() => import("@/pages/agent/AgentSubscription
 const AgentEarningsPage = lazy(() => import("@/pages/agent/AgentEarningsPage"));
 const AgentStorePage = lazy(() => import("@/pages/agent/AgentStorePage"));
 const AgentOrdersPage = lazy(() => import("@/pages/agent/AgentOrdersPage"));
+const AgentWithdrawPage = lazy(() => import("@/pages/agent/AgentWithdrawPage"));
 const AdminDashboardHome = lazy(() => import("@/pages/admin/AdminDashboardHome"));
 const StaffDashboardHome = lazy(() => import("@/pages/staff/StaffDashboardHome"));
 const StaffOrdersPage = lazy(() => import("@/pages/staff/StaffOrdersPage"));
@@ -65,6 +66,7 @@ const AdminIntentDetailPage = lazy(() => import("@/pages/admin/AdminIntentDetail
 const AdminPackagesPage = lazy(() => import("@/pages/admin/AdminPackagesPage"));
 const AdminSupplierPage = lazy(() => import("@/pages/admin/AdminSupplierPage"));
 const AdminAgentsPage = lazy(() => import("@/pages/admin/AdminAgentsPage"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Tuned defaults: cut needless refetches on tab focus, keep cached data warm
@@ -126,6 +128,7 @@ const App = () => (
                 <Route path="/agent/store" element={<AgentStorePage />} />
                 <Route path="/agent/orders" element={<AgentOrdersPage />} />
                 <Route path="/agent/earnings" element={<AgentEarningsPage />} />
+                <Route path="/agent/withdraw" element={<AgentWithdrawPage />} />
               </Route>
 
               {/* ====== ADMIN PANEL ====== */}
@@ -141,7 +144,7 @@ const App = () => (
                 <Route path="/admin/intents" element={<AdminIntentsPage />} />
                 <Route path="/admin/intents/:intentId" element={<AdminIntentDetailPage />} />
                 <Route path="/admin/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
-                <Route path="/admin/users" element={<ScaffoldPage title="Users" description="User management" />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/admin/agents" element={<AdminAgentsPage />} />
                 <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
                 <Route path="/admin/analytics" element={<ScaffoldPage title="Analytics" description="Platform analytics" />} />

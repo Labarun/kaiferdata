@@ -1,11 +1,13 @@
 /**
  * DashboardLayout — Premium liquid-glass customer dashboard shell
  */
+import { Suspense, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { signOut } from "@/services/auth";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { PageLoader } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/shared/RoleBadge";
 import {
@@ -19,12 +21,12 @@ import {
 import { User, LogOut, ChevronDown, UserCircle, Shield, Store, Headset, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
 
 export interface NavItem {
   label: string;
   path: string;
   icon: LucideIcon;
-  /** When true, this item is rendered as the elevated/centered tab on mobile dock. */
   featured?: boolean;
 }
 
@@ -33,12 +35,16 @@ interface DashboardLayoutProps {
   desktopExtraNav?: NavItem[];
   title: string;
   audienceFilter?: string;
+  /** Optional extra slot (e.g. "More" sheet trigger) shown at the end of the mobile dock. */
+  mobileExtraDockSlot?: React.ReactNode;
 }
 
-export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilter }: DashboardLayoutProps) {
+export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilter, mobileExtraDockSlot }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useCloseOnRouteChange(setMenuOpen);
 
   const handleSignOut = async () => {
     await signOut();
@@ -51,7 +57,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Premium glass top bar ── */}
-      <header className="sticky top-0 z-50 glass-topbar">
+      <header className="sticky top-0 z-50 glass-topbar" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Link to="/" className="flex items-center gap-2 group">
@@ -66,7 +72,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <DropdownMenu>
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 rounded-xl">
                   <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shadow-[0_0_8px_-3px_hsl(213_73%_40%/0.12)]">
@@ -84,17 +90,15 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                 </div>
                 <DropdownMenuSeparator />
 
-                {/* Always-available */}
-                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                <DropdownMenuItem onClick={() => { setMenuOpen(false); navigate("/dashboard"); }}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
+                <DropdownMenuItem onClick={() => { setMenuOpen(false); navigate("/dashboard/profile"); }}>
                   <UserCircle className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
 
-                {/* Role-aware quick switches */}
                 {(user?.role === "admin" || user?.role === "staff" || user?.role === "agent") && (
                   <>
                     <DropdownMenuSeparator />
@@ -103,21 +107,21 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                     </DropdownMenuLabel>
 
                     {user?.role === "admin" && (
-                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <DropdownMenuItem onClick={() => { setMenuOpen(false); navigate("/admin"); }}>
                         <Shield className="mr-2 h-4 w-4 text-destructive" />
                         Admin Panel
                       </DropdownMenuItem>
                     )}
 
                     {(user?.role === "admin" || user?.role === "staff") && (
-                      <DropdownMenuItem onClick={() => navigate("/staff")}>
+                      <DropdownMenuItem onClick={() => { setMenuOpen(false); navigate("/staff"); }}>
                         <Headset className="mr-2 h-4 w-4 text-warning" />
                         Staff Panel
                       </DropdownMenuItem>
                     )}
 
                     {(user?.role === "admin" || user?.role === "agent") && (
-                      <DropdownMenuItem onClick={() => navigate("/agent")}>
+                      <DropdownMenuItem onClick={() => { setMenuOpen(false); navigate("/agent"); }}>
                         <Store className="mr-2 h-4 w-4 text-primary" />
                         Agent Dashboard
                       </DropdownMenuItem>
@@ -160,13 +164,18 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
         <main className="flex-1 pb-24 md:pb-6">
           <div className="container py-5 sm:py-6 max-w-2xl">
             <NoticeBanner audience={audienceFilter} />
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>
 
       {/* ── Mobile floating glass dock ── */}
-      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 glass-dock rounded-2xl">
+      <nav
+        className="md:hidden fixed left-3 right-3 z-50 glass-dock rounded-2xl"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+      >
         <div className="flex items-end justify-around py-2 px-1">
           {navItems.slice(0, 5).map((item) => {
             const active = isActive(item.path);
@@ -189,11 +198,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                   >
                     <item.icon className="h-5 w-5" />
                   </div>
-                  <span
-                    className={`mt-1 text-[10px] font-semibold transition-colors ${
-                      active ? "text-primary" : "text-foreground/70"
-                    }`}
-                  >
+                  <span className={`mt-1 text-[10px] font-semibold transition-colors ${active ? "text-primary" : "text-foreground/70"}`}>
                     {item.label}
                   </span>
                 </Link>
@@ -206,9 +211,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                 to={item.path}
                 aria-label={item.label}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
-                  active
-                    ? "glass-nav-active text-primary"
-                    : "text-muted-foreground active:scale-95"
+                  active ? "glass-nav-active text-primary" : "text-muted-foreground active:scale-95"
                 }`}
               >
                 <item.icon className={`h-5 w-5 transition-transform duration-200 ${active ? "scale-110" : ""}`} />
@@ -216,6 +219,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
               </Link>
             );
           })}
+          {mobileExtraDockSlot}
         </div>
       </nav>
     </div>
