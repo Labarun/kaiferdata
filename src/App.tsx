@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 import { ScaffoldPage } from "@/components/shared/ScaffoldPage";
+import { PageLoader } from "@/components/shared/LoadingState";
 import { lazy, Suspense } from "react";
 
 // Layouts — kept eager since they wrap all routes
@@ -60,15 +61,18 @@ const AdminPackagesPage = lazy(() => import("@/pages/admin/AdminPackagesPage"));
 const AdminSupplierPage = lazy(() => import("@/pages/admin/AdminSupplierPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
-const queryClient = new QueryClient();
-
-function PageLoader() {
-  return (
-    <div className="min-h-[40vh] flex items-center justify-center">
-      <div className="h-6 w-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>
-  );
-}
+// Tuned defaults: cut needless refetches on tab focus, keep cached data warm
+// for 30s — fixes "every navigation refetches" sluggishness on mobile.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
