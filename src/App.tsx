@@ -19,6 +19,7 @@ import { StaffLayout } from "@/layouts/StaffLayout";
 
 // Critical public page — eagerly loaded for fast first paint
 import BuyDataPage from "@/pages/public/BuyDataPage";
+import Index from "@/pages/Index";
 
 // Lazy-loaded pages
 const TrackOrderPage = lazy(() => import("@/pages/public/TrackOrderPage"));
@@ -80,7 +81,7 @@ const App = () => (
               <Routes>
               {/* ====== PUBLIC AREA ====== */}
               <Route element={<PublicLayout />}>
-                <Route path="/" element={<BuyDataPage />} />
+                <Route path="/" element={<Index />} />
                 <Route path="/buy" element={<BuyDataPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/track" element={<TrackOrderPage />} />
