@@ -17,6 +17,7 @@ import { PageLoader } from "@/components/shared/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
+  adminActivateAgent,
   approveApplication,
   declineApplication,
   getApplicationDetail,
@@ -26,7 +27,7 @@ import {
   suspendAgent,
 } from "@/services/agentAdmin";
 import type { AgentApplication, AgentProfile, AgentSubscription } from "@/services/agent";
-import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store } from "lucide-react";
+import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap } from "lucide-react";
 
 interface Props {
   applicationId: string;
