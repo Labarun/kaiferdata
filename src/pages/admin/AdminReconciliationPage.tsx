@@ -9,9 +9,10 @@ import { RecoveryDialog } from "@/components/admin/RecoveryDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Loader2, AlertTriangle, CreditCard, Package, FileText,
-  ChevronRight, CheckCircle2, XCircle, ShieldAlert, RefreshCcw,
+  ChevronRight, CheckCircle2, XCircle, ShieldAlert, RefreshCcw, PlayCircle, Clock,
 } from "lucide-react";
 
 interface ReconciliationCategory {
@@ -29,14 +30,42 @@ export default function AdminReconciliationPage() {
   const [categories, setCategories] = useState<ReconciliationCategory[]>([]);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryContext, setRecoveryContext] = useState<{ payment?: Record<string, unknown> | null; intent?: Record<string, unknown> | null }>({});
+  const [sweepRunning, setSweepRunning] = useState(false);
+
+  const runRecoverySweep = async () => {
+    setSweepRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("recover-payments", { body: {} });
+      if (error) throw error;
+      const stats = (data?.stats || {}) as Record<string, number>;
+      toast.success(
+        `Sweep complete · ${stats.scanned || 0} scanned · ${stats.finalized || 0} recovered · ${stats.already_processed || 0} already done`,
+      );
+      await fetchData();
+    } catch (err) {
+      toast.error(`Sweep failed: ${(err as Error).message}`);
+    } finally {
+      setSweepRunning(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    const [stuckIntents, failedOrders, stuckOrders] = await Promise.all([
+    // Stuck payments: intents in pre-completed states older than 2 minutes (recovery candidates)
+    const cutoff2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+    const [stuckIntents, failedOrders, stuckOrders, stuckPayments] = await Promise.all([
       supabase.from("purchase_intents").select("*").eq("status", "payment_confirmed").order("created_at", { ascending: false }).limit(50),
       supabase.from("orders").select("*").eq("status", "failed").order("created_at", { ascending: false }).limit(50),
       supabase.from("orders").select("*").in("status", ["paid", "queued", "processing"]).order("created_at", { ascending: true }).limit(50),
+      supabase.from("purchase_intents").select("*")
+        .in("status", ["created", "pending_payment", "payment_processing"])
+        .lte("created_at", cutoff2min)
+        .gte("created_at", cutoff48h)
+        .order("created_at", { ascending: true })
+        .limit(50),
     ]);
 
     // Orphan payments: verified but no order linked
@@ -79,6 +108,18 @@ export default function AdminReconciliationPage() {
         icon: FileText,
         color: "text-amber-600",
         items: stuckIntents.data || [],
+        type: "intent",
+        recoverable: true,
+      });
+    }
+
+    if ((stuckPayments.data || []).length > 0) {
+      cats.push({
+        title: "Stuck Payments (Awaiting Recovery)",
+        description: "Intents older than 2 minutes still in pre-payment states. The recovery sweep will re-verify them with Paystack and finalize if successful.",
+        icon: Clock,
+        color: "text-amber-600",
+        items: stuckPayments.data || [],
         type: "intent",
         recoverable: true,
       });
@@ -127,9 +168,15 @@ export default function AdminReconciliationPage() {
     <div className="animate-fade-in space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <PageHeader title="Reconciliation" description="Identify and resolve problem records" />
-        <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-1.5">
-          <RefreshCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={runRecoverySweep} disabled={sweepRunning} className="gap-1.5">
+            <PlayCircle className={`h-3.5 w-3.5 ${sweepRunning ? "animate-spin" : ""}`} />
+            {sweepRunning ? "Running…" : "Run recovery sweep"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-1.5">
+            <RefreshCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       {loading ? (
