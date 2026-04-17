@@ -12,10 +12,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, ChevronDown, UserCircle } from "lucide-react";
+import { User, LogOut, ChevronDown, UserCircle, Shield, Store, Headset, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
@@ -73,17 +74,55 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl border-border/30">
+              <DropdownMenuContent align="end" className="w-60 glass-elevated rounded-xl border-border/30">
                 <div className="px-3 py-2">
-                  <p className="text-sm font-semibold text-foreground">{user?.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{user?.fullName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   <div className="mt-1.5"><RoleBadge role={user?.role || "user"} /></div>
                 </div>
                 <DropdownMenuSeparator />
+
+                {/* Always-available */}
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
                   <UserCircle className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
+
+                {/* Role-aware quick switches */}
+                {(user?.role === "admin" || user?.role === "staff" || user?.role === "agent") && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold px-3">
+                      Workspaces
+                    </DropdownMenuLabel>
+
+                    {user?.role === "admin" && (
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                        <Shield className="mr-2 h-4 w-4 text-destructive" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    )}
+
+                    {(user?.role === "admin" || user?.role === "staff") && (
+                      <DropdownMenuItem onClick={() => navigate("/staff")}>
+                        <Headset className="mr-2 h-4 w-4 text-warning" />
+                        Staff Panel
+                      </DropdownMenuItem>
+                    )}
+
+                    {(user?.role === "admin" || user?.role === "agent") && (
+                      <DropdownMenuItem onClick={() => navigate("/agent")}>
+                        <Store className="mr-2 h-4 w-4 text-primary" />
+                        Agent Dashboard
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
