@@ -54,3 +54,4 @@ All admin financial/role actions go through SECURITY DEFINER atomic RPCs with au
 - [Agent Withdrawals](mem://features/agent-withdrawals) — MoMo payout flow with atomic debit, admin approve/reject queue, auto-refund
 - [Admin User Management](mem://features/admin-user-management) — Detailed admin tooling for roles, wallets, account status via SECURITY DEFINER RPCs
 - [iOS PWA Standalone](mem://style/ios-pwa-standalone) — Manifest + Apple meta tags + safe-area-inset for installed-app feel
+- [Agent Promo & Install Pages](mem://features/agent-promo-and-install) — Smart-frequency landing modal + /get-app device-aware install routes
