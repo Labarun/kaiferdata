@@ -36,6 +36,7 @@ const UserOrderDetailPage = lazy(() => import("@/pages/user/UserOrderDetailPage"
 const UserTransactionsPage = lazy(() => import("@/pages/user/UserTransactionsPage"));
 const UserProfilePage = lazy(() => import("@/pages/user/UserProfilePage"));
 const UserBuyDataPage = lazy(() => import("@/pages/user/UserBuyDataPage"));
+const BecomeAgentPage = lazy(() => import("@/pages/user/BecomeAgentPage"));
 const AgentDashboardHome = lazy(() => import("@/pages/agent/AgentDashboardHome"));
 const AdminDashboardHome = lazy(() => import("@/pages/admin/AdminDashboardHome"));
 const StaffDashboardHome = lazy(() => import("@/pages/staff/StaffDashboardHome"));
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="/dashboard/orders/:orderId" element={<UserOrderDetailPage />} />
                 <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
                 <Route path="/dashboard/profile" element={<UserProfilePage />} />
+                <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
               </Route>
 
               {/* ====== AGENT DASHBOARD ====== */}

@@ -24,6 +24,8 @@ export interface NavItem {
   label: string;
   path: string;
   icon: LucideIcon;
+  /** When true, this item is rendered as the elevated/centered tab on mobile dock. */
+  featured?: boolean;
 }
 
 interface DashboardLayoutProps {
@@ -165,13 +167,44 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
 
       {/* ── Mobile floating glass dock ── */}
       <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 glass-dock rounded-2xl">
-        <div className="flex items-center justify-around py-2 px-1">
+        <div className="flex items-end justify-around py-2 px-1">
           {navItems.slice(0, 5).map((item) => {
             const active = isActive(item.path);
+            const featured = !!item.featured;
+
+            if (featured) {
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  aria-label={item.label}
+                  className="relative flex flex-col items-center -mt-5 px-2"
+                >
+                  <div
+                    className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                      active
+                        ? "bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-[0_8px_22px_-6px_hsl(213_73%_40%/0.55),0_2px_6px_-1px_hsl(213_73%_40%/0.25)]"
+                        : "bg-gradient-to-br from-primary/95 to-primary/75 text-primary-foreground shadow-[0_6px_18px_-6px_hsl(213_73%_40%/0.5)] active:scale-95"
+                    } ring-2 ring-background/80`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <span
+                    className={`mt-1 text-[10px] font-semibold transition-colors ${
+                      active ? "text-primary" : "text-foreground/70"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.label}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
                   active
                     ? "glass-nav-active text-primary"
