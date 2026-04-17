@@ -217,3 +217,78 @@ export async function getStoreBySlug(slug: string): Promise<AgentProfile | null>
     .maybeSingle();
   return data;
 }
+
+/* ── Subscription intents (Phase 2) ─────────────────────── */
+/**
+ * Generates a kaiferdata-prefixed reference for an agent_subscription intent.
+ * Format: KD-AGS-<base36 timestamp><5-char rand>
+ */
+function generateAgentSubscriptionReference(): string {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
+  return `KD-AGS-${ts}${rand}`;
+}
+
+/**
+ * Creates a new purchase_intents row for an agent subscription payment.
+ * The user must already have an approved agent_profile (status=pending_subscription
+ * or subscription_expired). Strict additive: never touches orders or wallets.
+ *
+ * @returns The created intent (so the caller can hand the id to initialize-payment).
+ */
+export async function createSubscriptionIntent(opts: {
+  userId: string;
+  email: string | null;
+  fullName: string | null;
+  phone: string | null;
+  plan: AgentPlanCode;
+}) {
+  const planDef = AGENT_PLANS[opts.plan];
+
+  const { data, error } = await supabase
+    .from("purchase_intents")
+    .insert({
+      intent_reference: generateAgentSubscriptionReference(),
+      intent_type: "agent_subscription",
+      actor_type: "user",
+      actor_id: opts.userId,
+      source_channel: "agent_subscription_checkout",
+      // network/phone are required by table schema — use placeholders since
+      // an agent subscription doesn't target a phone number.
+      network: "n/a",
+      phone_number: opts.phone || "0000000000",
+      amount_expected: planDef.price,
+      base_amount: planDef.price,
+      fee_amount: 0,
+      fee_rate: 0,
+      total_amount: planDef.price,
+      customer_email: opts.email,
+      customer_name: opts.fullName,
+      plan_snapshot: {
+        plan: planDef.code,
+        label: planDef.label,
+        price: planDef.price,
+        period_days: planDef.periodDays,
+      },
+      status: "created",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Initialize a Paystack checkout for an agent subscription intent.
+ * Calls the existing initialize-payment edge function (no changes to its
+ * security model — it now branches on intent_type === 'agent_subscription').
+ */
+export async function initializeSubscriptionCheckout(intentId: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("initialize-payment", {
+    body: { intent_id: intentId },
+  });
+  if (error) throw new Error(error.message);
+  if (!data?.authorization_url) throw new Error(data?.error || "Could not start checkout.");
+  return data.authorization_url as string;
+}

@@ -39,6 +39,7 @@ const UserProfilePage = lazy(() => import("@/pages/user/UserProfilePage"));
 const UserBuyDataPage = lazy(() => import("@/pages/user/UserBuyDataPage"));
 const BecomeAgentPage = lazy(() => import("@/pages/user/BecomeAgentPage"));
 const AgentDashboardHome = lazy(() => import("@/pages/agent/AgentDashboardHome"));
+const AgentSubscriptionPage = lazy(() => import("@/pages/agent/AgentSubscriptionPage"));
 const AdminDashboardHome = lazy(() => import("@/pages/admin/AdminDashboardHome"));
 const StaffDashboardHome = lazy(() => import("@/pages/staff/StaffDashboardHome"));
 const StaffOrdersPage = lazy(() => import("@/pages/staff/StaffOrdersPage"));
@@ -107,6 +108,10 @@ const App = () => (
                 <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
                 <Route path="/dashboard/profile" element={<UserProfilePage />} />
                 <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
+                {/* Subscription page lives under UserLayout because newly-approved
+                    agents don't have the `agent` role yet — they only get it
+                    after their first successful subscription payment. */}
+                <Route path="/agent/subscription" element={<AgentSubscriptionPage />} />
               </Route>
 
               {/* ====== AGENT DASHBOARD ====== */}
@@ -115,7 +120,6 @@ const App = () => (
                 <Route path="/agent/store" element={<ScaffoldPage title="Store" description="Agent store coming in Phase 2" />} />
                 <Route path="/agent/orders" element={<ScaffoldPage title="Orders" description="Agent orders coming in Phase 2" />} />
                 <Route path="/agent/earnings" element={<ScaffoldPage title="Earnings" description="Earnings tracking coming in Phase 2" />} />
-                <Route path="/agent/subscription" element={<ScaffoldPage title="Subscription" description="Subscription management coming in Phase 2" />} />
               </Route>
 
               {/* ====== ADMIN PANEL ====== */}
