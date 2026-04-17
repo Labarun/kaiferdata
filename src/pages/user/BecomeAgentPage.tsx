@@ -48,7 +48,7 @@ export default function BecomeAgentPage() {
     refresh();
   }, [refresh]);
 
-  if (loading || !state) return <PageLoader label="Loading agent program…" />;
+  if (loading || !state) return <PageLoader />;
 
   switch (state.kind) {
     case "no_application":
