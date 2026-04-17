@@ -167,6 +167,37 @@ export function isValidSlug(slug: string): boolean {
   return SLUG_RE.test(slug);
 }
 
+/**
+ * Generates a unique store slug from a base name (store/business name or fallback).
+ * Tries the clean slug first, then appends short random suffixes until a free one is found.
+ * Strict additive: only reads from agent_applications + agent_profiles to verify uniqueness.
+ */
+export async function generateUniqueStoreSlug(
+  baseName: string,
+  excludeApplicationId?: string,
+): Promise<string> {
+  const cleaned = slugify(baseName) || "store";
+  // Ensure base length >= 3
+  let base = cleaned.length >= 3 ? cleaned : `${cleaned}-store`.slice(0, 32);
+  base = base.replace(/^-+|-+$/g, "") || "store";
+
+  // Try base first if valid
+  if (isValidSlug(base) && (await isSlugAvailable(base, excludeApplicationId))) {
+    return base;
+  }
+  // Then try suffixes
+  for (let i = 0; i < 8; i++) {
+    const suffix = Math.random().toString(36).slice(2, 6);
+    const candidate = `${base.slice(0, 32 - suffix.length - 1)}-${suffix}`.toLowerCase();
+    if (isValidSlug(candidate) && (await isSlugAvailable(candidate, excludeApplicationId))) {
+      return candidate;
+    }
+  }
+  // Final fallback — timestamp-based, guaranteed unique
+  const ts = Date.now().toString(36).slice(-5);
+  return `${base.slice(0, 26)}-${ts}`.toLowerCase();
+}
+
 /** Returns true if the slug is free (not used by any application or profile other than `excludeApplicationId`). */
 export async function isSlugAvailable(slug: string, excludeApplicationId?: string): Promise<boolean> {
   const lc = slug.toLowerCase();

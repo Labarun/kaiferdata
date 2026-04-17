@@ -4,13 +4,18 @@
  * Steps:
  *   A. Personal & contact details
  *   B. Reseller / business intent
- *   C. Store setup (slug, logo, agreements) → review → submit
+ *   C. Store setup (logo, name, tagline, agreements) → submit
  *
- * Auto-saves draft on step transitions. Re-opens cleanly when an applicant
- * comes back to a `needs_changes` application — admin's note is shown at
- * the top, and submit re-flips status to "submitted".
+ * Slug strategy (fix):
+ *   The store slug is NEVER a manual field in this flow. It's auto-generated
+ *   on submit from the store name (with a short random suffix to ensure
+ *   uniqueness). This prevents the early-step "Invalid store slug" failure
+ *   and matches the product spec — applicants shouldn't pick URLs.
+ *
+ * Draft saves are step-aware: only fields collected up to the current step
+ * are persisted, so a partial slug never reaches the database.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +24,16 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, ArrowRight, Check, Upload, Loader2, ShieldCheck,
+  ArrowLeft, ArrowRight, Upload, Loader2, ShieldCheck,
   AlertCircle, Sparkles, Store, User as UserIcon, Briefcase,
 } from "lucide-react";
 import {
   type AgentApplication,
+  type AgentApplicationUpdate,
   saveApplicationDraft,
   submitApplication,
-  isValidSlug,
-  isSlugAvailable,
-  slugify,
   uploadStoreLogo,
+  generateUniqueStoreSlug,
 } from "@/services/agent";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -58,8 +62,6 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [slugChecking, setSlugChecking] = useState(false);
-  const [slugError, setSlugError] = useState<string | null>(null);
 
   // Form state — initialised from existing application row
   const [form, setForm] = useState({
@@ -76,39 +78,13 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
     social_link: application.social_link || "",
 
     store_name: application.store_name || "",
-    store_slug: application.store_slug || "",
     store_logo_url: application.store_logo_url || "",
     store_tagline: application.store_tagline || "",
     agreed_to_terms: application.agreed_to_terms,
     acknowledged_subscription: application.acknowledged_subscription,
   });
 
-  // Auto-derive slug from store name when slug is empty
-  useEffect(() => {
-    if (!form.store_slug && form.store_name) {
-      setForm((f) => ({ ...f, store_slug: slugify(f.store_name) }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.store_name]);
-
-  // Live slug availability check (debounced)
-  useEffect(() => {
-    if (!form.store_slug) { setSlugError(null); return; }
-    if (!isValidSlug(form.store_slug)) {
-      setSlugError("3-32 lowercase letters, numbers or dashes.");
-      return;
-    }
-    setSlugError(null);
-    setSlugChecking(true);
-    const t = setTimeout(async () => {
-      const available = await isSlugAvailable(form.store_slug, application.id);
-      setSlugError(available ? null : "This name is already taken.");
-      setSlugChecking(false);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [form.store_slug, application.id]);
-
-  /* ── Step validators ─────────────────────────────────── */
+  /* ── Step validators (step-aware, never blocks on slug) ──── */
   const stepValid = useMemo(() => {
     switch (stepIdx) {
       case 0:
@@ -121,24 +97,48 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
           && form.motivation.trim().length >= 10;
       case 2:
         return form.store_name.trim().length >= 2
-          && isValidSlug(form.store_slug)
-          && !slugError
-          && !slugChecking
           && form.agreed_to_terms
           && form.acknowledged_subscription;
       default: return false;
     }
-  }, [stepIdx, form, slugError, slugChecking]);
+  }, [stepIdx, form]);
 
-  /* ── Save draft helper ───────────────────────────────── */
-  const persist = async (): Promise<boolean> => {
+  /* ── Step-aware draft save ──────────────────────────────────
+   * Only fields collected up to and including the current step
+   * are sent to the DB. The slug is intentionally never sent here. */
+  const buildPatchForStep = (idx: number): AgentApplicationUpdate => {
+    const patch: AgentApplicationUpdate = {};
+    if (idx >= 0) {
+      patch.full_name = form.full_name;
+      patch.phone = form.phone;
+      patch.email = form.email;
+      patch.city = form.city;
+      patch.business_name = form.business_name;
+    }
+    if (idx >= 1) {
+      patch.has_sold_data_before = form.has_sold_data_before;
+      patch.selling_channels = form.selling_channels;
+      patch.expected_customer_base = form.expected_customer_base;
+      patch.motivation = form.motivation;
+      patch.social_link = form.social_link;
+    }
+    if (idx >= 2) {
+      patch.store_name = form.store_name;
+      patch.store_logo_url = form.store_logo_url;
+      patch.store_tagline = form.store_tagline;
+      patch.agreed_to_terms = form.agreed_to_terms;
+      patch.acknowledged_subscription = form.acknowledged_subscription;
+    }
+    if (isReturning && idx > 0) {
+      patch.status = "draft";
+    }
+    return patch;
+  };
+
+  const persist = async (idx: number): Promise<boolean> => {
     setSaving(true);
     try {
-      await saveApplicationDraft(application.id, {
-        ...form,
-        // any edits during needs_changes flip back to draft
-        status: isReturning && stepIdx > 0 ? "draft" : undefined,
-      });
+      await saveApplicationDraft(application.id, buildPatchForStep(idx));
       return true;
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Couldn't save your progress.";
@@ -151,7 +151,7 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
 
   const goNext = async () => {
     if (!stepValid || saving) return;
-    const ok = await persist();
+    const ok = await persist(stepIdx);
     if (!ok) return;
     setStepIdx((i) => Math.min(i + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -166,15 +166,23 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
     if (!stepValid) return;
     setSubmitting(true);
     try {
-      await persist();
+      // Auto-generate a unique slug from the store name on final submit.
+      const slug = await generateUniqueStoreSlug(
+        form.store_name || form.business_name || form.full_name || "store",
+        application.id,
+      );
+      const finalPatch = buildPatchForStep(2);
+      finalPatch.store_slug = slug;
+      await saveApplicationDraft(application.id, finalPatch);
       await submitApplication(application.id);
       toast({
         title: "Application submitted",
         description: "We'll review it shortly. You'll see the result on this page.",
       });
       onSubmitted();
-    } catch (e: any) {
-      toast({ title: "Submit failed", description: e?.message, variant: "destructive" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Submit failed";
+      toast({ title: "Submit failed", description: message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -187,10 +195,12 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
     try {
       const url = await uploadStoreLogo(user.id, file);
       setForm((f) => ({ ...f, store_logo_url: url }));
+      // Only persist the logo field — never partial slug data.
       await saveApplicationDraft(application.id, { store_logo_url: url });
       toast({ title: "Logo uploaded" });
-    } catch (e: any) {
-      toast({ title: "Upload failed", description: e?.message, variant: "destructive" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Upload failed";
+      toast({ title: "Upload failed", description: message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -354,24 +364,10 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
               </div>
             </Field>
 
-            <Field label="Store name" required>
+            <Field label="Store name" required hint="Your store URL is generated automatically">
               <Input value={form.store_name}
                 onChange={(e) => setForm({ ...form, store_name: e.target.value })}
                 placeholder="e.g. John's Data" className="h-11 rounded-xl" />
-            </Field>
-
-            <Field label="Store URL" required>
-              <div className="flex items-center gap-1 glass-card rounded-xl pl-3 pr-1 h-11 border border-input">
-                <span className="text-[12px] text-muted-foreground/70 shrink-0">kaiferdata.com/store/</span>
-                <Input value={form.store_slug}
-                  onChange={(e) => setForm({ ...form, store_slug: slugify(e.target.value) })}
-                  placeholder="johns-data" className="h-9 border-0 bg-transparent px-1 focus-visible:ring-0 text-[14px] font-mono" />
-                {slugChecking && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground/60 mr-2" />}
-                {!slugChecking && form.store_slug && !slugError && (
-                  <Check className="h-3.5 w-3.5 text-primary mr-2" />
-                )}
-              </div>
-              {slugError && <p className="text-[11px] text-destructive mt-1">{slugError}</p>}
             </Field>
 
             <Field label="Tagline" hint="One short line shown on your store">
@@ -395,9 +391,8 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
                   onCheckedChange={(v) => setForm({ ...form, acknowledged_subscription: v === true })}
                   className="mt-0.5" />
                 <span className="text-[12px] text-muted-foreground leading-relaxed">
-                  I understand that, after approval, an active subscription
-                  (GH₵50 / month or GH₵400 / year) is required to keep my agent
-                  benefits and storefront active.
+                  I understand that, after approval, an active subscription is required
+                  to keep my agent benefits and storefront active.
                 </span>
               </label>
             </div>
@@ -437,7 +432,7 @@ function Field({
       <Label className="text-[12px] font-semibold text-foreground/80 flex items-center gap-1.5">
         {label}
         {required && <span className="text-destructive/80">*</span>}
-        {hint && !required && <span className="text-[10px] text-muted-foreground/60 font-normal">· {hint}</span>}
+        {hint && <span className="text-[10px] text-muted-foreground/60 font-normal">· {hint}</span>}
       </Label>
       {children}
     </div>

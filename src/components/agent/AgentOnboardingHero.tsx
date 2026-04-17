@@ -56,10 +56,11 @@ const BENEFITS = [
 ];
 
 const HOW = [
-  "Apply in 3 short steps",
-  "Get reviewed within 24-48 hours",
-  "Subscribe (GH₵50/mo or GH₵400/yr)",
-  "Your storefront goes live instantly",
+  "Apply in a few minutes",
+  "Our team reviews your application",
+  "Get approved within ~24 hours",
+  "Activate your store",
+  "Start selling and earning",
 ];
 
 export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props) {
@@ -155,15 +156,15 @@ export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props)
         </ol>
       </div>
 
-      {/* Subscription notice */}
+      {/* Post-approval activation notice — no pricing shown pre-approval */}
       <div className="glass-subtle rounded-xl p-4 text-center space-y-1 animate-fade-in animate-stagger-4">
         <p className="text-[11px] text-muted-foreground/70 font-medium uppercase tracking-wider">
-          Subscription after approval
+          Activation
         </p>
-        <p className="text-[14px] text-foreground font-semibold">
-          GH₵50 / month <span className="text-muted-foreground/50">·</span> GH₵400 / year
+        <p className="text-[13px] text-foreground font-medium">
+          Once approved, you'll activate your store with a small subscription.
         </p>
-        <p className="text-[10.5px] text-muted-foreground/55">Manual renewal · Cancel anytime</p>
+        <p className="text-[10.5px] text-muted-foreground/55">Pricing shown at activation</p>
       </div>
 
       {/* CTA — sticky, sits clear of the mobile bottom dock and safe area */}
