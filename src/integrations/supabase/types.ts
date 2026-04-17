@@ -101,6 +101,53 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_earnings: {
+        Row: {
+          agent_profile_id: string
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          id: string
+          order_amount: number
+          order_id: string
+          status: string
+          user_id: string
+          wallet_transaction_id: string | null
+        }
+        Insert: {
+          agent_profile_id: string
+          commission_amount: number
+          commission_rate: number
+          created_at?: string
+          id?: string
+          order_amount: number
+          order_id: string
+          status?: string
+          user_id: string
+          wallet_transaction_id?: string | null
+        }
+        Update: {
+          agent_profile_id?: string
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          order_amount?: number
+          order_id?: string
+          status?: string
+          user_id?: string
+          wallet_transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_earnings_agent_profile_id_fkey"
+            columns: ["agent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "agent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_profiles: {
         Row: {
           application_id: string | null
@@ -1195,6 +1242,20 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      credit_agent_commission_atomic: {
+        Args: {
+          _agent_profile_id: string
+          _agent_user_id: string
+          _commission_rate: number
+          _order_amount: number
+          _order_id: string
+        }
+        Returns: {
+          already_processed: boolean
+          commission_amount: number
+          earning_id: string
+        }[]
       }
       credit_wallet_atomic: {
         Args: {

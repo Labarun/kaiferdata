@@ -41,6 +41,9 @@ const UserBuyDataPage = lazy(() => import("@/pages/user/UserBuyDataPage"));
 const BecomeAgentPage = lazy(() => import("@/pages/user/BecomeAgentPage"));
 const AgentDashboardHome = lazy(() => import("@/pages/agent/AgentDashboardHome"));
 const AgentSubscriptionPage = lazy(() => import("@/pages/agent/AgentSubscriptionPage"));
+const AgentEarningsPage = lazy(() => import("@/pages/agent/AgentEarningsPage"));
+const AgentStorePage = lazy(() => import("@/pages/agent/AgentStorePage"));
+const AgentOrdersPage = lazy(() => import("@/pages/agent/AgentOrdersPage"));
 const AdminDashboardHome = lazy(() => import("@/pages/admin/AdminDashboardHome"));
 const StaffDashboardHome = lazy(() => import("@/pages/staff/StaffDashboardHome"));
 const StaffOrdersPage = lazy(() => import("@/pages/staff/StaffOrdersPage"));
@@ -120,9 +123,9 @@ const App = () => (
               {/* ====== AGENT DASHBOARD ====== */}
               <Route element={<ProtectedRoute allowedRoles={["agent", "admin"]}><AgentLayout /></ProtectedRoute>}>
                 <Route path="/agent" element={<AgentDashboardHome />} />
-                <Route path="/agent/store" element={<ScaffoldPage title="Store" description="Agent store coming in Phase 2" />} />
-                <Route path="/agent/orders" element={<ScaffoldPage title="Orders" description="Agent orders coming in Phase 2" />} />
-                <Route path="/agent/earnings" element={<ScaffoldPage title="Earnings" description="Earnings tracking coming in Phase 2" />} />
+                <Route path="/agent/store" element={<AgentStorePage />} />
+                <Route path="/agent/orders" element={<AgentOrdersPage />} />
+                <Route path="/agent/earnings" element={<AgentEarningsPage />} />
               </Route>
 
               {/* ====== ADMIN PANEL ====== */}
