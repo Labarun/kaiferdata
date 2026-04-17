@@ -23,6 +23,7 @@ import {
   Sparkles,
   CreditCard,
   AlertCircle,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const NET_DOT: Record<string, string> = {
 };
 
 export type CheckoutStep = "details" | "review" | "processing" | "error";
+export type CheckoutPaymentMethod = "paystack" | "wallet";
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -51,6 +53,16 @@ interface CheckoutSheetProps {
   processingLabel?: string;
   paymentError?: string | null;
   onClearError?: () => void;
+  /** Optional payment-method picker. When omitted, the picker is hidden and
+   *  Paystack is the only option (preserves guest-checkout behavior). */
+  paymentMethod?: CheckoutPaymentMethod;
+  onPaymentMethodChange?: (m: CheckoutPaymentMethod) => void;
+  /** Required when paymentMethod picker is shown; used for the wallet tile. */
+  walletBalance?: number;
+  /** When true, wallet checkout is disabled with a "Coming soon" hint.
+   *  Defaults to true in Phase 1 since the wallet-debit edge function is not
+   *  shipped yet. */
+  walletComingSoon?: boolean;
 }
 
 export function CheckoutSheet({
@@ -69,6 +81,10 @@ export function CheckoutSheet({
   processingLabel,
   paymentError,
   onClearError,
+  paymentMethod,
+  onPaymentMethodChange,
+  walletBalance,
+  walletComingSoon = true,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
