@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_user_notes: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          note: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_applications: {
         Row: {
           acknowledged_subscription: boolean
@@ -1155,6 +1179,63 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_note: string | null
+          agent_profile_id: string
+          amount: number
+          created_at: string
+          id: string
+          momo_name: string
+          momo_network: string
+          momo_number: string
+          refund_transaction_id: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          wallet_transaction_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          agent_profile_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          momo_name: string
+          momo_network: string
+          momo_number: string
+          refund_transaction_id?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          wallet_transaction_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          agent_profile_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          momo_name?: string
+          momo_network?: string
+          momo_number?: string
+          refund_transaction_id?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wallet_transaction_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1174,6 +1255,55 @@ export type Database = {
           expires_at: string
           starts_at: string
           subscription_id: string
+        }[]
+      }
+      admin_credit_user_wallet: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _reason: string
+          _target_user_id: string
+        }
+        Returns: {
+          new_balance: number
+          txn_id: string
+        }[]
+      }
+      admin_debit_user_wallet: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _reason: string
+          _target_user_id: string
+        }
+        Returns: {
+          new_balance: number
+          txn_id: string
+        }[]
+      }
+      admin_set_account_status: {
+        Args: {
+          _admin_id: string
+          _reason: string
+          _status: Database["public"]["Enums"]["account_status"]
+          _target_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_user_role: {
+        Args: {
+          _admin_id: string
+          _grant?: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+          _target_user_id: string
+        }
+        Returns: undefined
+      }
+      approve_agent_withdrawal_atomic: {
+        Args: { _admin_id: string; _note?: string; _request_id: string }
+        Returns: {
+          request_id: string
+          status: string
         }[]
       }
       claim_intent_for_verification: {
@@ -1274,6 +1404,23 @@ export type Database = {
           txn_id: string
         }[]
       }
+      debit_wallet_atomic: {
+        Args: {
+          _amount: number
+          _created_by?: string
+          _linked_record_id?: string
+          _linked_record_type?: string
+          _narration: string
+          _reference: string
+          _wallet_id: string
+        }
+        Returns: {
+          closing_bal: number
+          new_balance: number
+          opening_bal: number
+          txn_id: string
+        }[]
+      }
       get_account_status: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["account_status"]
@@ -1288,6 +1435,28 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reject_agent_withdrawal_atomic: {
+        Args: { _admin_id: string; _note?: string; _request_id: string }
+        Returns: {
+          refunded_amount: number
+          request_id: string
+          status: string
+        }[]
+      }
+      request_agent_withdrawal_atomic: {
+        Args: {
+          _amount: number
+          _momo_name: string
+          _momo_network: string
+          _momo_number: string
+          _user_id: string
+        }
+        Returns: {
+          new_balance: number
+          request_id: string
+          txn_id: string
+        }[]
       }
       resolve_login_identifier: {
         Args: { _identifier: string }
