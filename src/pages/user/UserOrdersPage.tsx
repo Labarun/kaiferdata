@@ -70,7 +70,7 @@ export default function UserOrdersPage() {
           {orders.map((o) => {
             const snap = (o.bundle_snapshot || {}) as Record<string, unknown>;
             return (
-              <Link key={o.id as string} to={`/dashboard/orders/${o.id}`}>
+              <Link key={o.id as string} to={`/dashboard/orders/${o.id}`} className="cv-auto-card block">
                 <div className="glass-card rounded-xl hover:scale-[1.01] transition-all duration-200">
                   <div className="flex items-center justify-between p-4">
                     <div className="min-w-0 flex-1">

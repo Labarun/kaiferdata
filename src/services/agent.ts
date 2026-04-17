@@ -27,8 +27,8 @@ export type AgentSubscription = Database["public"]["Tables"]["agent_subscription
 
 /* ── Plan catalogue ─────────────────────────────────────── */
 export const AGENT_PLANS = {
-  monthly: { code: "monthly" as const, label: "Monthly", price: 50, periodDays: 30 },
-  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 400, periodDays: 365 },
+  monthly: { code: "monthly" as const, label: "Monthly", price: 30, periodDays: 30 },
+  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 300, periodDays: 365 },
 } as const;
 export type AgentPlanCode = keyof typeof AGENT_PLANS;
 

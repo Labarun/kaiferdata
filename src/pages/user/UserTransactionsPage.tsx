@@ -59,7 +59,7 @@ export default function UserTransactionsPage() {
               <Link
                 to={`/dashboard/transactions/${t.id}`}
                 key={t.id as string}
-                className="block glass-card rounded-xl hover:bg-primary/[0.03] active:scale-[0.99] transition-all"
+                className="cv-auto-card block glass-card rounded-xl hover:bg-primary/[0.03] active:scale-[0.99] transition-all"
               >
                 <div className="flex items-center gap-3.5 p-4">
                   {/* Direction icon */}

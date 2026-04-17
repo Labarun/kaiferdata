@@ -189,6 +189,25 @@
     font-family: var(--font-mono);
   }
 
+  /* ═══ PERFORMANCE UTILITIES (zero visual change) ═══
+     Skip painting off-screen list rows on mobile. The browser still
+     reserves space (contain-intrinsic-size) but bypasses paint+layout
+     for items scrolled out of view. Big win on Android Chrome / iOS Safari. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 88px;
+  }
+  .cv-auto-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 140px;
+  }
+  /* Promote an element to its own GPU layer only while interacting.
+     Use sparingly — overuse hurts memory. */
+  .gpu-promote {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
   /* ═══ LIQUID GLASS MATERIAL SYSTEM ═══ */
 
   /* Layer 0 — Subtle background glass */
