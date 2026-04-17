@@ -20,7 +20,9 @@ import {
   initializePayment,
   type DataPlan,
 } from "@/services/purchaseIntent";
+import { purchaseWithWallet } from "@/services/walletPurchase";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getNetworkBrand } from "@/config/networkBrands";
@@ -37,6 +39,7 @@ type PaymentMethod = "wallet" | "paystack";
 export default function UserBuyDataPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [packages, setPackages] = useState<DataPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,19 +126,36 @@ export default function UserBuyDataPage() {
   const handleConfirm = async () => {
     if (!network || !selectedPkg) return;
 
-    if (paymentMethod === "wallet") {
-      // Wallet checkout edge function ships in Phase 2 — keep guard so the
-      // anti-manipulation/payment logic stays untouched in Phase 1.
-      toast({
-        title: "Coming soon",
-        description: "Wallet checkout for bundles ships in the next update. Use Paystack for now.",
-      });
-      return;
-    }
-
     setSubmitting(true);
     setPaymentError(null);
     try {
+      if (paymentMethod === "wallet") {
+        if (walletBalance < selectedPkg.selling_price) {
+          throw new Error(
+            `Wallet balance is too low. You need GH₵${selectedPkg.selling_price.toFixed(2)} but have GH₵${walletBalance.toFixed(2)}. Top up first.`,
+          );
+        }
+        setProcessingLabel("Charging wallet…");
+        const result = await purchaseWithWallet({
+          packageId: selectedPkg.id,
+          network,
+          phoneNumber,
+          customerName: customerName || undefined,
+          customerEmail: customerEmail || undefined,
+        });
+        setProcessingLabel("Sending bundle…");
+        toast({
+          title: "Order placed",
+          description: `GH₵${result.amount_charged.toFixed(2)} debited. New balance GH₵${result.new_balance.toFixed(2)}.`,
+        });
+        // Refresh wallet balance locally
+        setWalletBalance(result.new_balance);
+        setCheckoutOpen(false);
+        // Navigate to order detail so user can watch fulfillment
+        setTimeout(() => navigate(`/dashboard/orders/${result.order_id}`), 200);
+        return;
+      }
+
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
@@ -361,7 +381,7 @@ export default function UserBuyDataPage() {
         paymentMethod={paymentMethod}
         onPaymentMethodChange={setPaymentMethod}
         walletBalance={walletBalance}
-        walletComingSoon={true}
+        walletComingSoon={false}
       />
     </div>
   );
