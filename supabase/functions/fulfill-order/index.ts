@@ -58,7 +58,10 @@ function outcomeToMessage(outcome: SupplierOutcome, network: string, volume: str
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+  return path.split(".").reduce<unknown>(
+    (o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined),
+    obj as unknown,
+  );
 }
 
 function normalizeToken(value: unknown): string {
