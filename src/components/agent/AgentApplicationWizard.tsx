@@ -38,6 +38,8 @@ interface Props {
   application: AgentApplication;
   /** Called after successful submit so the parent can refetch state. */
   onSubmitted: () => void;
+  /** Optional — invoked when the user taps the back arrow to leave the wizard. Defaults to navigate("/dashboard"). */
+  onExit?: () => void;
 }
 
 const STEPS = [
@@ -46,7 +48,7 @@ const STEPS = [
   { key: "store",    label: "Your store", icon: Store },
 ] as const;
 
-export function AgentApplicationWizard({ application, onSubmitted }: Props) {
+export function AgentApplicationWizard({ application, onSubmitted, onExit }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -200,10 +202,10 @@ export function AgentApplicationWizard({ application, onSubmitted }: Props) {
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => (onExit ? onExit() : navigate("/dashboard"))}
           className="text-[12px] text-muted-foreground/70 flex items-center gap-1 hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
+          <ArrowLeft className="h-3.5 w-3.5" /> {onExit ? "Overview" : "Dashboard"}
         </button>
         {saving && (
           <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
