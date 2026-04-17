@@ -22,10 +22,9 @@ export function Shimmer({ className }: ShimmerProps) {
     <div
       className={cn(
         "relative overflow-hidden bg-muted/40 rounded-md",
-        "before:absolute before:inset-0 before:-translate-x-full",
-        "before:animate-[shimmer_1.6s_ease-in-out_infinite]",
-        "before:bg-gradient-to-r before:from-transparent before:via-white/45 before:to-transparent",
-        "dark:before:via-white/10",
+        "after:absolute after:inset-0 after:animate-shimmer-sweep",
+        "after:bg-gradient-to-r after:from-transparent after:via-white/45 after:to-transparent",
+        "dark:after:via-white/10",
         className,
       )}
     />
