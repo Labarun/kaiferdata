@@ -71,10 +71,9 @@ export async function createPurchaseIntent(params: {
     description: params.plan.description,
   };
 
-  const orderContext: Record<string, unknown> = {};
-  if (params.referral) {
-    orderContext.referral = params.referral;
-  }
+  const orderContext = params.referral
+    ? { referral: params.referral }
+    : null;
 
   const { data, error } = await supabase
     .from("purchase_intents")

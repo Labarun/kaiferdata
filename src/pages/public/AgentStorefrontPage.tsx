@@ -187,16 +187,13 @@ export default function AgentStorefrontPage() {
   const pageTitle = `${store.store_name} · Buy Data on Kaiferdata`;
   const pageDesc = store.store_tagline || `Shop MTN, Telecel and AirtelTigo data bundles from ${store.store_name}. Fast delivery, secure payments.`;
 
+  // SEO: set document title (no helmet dep)
+  if (typeof document !== "undefined") {
+    document.title = pageTitle;
+  }
+
   return (
     <div className="min-h-[70vh] pb-6">
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDesc} />
-        <link rel="canonical" href={`https://kaiferdata.com/store/${store.store_slug}`} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDesc} />
-        {store.store_logo_url && <meta property="og:image" content={store.store_logo_url} />}
-      </Helmet>
 
       {/* ── Storefront hero ── */}
       <section className="bg-hero-gradient relative overflow-hidden">
