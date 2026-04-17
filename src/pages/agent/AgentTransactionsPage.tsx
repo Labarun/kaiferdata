@@ -61,7 +61,7 @@ export default function AgentTransactionsPage() {
                 const Icon = meta.icon;
                 const isInflow = t.direction === "inflow";
                 return (
-                  <li key={t.id} className="px-4 py-3 flex items-center gap-3">
+                  <li key={t.id} className="cv-auto px-4 py-3 flex items-center gap-3">
                     <div className={`h-9 w-9 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 ${meta.tint}`}>
                       <Icon className="h-4 w-4" />
                     </div>

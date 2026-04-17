@@ -81,7 +81,7 @@ export default function AgentOrdersPage() {
               {orders.map((o) => {
                 const commission = earnings.get(o.id);
                 return (
-                  <li key={o.id} className="px-4 py-3">
+                  <li key={o.id} className="cv-auto px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
