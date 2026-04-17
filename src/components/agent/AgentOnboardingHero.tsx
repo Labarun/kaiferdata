@@ -16,6 +16,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   onStarted: () => void;
+  /** When true, the CTA reads "Resume application" and the existing draft is reused instead of creating a new one. */
+  resumeMode?: boolean;
+  /** Optional admin note to surface above the CTA (used in `needs_changes` flow). */
+  adminNote?: string | null;
 }
 
 const BENEFITS = [
@@ -58,7 +62,7 @@ const HOW = [
   "Your storefront goes live instantly",
 ];
 
-export function AgentOnboardingHero({ onStarted }: Props) {
+export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [starting, setStarting] = useState(false);
@@ -67,6 +71,7 @@ export function AgentOnboardingHero({ onStarted }: Props) {
     if (!user) return;
     setStarting(true);
     try {
+      // getOrCreateDraft is idempotent, so resume re-uses the same row.
       await getOrCreateDraft(user.id);
       onStarted();
     } catch (e: any) {
