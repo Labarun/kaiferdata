@@ -143,8 +143,7 @@ export async function listUserNotes(userId: string) {
 }
 
 export async function addUserNote(userId: string, adminId: string, note: string) {
-  const { error } = await supabase
-    .from("admin_user_notes" as never)
+  const { error } = await (supabase.from("admin_user_notes" as never) as any)
     .insert({ user_id: userId, admin_id: adminId, note });
   return { error };
 }
