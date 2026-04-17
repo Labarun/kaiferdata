@@ -34,11 +34,10 @@ export interface PricingRow {
 /** Fetch all resaleable packages + this agent's existing prices, joined. */
 export async function fetchAgentPricingMatrix(agentProfileId: string): Promise<PricingRow[]> {
   const [{ data: pkgs }, { data: prices }] = await Promise.all([
-    supabase
-      .from("data_packages")
+    (supabase.from("data_packages") as any)
       .select("*")
       .eq("is_active", true)
-      .eq("is_agent_resaleable" as any, true)
+      .eq("is_agent_resaleable", true)
       .order("network", { ascending: true })
       .order("display_order", { ascending: true }),
     supabase
