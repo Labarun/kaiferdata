@@ -26,13 +26,8 @@ import { cn } from "@/lib/utils";
 import { getNetworkBrand } from "@/config/networkBrands";
 import {
   Wifi,
-  Loader2,
   Check,
   ChevronRight,
-  Wallet,
-  CreditCard,
-  Zap,
-  AlertCircle,
 } from "lucide-react";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
@@ -363,6 +358,10 @@ export default function UserBuyDataPage() {
         processingLabel={processingLabel}
         paymentError={paymentError}
         onClearError={handleClearError}
+        paymentMethod={paymentMethod}
+        onPaymentMethodChange={setPaymentMethod}
+        walletBalance={walletBalance}
+        walletComingSoon={true}
       />
     </div>
   );
