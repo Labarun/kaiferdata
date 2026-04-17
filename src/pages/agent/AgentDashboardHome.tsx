@@ -1,56 +1,72 @@
 /**
- * Agent Dashboard Home
- *
- * Shows live commissions, lifetime stats and quick actions.
+ * Agent Dashboard Home — premium analytics dashboard with separate
+ * earnings balance, range filters, KPIs, top bundles, recent activity.
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { WalletCard } from "@/components/shared/WalletCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Store,
-  ShoppingCart,
-  DollarSign,
-  TrendingUp,
-  Share2,
-  Copy,
-  Check,
-  ExternalLink,
-  Sparkles,
+  Store, ShoppingCart, DollarSign, TrendingUp, Share2, Copy, Check, ExternalLink,
+  Users, Package, Crown, ArrowDownToLine,
 } from "lucide-react";
-import { fetchAgentSummary, fetchCommissionRate, type AgentEarningsSummary } from "@/services/agentEarnings";
-import { supabase } from "@/integrations/supabase/client";
+import { EarningsBalanceCard } from "@/components/agent/EarningsBalanceCard";
+import { AnalyticsRangeFilter } from "@/components/agent/AnalyticsRangeFilter";
+import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentEarningsWallet";
+import { fetchAgentAnalytics, type AgentAnalytics, type AnalyticsRange } from "@/services/agentAnalytics";
+import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
 
 const fmt = (n: number) => `GH₵${n.toFixed(2)}`;
 
 export default function AgentDashboardHome() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState<AgentEarningsSummary | null>(null);
-  const [rate, setRate] = useState(8);
+  const sub = useSubscriptionSnapshot();
+  const [wallet, setWallet] = useState<AgentEarningsWallet | null>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
-  const [storeName, setStoreName] = useState<string>("");
+  const [storeName, setStoreName] = useState("");
+  const [storeStatus, setStoreStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Analytics
+  const [range, setRange] = useState<AnalyticsRange>("7d");
+  const [analytics, setAnalytics] = useState<AgentAnalytics | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+
+  // Initial profile + wallet
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
     (async () => {
-      const [s, r, p] = await Promise.all([
-        fetchAgentSummary(user.id),
-        fetchCommissionRate(),
-        supabase.from("agent_profiles").select("store_slug, store_name").eq("user_id", user.id).maybeSingle(),
+      const [w, p] = await Promise.all([
+        fetchEarningsWallet(user.id),
+        supabase.from("agent_profiles").select("store_slug, store_name, status").eq("user_id", user.id).maybeSingle(),
       ]);
       if (cancelled) return;
-      setSummary(s);
-      setRate(r);
+      setWallet(w);
       setStoreSlug(p.data?.store_slug ?? null);
       setStoreName(p.data?.store_name ?? "");
+      setStoreStatus(p.data?.status ?? null);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  // Analytics — refetch on range change
+  useEffect(() => {
+    if (!sub.agentProfileId) return;
+    let cancelled = false;
+    setLoadingAnalytics(true);
+    fetchAgentAnalytics(sub.agentProfileId, range).then((a) => {
+      if (!cancelled) {
+        setAnalytics(a);
+        setLoadingAnalytics(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [sub.agentProfileId, range]);
 
   const storeUrl = storeSlug ? `${window.location.origin}/store/${storeSlug}` : "";
 
@@ -68,67 +84,89 @@ export default function AgentDashboardHome() {
   };
 
   return (
-    <div className="animate-fade-in pb-6 space-y-5">
+    <div className="animate-fade-in pb-8 space-y-5">
       <PageHeader
-        title={`Welcome back${user?.fullName ? `, ${user.fullName}` : ""}`}
-        description={`You earn ${rate}% on every delivered order.`}
+        title={`Welcome back${user?.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}`}
+        description="Real-time view of your store's performance."
       />
 
-      {/* Earnings tile */}
-      <Card className="relative overflow-hidden border-success/20 bg-gradient-to-br from-success/5 via-background to-primary/5">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
-                Lifetime Earnings
+      {/* Subscription banner */}
+      {!sub.loading && !sub.isSubscriptionActive && (
+        <Card className="border-warning/30 bg-warning/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
+              <Crown className="h-5 w-5 text-warning" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">
+                {sub.profileStatus === "subscription_expired" ? "Subscription expired" : "Activate your store"}
               </p>
-              <p className="text-[28px] font-bold text-success tabular-nums tracking-tight mt-1">
-                {fmt(summary?.total_profit || 0)}
-              </p>
-              <p className="text-[11px] text-muted-foreground/70 mt-1">
-                {summary?.total_orders || 0} orders · {fmt(summary?.total_sales || 0)} in sales
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pricing, marketing tools and withdrawals are locked until you subscribe.
               </p>
             </div>
-            <Sparkles className="h-5 w-5 text-success/50" />
-          </div>
-          <div className="flex items-center gap-2 pt-3 border-t border-border/40">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-                This Month
-              </p>
-              <p className="text-[15px] font-bold text-foreground tabular-nums">
-                {fmt(summary?.this_month_profit || 0)}
-              </p>
-            </div>
-            <div className="flex-1 border-l border-border/40 pl-3">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-                Orders
-              </p>
-              <p className="text-[15px] font-bold text-foreground tabular-nums">
-                {summary?.this_month_orders || 0}
-              </p>
-            </div>
-            <Button asChild size="sm" variant="ghost" className="text-xs">
-              <Link to="/agent/earnings">
-                <TrendingUp className="h-3.5 w-3.5 mr-1" />
-                Details
-              </Link>
+            <Button asChild size="sm" className="shrink-0">
+              <Link to="/agent/subscription">Activate</Link>
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Share storefront */}
+      {/* Earnings balance hero */}
+      <EarningsBalanceCard wallet={wallet} loading={!wallet && !!user} />
+
+      {/* Range filter */}
+      <div className="space-y-2">
+        <p className="text-[10.5px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/70 px-0.5">
+          Performance
+        </p>
+        <AnalyticsRangeFilter value={range} onChange={setRange} />
+      </div>
+
+      {/* Stat tiles */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <KpiTile icon={ShoppingCart} label="Orders" value={loadingAnalytics ? "—" : String(analytics?.ordersCount ?? 0)} tint="text-primary" />
+        <KpiTile icon={TrendingUp} label="Revenue" value={loadingAnalytics ? "—" : fmt(analytics?.revenue ?? 0)} tint="text-foreground" />
+        <KpiTile icon={DollarSign} label="Profit" value={loadingAnalytics ? "—" : fmt(analytics?.profit ?? 0)} tint="text-success" />
+        <KpiTile icon={Users} label="Customers" value={loadingAnalytics ? "—" : String(analytics?.activeCustomers ?? 0)} tint="text-info" />
+      </div>
+
+      {/* Top bundles */}
+      {analytics && analytics.topBundles.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold flex items-center gap-1.5">
+                <Package className="h-3.5 w-3.5 text-primary" /> Top bundles
+              </p>
+              <Link to="/agent/orders" className="text-[11px] text-primary font-medium">All orders →</Link>
+            </div>
+            <ul className="space-y-1.5">
+              {analytics.topBundles.map((b, i) => (
+                <li key={`${b.network}-${b.name}`} className="flex items-center gap-3">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-[11px] font-bold text-primary">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-semibold truncate">{b.network} · {b.name}</p>
+                    <p className="text-[10.5px] text-muted-foreground/70">{b.qty} orders · {fmt(b.revenue)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Storefront share */}
       {storeSlug && (
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
-                Your storefront
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex items-center gap-1.5">
+                <Store className="h-3 w-3" /> Your storefront
               </p>
-              <Link to="/agent/store" className="text-[11px] text-primary font-medium">
-                Manage
-              </Link>
+              <Badge variant="outline" className="text-[9px] capitalize">{storeStatus ?? "—"}</Badge>
             </div>
             <code className="block text-[12px] bg-muted/50 rounded-lg px-3 py-2 truncate font-mono mb-2">
               {storeUrl}
@@ -139,13 +177,11 @@ export default function AgentDashboardHome() {
                 {copied ? "Copied" : "Copy"}
               </Button>
               <Button size="sm" variant="outline" onClick={handleShareWhatsApp} className="text-xs">
-                <Share2 className="h-3.5 w-3.5 mr-1" />
-                Share
+                <Share2 className="h-3.5 w-3.5 mr-1" /> Share
               </Button>
               <Button size="sm" variant="outline" asChild className="text-xs">
                 <a href={storeUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                  Open
+                  <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                 </a>
               </Button>
             </div>
@@ -153,31 +189,69 @@ export default function AgentDashboardHome() {
         </Card>
       )}
 
+      {/* Recent orders */}
+      {analytics && analytics.recentOrders.length > 0 && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between">
+              <p className="text-sm font-semibold">Recent orders</p>
+              <Link to="/agent/orders" className="text-[11px] text-primary font-medium">All →</Link>
+            </div>
+            <ul className="divide-y divide-border/40">
+              {analytics.recentOrders.slice(0, 5).map((o: any) => (
+                <li key={o.id} className="px-4 py-2.5 flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-semibold truncate">{o.network} · {o.bundle_name}</p>
+                    <p className="text-[10.5px] text-muted-foreground/70">{o.beneficiary_number} · {o.public_order_id}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[12.5px] font-bold tabular-nums">{fmt(Number(o.amount_charged))}</p>
+                    <p className="text-[10px] text-muted-foreground/60 capitalize">{o.status}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick actions */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <WalletCard />
-        {[
-          { icon: Store, title: "My Store", desc: "Edit branding & link", to: "/agent/store" },
-          { icon: ShoppingCart, title: "Orders", desc: "Recent customer orders", to: "/agent/orders" },
-          { icon: DollarSign, title: "Earnings", desc: "Commission history", to: "/agent/earnings" },
-        ].map((item) => (
-          <Link key={item.title} to={item.to}>
-            <Card className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <item.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <QuickAction icon={ArrowDownToLine} title="Withdraw" desc="Cash out earnings" to="/agent/withdraw" />
+        <QuickAction icon={Package} title="Pricing" desc="Set selling prices" to="/agent/pricing" />
       </div>
     </div>
+  );
+}
+
+function KpiTile({ icon: Icon, label, value, tint }: { icon: any; label: string; value: string; tint: string }) {
+  return (
+    <Card>
+      <CardContent className="p-3.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Icon className={`h-3.5 w-3.5 ${tint}`} />
+          <p className="text-[9.5px] uppercase tracking-wider text-muted-foreground/65 font-semibold">{label}</p>
+        </div>
+        <p className="text-[18px] font-bold tabular-nums tracking-tight">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickAction({ icon: Icon, title, desc, to }: { icon: any; title: string; desc: string; to: string }) {
+  return (
+    <Link to={to}>
+      <Card className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="text-xs text-muted-foreground truncate">{desc}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

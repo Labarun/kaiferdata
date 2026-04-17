@@ -7,8 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
-  MoreHorizontal, Store, Settings, CreditCard, Bell, UserCircle,
-  LayoutDashboard, LogOut,
+  MoreHorizontal, Store, Settings, CreditCard, UserCircle,
+  LayoutDashboard, LogOut, Tag, Megaphone, Users, ListChecks, Layers,
 } from "lucide-react";
 import { signOut } from "@/services/auth";
 import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
@@ -34,13 +34,17 @@ export function AgentMoreSheet({ storeSlug }: { storeSlug?: string | null }) {
   };
 
   const items: MoreItem[] = [
-    { label: "User Dashboard", description: "Switch to your personal area", icon: LayoutDashboard, to: "/dashboard" },
-    { label: "Manage Store", description: "Branding, slug & visibility", icon: Settings, to: "/agent/store" },
+    { label: "Pricing", description: "Set selling prices", icon: Tag, to: "/agent/pricing" },
+    { label: "Marketing", description: "QR, share, promote", icon: Megaphone, to: "/agent/marketing" },
+    { label: "Customers", description: "Buyer insights", icon: Users, to: "/agent/customers" },
+    { label: "Transactions", description: "Earnings ledger", icon: ListChecks, to: "/agent/transactions" },
+    { label: "Bulk Orders", description: "Batch buy via wallet", icon: Layers, to: "/agent/bulk" },
+    { label: "Manage Store", description: "Branding & details", icon: Settings, to: "/agent/store" },
     ...(storeSlug
       ? [{ label: "Open Storefront", description: `kaiferdata.com/store/${storeSlug}`, icon: Store, to: `/store/${storeSlug}`, external: true }]
       : []),
     { label: "Subscription", description: "Plan & renewal", icon: CreditCard, to: "/agent/subscription" },
-    { label: "Notices", description: "Announcements", icon: Bell, to: "/dashboard" },
+    { label: "User Dashboard", description: "Switch to personal area", icon: LayoutDashboard, to: "/dashboard" },
     { label: "Profile", description: "Account details", icon: UserCircle, to: "/dashboard/profile" },
     { label: "Sign out", icon: LogOut, onClick: handleSignOut, destructive: true },
   ];
@@ -56,7 +60,7 @@ export function AgentMoreSheet({ storeSlug }: { storeSlug?: string | null }) {
           <span>More</span>
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="rounded-t-2xl pb-[env(safe-area-inset-bottom)]">
+      <SheetContent side="bottom" className="rounded-t-2xl pb-[env(safe-area-inset-bottom)] max-h-[85vh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle>Agent menu</SheetTitle>
         </SheetHeader>
