@@ -163,9 +163,13 @@ export default function UserWalletPage() {
           ) : (
             <div className="divide-y divide-border/30">
               {transactions.map((t) => (
-                <div key={t.id as string} className="flex items-center justify-between px-4 py-3.5">
+                <Link
+                  key={t.id as string}
+                  to={`/dashboard/transactions/${t.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-primary/[0.03] transition-colors"
+                >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{(t.narration as string) || (t.transaction_type as string)}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{(t.narration as string) || (t.transaction_type as string)}</p>
                     <p className="text-[11px] text-muted-foreground">{new Date(t.created_at as string).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right shrink-0">
@@ -176,7 +180,7 @@ export default function UserWalletPage() {
                       t.status === "completed" ? "text-primary/70" : t.status === "failed" ? "text-destructive" : "text-muted-foreground"
                     }`}>{t.status as string}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

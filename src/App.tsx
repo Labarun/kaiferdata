@@ -36,6 +36,7 @@ const UserWalletPage = lazy(() => import("@/pages/user/UserWalletPage"));
 const UserOrdersPage = lazy(() => import("@/pages/user/UserOrdersPage"));
 const UserOrderDetailPage = lazy(() => import("@/pages/user/UserOrderDetailPage"));
 const UserTransactionsPage = lazy(() => import("@/pages/user/UserTransactionsPage"));
+const UserTransactionDetailPage = lazy(() => import("@/pages/user/UserTransactionDetailPage"));
 const UserProfilePage = lazy(() => import("@/pages/user/UserProfilePage"));
 const UserBuyDataPage = lazy(() => import("@/pages/user/UserBuyDataPage"));
 const BecomeAgentPage = lazy(() => import("@/pages/user/BecomeAgentPage"));
@@ -120,6 +121,7 @@ const App = () => (
                 <Route path="/dashboard/orders" element={<UserOrdersPage />} />
                 <Route path="/dashboard/orders/:orderId" element={<UserOrderDetailPage />} />
                 <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
+                <Route path="/dashboard/transactions/:transactionId" element={<UserTransactionDetailPage />} />
                 <Route path="/dashboard/profile" element={<UserProfilePage />} />
                 <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
                 {/* Subscription page lives under UserLayout because newly-approved

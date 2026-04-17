@@ -2,9 +2,10 @@
  * User Transactions Page — Premium liquid-glass financial history
  */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRightLeft, Clock, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { ArrowRightLeft, Clock, ArrowUpRight, ArrowDownLeft, ChevronRight } from "lucide-react";
 import { ListSkeleton } from "@/components/shared/LoadingState";
 
 export default function UserTransactionsPage() {
@@ -55,7 +56,11 @@ export default function UserTransactionsPage() {
           {transactions.map((t) => {
             const isInflow = t.direction === "inflow";
             return (
-              <div key={t.id as string} className="glass-card rounded-xl">
+              <Link
+                to={`/dashboard/transactions/${t.id}`}
+                key={t.id as string}
+                className="block glass-card rounded-xl hover:bg-primary/[0.03] active:scale-[0.99] transition-all"
+              >
                 <div className="flex items-center gap-3.5 p-4">
                   {/* Direction icon */}
                   <div className={`p-2 rounded-xl ${isInflow ? "bg-primary/10" : "bg-muted"}`}>
@@ -66,7 +71,7 @@ export default function UserTransactionsPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{(t.narration as string) || (t.transaction_type as string)}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{(t.narration as string) || (t.transaction_type as string)}</p>
                     {t.reference && <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">{t.reference as string}</p>}
                     <p className="text-[10px] text-muted-foreground/50 mt-0.5 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -74,16 +79,19 @@ export default function UserTransactionsPage() {
                     </p>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <p className={`text-sm font-bold ${isInflow ? "text-primary" : "text-foreground"}`}>
-                      {isInflow ? "+" : "−"}GH₵{Number(t.amount).toLocaleString()}
-                    </p>
-                    <p className={`text-[10px] font-medium mt-0.5 ${
-                      t.status === "completed" ? "text-primary/70" : t.status === "failed" ? "text-destructive" : "text-muted-foreground"
-                    }`}>{t.status as string}</p>
+                  <div className="text-right shrink-0 flex items-center gap-1">
+                    <div>
+                      <p className={`text-sm font-bold ${isInflow ? "text-primary" : "text-foreground"}`}>
+                        {isInflow ? "+" : "−"}GH₵{Number(t.amount).toFixed(2)}
+                      </p>
+                      <p className={`text-[10px] font-medium mt-0.5 ${
+                        t.status === "completed" ? "text-primary/70" : t.status === "failed" ? "text-destructive" : "text-muted-foreground"
+                      }`}>{t.status as string}</p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
