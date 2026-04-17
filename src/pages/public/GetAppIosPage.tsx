@@ -4,7 +4,7 @@
 import { Link } from "react-router-dom";
 import { Share, Plus, Home, CheckCircle2, Apple } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import appIcon from "@/assets/kaiferdata-icon.png";
+import appIcon from "@/assets/kaiferdata-logo.png";
 
 const STEPS = [
   {

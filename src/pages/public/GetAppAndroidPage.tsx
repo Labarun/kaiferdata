@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { Download, Zap, Shield, Smartphone, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APK_DOWNLOAD_URL, APK_SIZE_LABEL, APK_VERSION_LABEL } from "@/lib/deviceDetect";
-import appIcon from "@/assets/kaiferdata-icon.png";
+import appIcon from "@/assets/kaiferdata-logo.png";
 
 export default function GetAppAndroidPage() {
   return (
