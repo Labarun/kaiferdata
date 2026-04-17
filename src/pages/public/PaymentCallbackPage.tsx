@@ -160,6 +160,44 @@ export default function PaymentCallbackPage() {
     );
   }
 
+  /* ── Agent Subscription Success ── */
+  if (state === "agent_success") {
+    return (
+      <div className="container py-8 sm:py-12">
+        <div className="max-w-md mx-auto space-y-6 animate-fade-in">
+          <div className="text-center">
+            <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(var(--primary)/0.18)]">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
+              You're an Agent!
+            </h2>
+            <p className="text-[12.5px] text-muted-foreground/55 mt-1.5 leading-relaxed max-w-[300px] mx-auto">
+              Your agent subscription is active. Your storefront is live and reseller pricing has been unlocked.
+            </p>
+          </div>
+
+          <div className="glass-premium rounded-2xl p-5 text-center space-y-2">
+            <p className="text-[11px] text-muted-foreground/55 uppercase tracking-wider font-semibold">
+              Subscription
+            </p>
+            <p className="text-base font-bold text-foreground">Kaiferdata Agent</p>
+            <p className="text-[11px] text-muted-foreground/65 leading-relaxed">
+              Manage your store, orders, earnings, and renewals from your agent dashboard.
+            </p>
+          </div>
+
+          <Button asChild className="w-full h-12 rounded-xl">
+            <Link to="/agent">
+              Open Agent Dashboard
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   /* ── Purchase Success ── */
   if (state === "success" && order) {
     return (
