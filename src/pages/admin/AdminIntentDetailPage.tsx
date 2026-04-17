@@ -1,13 +1,15 @@
 /**
  * Admin Intent Detail Page
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, FileText, Package, CreditCard, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2, FileText, Package, CreditCard, ArrowRight, RotateCcw } from "lucide-react";
 
 export default function AdminIntentDetailPage() {
   const { intentId } = useParams<{ intentId: string }>();
@@ -15,25 +17,53 @@ export default function AdminIntentDetailPage() {
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [payment, setPayment] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
 
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (!intentId) return;
-    async function fetch() {
-      const { data: i } = await supabase.from("purchase_intents").select("*").eq("id", intentId).single();
-      setIntent(i);
+    const { data: i } = await supabase.from("purchase_intents").select("*").eq("id", intentId).single();
+    setIntent(i);
 
-      if (i) {
-        const [orderRes, paymentRes] = await Promise.all([
-          supabase.from("orders").select("*").eq("intent_id", intentId).maybeSingle(),
-          supabase.from("payment_records").select("*").eq("intent_id", intentId).maybeSingle(),
-        ]);
-        setOrder(orderRes.data);
-        setPayment(paymentRes.data);
-      }
-      setLoading(false);
+    if (i) {
+      const [orderRes, paymentRes] = await Promise.all([
+        supabase.from("orders").select("*").eq("intent_id", intentId).maybeSingle(),
+        supabase.from("payment_records").select("*").eq("intent_id", intentId).maybeSingle(),
+      ]);
+      setOrder(orderRes.data);
+      setPayment(paymentRes.data);
     }
-    fetch();
+    setLoading(false);
   }, [intentId]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const retryFinalization = async () => {
+    if (!intent?.intent_reference) return;
+    setRetrying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("recover-payments", {
+        body: { reference: intent.intent_reference },
+      });
+      if (error) throw error;
+      const stats = (data?.stats || {}) as Record<string, number>;
+      if (stats.finalized > 0) {
+        toast.success("Payment finalized successfully");
+      } else if (stats.already_processed > 0) {
+        toast.info("Payment was already processed");
+      } else if (stats.not_yet_paid > 0) {
+        toast.warning("Paystack reports payment not yet successful");
+      } else if (stats.blocked > 0) {
+        toast.error("Finalization blocked (security check failed)");
+      } else {
+        toast.error("No action taken");
+      }
+      await fetchAll();
+    } catch (err) {
+      toast.error(`Retry failed: ${(err as Error).message}`);
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!intent) return <div className="text-center py-16 text-sm text-muted-foreground">Intent not found.</div>;
@@ -45,9 +75,15 @@ export default function AdminIntentDetailPage() {
     <div className="animate-fade-in space-y-5">
       <PageHeader title={intent.intent_reference as string} description="Purchase intent detail" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <OperationsBadge status={intent.status as string} className="text-xs px-3 py-1" />
         <span className="text-[11px] text-muted-foreground">{intent.intent_type as string} · {intent.actor_type as string}</span>
+        {!order && intent.status !== "completed" && intent.status !== "failed" && intent.status !== "cancelled" && intent.status !== "expired" && (
+          <Button size="sm" variant="outline" onClick={retryFinalization} disabled={retrying} className="ml-auto gap-1.5 h-7 text-[11px]">
+            <RotateCcw className={`h-3 w-3 ${retrying ? "animate-spin" : ""}`} />
+            {retrying ? "Retrying…" : "Retry finalization"}
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
