@@ -12,10 +12,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, ChevronDown, UserCircle } from "lucide-react";
+import { User, LogOut, ChevronDown, UserCircle, Shield, Store, Headset, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
@@ -23,6 +24,8 @@ export interface NavItem {
   label: string;
   path: string;
   icon: LucideIcon;
+  /** When true, this item is rendered as the elevated/centered tab on mobile dock. */
+  featured?: boolean;
 }
 
 interface DashboardLayoutProps {
@@ -73,17 +76,55 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 glass-elevated rounded-xl border-border/30">
+              <DropdownMenuContent align="end" className="w-60 glass-elevated rounded-xl border-border/30">
                 <div className="px-3 py-2">
-                  <p className="text-sm font-semibold text-foreground">{user?.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{user?.fullName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   <div className="mt-1.5"><RoleBadge role={user?.role || "user"} /></div>
                 </div>
                 <DropdownMenuSeparator />
+
+                {/* Always-available */}
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
                   <UserCircle className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
+
+                {/* Role-aware quick switches */}
+                {(user?.role === "admin" || user?.role === "staff" || user?.role === "agent") && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold px-3">
+                      Workspaces
+                    </DropdownMenuLabel>
+
+                    {user?.role === "admin" && (
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                        <Shield className="mr-2 h-4 w-4 text-destructive" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    )}
+
+                    {(user?.role === "admin" || user?.role === "staff") && (
+                      <DropdownMenuItem onClick={() => navigate("/staff")}>
+                        <Headset className="mr-2 h-4 w-4 text-warning" />
+                        Staff Panel
+                      </DropdownMenuItem>
+                    )}
+
+                    {(user?.role === "admin" || user?.role === "agent") && (
+                      <DropdownMenuItem onClick={() => navigate("/agent")}>
+                        <Store className="mr-2 h-4 w-4 text-primary" />
+                        Agent Dashboard
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -126,13 +167,44 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
 
       {/* ── Mobile floating glass dock ── */}
       <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 glass-dock rounded-2xl">
-        <div className="flex items-center justify-around py-2 px-1">
+        <div className="flex items-end justify-around py-2 px-1">
           {navItems.slice(0, 5).map((item) => {
             const active = isActive(item.path);
+            const featured = !!item.featured;
+
+            if (featured) {
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  aria-label={item.label}
+                  className="relative flex flex-col items-center -mt-5 px-2"
+                >
+                  <div
+                    className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                      active
+                        ? "bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-[0_8px_22px_-6px_hsl(213_73%_40%/0.55),0_2px_6px_-1px_hsl(213_73%_40%/0.25)]"
+                        : "bg-gradient-to-br from-primary/95 to-primary/75 text-primary-foreground shadow-[0_6px_18px_-6px_hsl(213_73%_40%/0.5)] active:scale-95"
+                    } ring-2 ring-background/80`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <span
+                    className={`mt-1 text-[10px] font-semibold transition-colors ${
+                      active ? "text-primary" : "text-foreground/70"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.label}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
                   active
                     ? "glass-nav-active text-primary"

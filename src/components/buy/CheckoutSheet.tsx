@@ -23,6 +23,7 @@ import {
   Sparkles,
   CreditCard,
   AlertCircle,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const NET_DOT: Record<string, string> = {
 };
 
 export type CheckoutStep = "details" | "review" | "processing" | "error";
+export type CheckoutPaymentMethod = "paystack" | "wallet";
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -51,6 +53,16 @@ interface CheckoutSheetProps {
   processingLabel?: string;
   paymentError?: string | null;
   onClearError?: () => void;
+  /** Optional payment-method picker. When omitted, the picker is hidden and
+   *  Paystack is the only option (preserves guest-checkout behavior). */
+  paymentMethod?: CheckoutPaymentMethod;
+  onPaymentMethodChange?: (m: CheckoutPaymentMethod) => void;
+  /** Required when paymentMethod picker is shown; used for the wallet tile. */
+  walletBalance?: number;
+  /** When true, wallet checkout is disabled with a "Coming soon" hint.
+   *  Defaults to true in Phase 1 since the wallet-debit edge function is not
+   *  shipped yet. */
+  walletComingSoon?: boolean;
 }
 
 export function CheckoutSheet({
@@ -69,6 +81,10 @@ export function CheckoutSheet({
   processingLabel,
   paymentError,
   onClearError,
+  paymentMethod,
+  onPaymentMethodChange,
+  walletBalance,
+  walletComingSoon = true,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
@@ -336,6 +352,109 @@ export function CheckoutSheet({
           {/* ── STEP: Review ── */}
           {step === "review" && (
             <div className="space-y-5 animate-fade-in">
+              {/* Payment method picker — only shown when caller wires it up
+                   (i.e. logged-in dashboard buy flow). Guest checkout omits
+                   these props and keeps Paystack as the only path. */}
+              {paymentMethod && onPaymentMethodChange && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground/50 font-semibold uppercase tracking-wider px-1">
+                    Pay with
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Paystack tile */}
+                    <button
+                      type="button"
+                      onClick={() => onPaymentMethodChange("paystack")}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200",
+                        paymentMethod === "paystack"
+                          ? "glass-elevated ring-2 ring-primary/25"
+                          : "glass-card hover:glass-elevated active:scale-[0.98]"
+                      )}
+                    >
+                      <CreditCard
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          paymentMethod === "paystack" ? "text-primary" : "text-muted-foreground/55"
+                        )}
+                      />
+                      <div className="min-w-0">
+                        <p
+                          className={cn(
+                            "text-[12px] font-bold leading-tight",
+                            paymentMethod === "paystack" ? "text-foreground" : "text-foreground/70"
+                          )}
+                        >
+                          Paystack
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/55 mt-0.5">MoMo · Card</p>
+                      </div>
+                    </button>
+
+                    {/* Wallet tile */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (walletComingSoon) return;
+                        if (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount) return;
+                        onPaymentMethodChange("wallet");
+                      }}
+                      disabled={
+                        walletComingSoon ||
+                        (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount)
+                      }
+                      className={cn(
+                        "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200 relative overflow-hidden",
+                        paymentMethod === "wallet"
+                          ? "glass-elevated ring-2 ring-primary/25"
+                          : "glass-card hover:glass-elevated active:scale-[0.98]",
+                        (walletComingSoon ||
+                          (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount)) &&
+                          "opacity-55 cursor-not-allowed hover:scale-100"
+                      )}
+                    >
+                      <Wallet
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          paymentMethod === "wallet" ? "text-primary" : "text-muted-foreground/55"
+                        )}
+                      />
+                      <div className="min-w-0">
+                        <p
+                          className={cn(
+                            "text-[12px] font-bold leading-tight",
+                            paymentMethod === "wallet" ? "text-foreground" : "text-foreground/70"
+                          )}
+                        >
+                          Wallet
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/55 mt-0.5 tabular-nums">
+                          {typeof walletBalance === "number"
+                            ? `GH₵${formatGHS(walletBalance)}`
+                            : "—"}
+                        </p>
+                      </div>
+                      {walletComingSoon && (
+                        <span className="absolute top-1.5 right-1.5 text-[8px] font-bold uppercase tracking-wider text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded-md">
+                          Soon
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Insufficient balance / coming soon hint */}
+                  {paymentMethod === "wallet" &&
+                    !walletComingSoon &&
+                    typeof walletBalance === "number" &&
+                    walletBalance < feeBreakdown.baseAmount && (
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-warning font-medium px-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        Wallet balance too low. Top up or pay with Paystack.
+                      </div>
+                    )}
+                </div>
+              )}
+
               <div className="rounded-2xl overflow-hidden glass-card">
                 <ReviewRow label="Network" value={network} />
                 <ReviewRow label="Bundle" value={plan.volume} />
@@ -357,17 +476,19 @@ export function CheckoutSheet({
                     </span>
                   </div>
                 </div>
-                <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.15)] dark:bg-[hsl(213_30%_20%/0.15)]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
-                      Processing Fee
-                      <span className="text-[9px] text-muted-foreground/35 font-normal">(3%)</span>
-                    </span>
-                    <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">
-                      GH₵{formatGHS(feeBreakdown.feeAmount)}
-                    </span>
+                {paymentMethod !== "wallet" && (
+                  <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.15)] dark:bg-[hsl(213_30%_20%/0.15)]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
+                        Processing Fee
+                        <span className="text-[9px] text-muted-foreground/35 font-normal">(3%)</span>
+                      </span>
+                      <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">
+                        GH₵{formatGHS(feeBreakdown.feeAmount)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between px-4 py-4 bg-[hsl(215_40%_96%/0.4)] dark:bg-[hsl(213_30%_20%/0.5)]">
                   <span className="text-[11px] text-muted-foreground/55 font-semibold uppercase tracking-wider">
@@ -375,16 +496,31 @@ export function CheckoutSheet({
                   </span>
                   <span className="font-bold text-gradient-brand tracking-tight">
                     <span className="text-[16px]">GH₵</span>
-                    <span className="text-[24px] ml-[1px]">{formatGHS(feeBreakdown.totalAmount)}</span>
+                    <span className="text-[24px] ml-[1px]">
+                      {formatGHS(
+                        paymentMethod === "wallet" ? feeBreakdown.baseAmount : feeBreakdown.totalAmount
+                      )}
+                    </span>
                   </span>
                 </div>
               </div>
 
               <div className="flex items-start gap-2.5 text-[10.5px] text-muted-foreground/50 px-1">
-                <CreditCard className="h-4 w-4 shrink-0 mt-0.5 text-primary/55" />
-                <span className="leading-relaxed">
-                  You'll be redirected to Paystack to complete payment securely via Mobile Money or Card.
-                </span>
+                {paymentMethod === "wallet" ? (
+                  <>
+                    <Wallet className="h-4 w-4 shrink-0 mt-0.5 text-primary/55" />
+                    <span className="leading-relaxed">
+                      Bundle cost will be debited from your wallet instantly — no fees.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 shrink-0 mt-0.5 text-primary/55" />
+                    <span className="leading-relaxed">
+                      You'll be redirected to Paystack to complete payment securely via Mobile Money or Card.
+                    </span>
+                  </>
+                )}
               </div>
 
               <div className="flex gap-2.5">
@@ -398,10 +534,18 @@ export function CheckoutSheet({
                 </Button>
                 <Button
                   onClick={onConfirm}
+                  disabled={
+                    paymentMethod === "wallet" &&
+                    typeof walletBalance === "number" &&
+                    walletBalance < feeBreakdown.baseAmount
+                  }
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
                   <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵{formatGHS(feeBreakdown.totalAmount)}
+                  Pay GH₵
+                  {formatGHS(
+                    paymentMethod === "wallet" ? feeBreakdown.baseAmount : feeBreakdown.totalAmount
+                  )}
                 </Button>
               </div>
             </div>
