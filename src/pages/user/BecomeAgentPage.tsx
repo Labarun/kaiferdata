@@ -1,89 +1,126 @@
 /**
- * BecomeAgentPage — Phase 1 placeholder shown when a non-agent taps the Agent
- * tab in the bottom dock. Real onboarding flow ships in Phase 2.
+ * BecomeAgentPage — Phase 2 state router for the agent onboarding flow.
+ *
+ * Resolves the current AgentState via services/agent.resolveAgentState() and
+ * renders the appropriate screen:
+ *   - no_application                  → AgentOnboardingHero
+ *   - draft / needs_changes           → AgentApplicationWizard
+ *   - submitted / under_review        → AgentApplicationStatus (waiting)
+ *   - declined                        → AgentApplicationStatus (declined)
+ *   - approved_pending_subscription   → AgentApplicationStatus (CTA → subscription)
+ *   - active                          → redirect to /agent
+ *   - subscription_expired/suspended  → AgentApplicationStatus variants
+ *
+ * Strict additive: this only reads; it never mutates payment / wallet rows.
  */
-import { Link } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { resolveAgentState, type AgentState } from "@/services/agent";
+import { AgentOnboardingHero } from "@/components/agent/AgentOnboardingHero";
+import { AgentApplicationWizard } from "@/components/agent/AgentApplicationWizard";
+import { AgentApplicationStatus } from "@/components/agent/AgentApplicationStatus";
+import { PageLoader } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
-import { Store, TrendingUp, Wallet, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
-
-const benefits = [
-  {
-    icon: TrendingUp,
-    title: "Lower agent prices",
-    desc: "Buy bundles at reseller pricing and set your own margin.",
-  },
-  {
-    icon: Store,
-    title: "Your own storefront",
-    desc: "A premium public store page with your brand, logo and link.",
-  },
-  {
-    icon: Wallet,
-    title: "Profit tracking",
-    desc: "Every sale credits your earnings wallet automatically.",
-  },
-];
+import { ArrowRight, ShieldAlert } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function BecomeAgentPage() {
-  return (
-    <div className="space-y-6 pb-4">
-      {/* Hero */}
-      <div className="animate-fade-in">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-primary/60" />
-          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
-            Become a Kaiferdata Agent
-          </p>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">
-          Resell data. Build your business.
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-          Join the Kaiferdata agent program — get reseller pricing, your own
-          storefront, and earn on every sale.
-        </p>
-      </div>
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [state, setState] = useState<AgentState | null>(null);
+  const [loading, setLoading] = useState(true);
 
-      {/* Benefit cards */}
-      <div className="grid gap-3 animate-fade-in animate-stagger-1">
-        {benefits.map((b) => (
-          <div key={b.title} className="glass-card rounded-xl p-4 flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
-              <b.icon className="h-4 w-4 text-primary" />
+  const refresh = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const s = await resolveAgentState(user.id);
+      setState(s);
+      // If already an active agent, send them straight to the agent dashboard.
+      if (s.kind === "active") navigate("/agent", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  if (loading || !state) return <PageLoader label="Loading agent program…" />;
+
+  switch (state.kind) {
+    case "no_application":
+      return <AgentOnboardingHero onStarted={refresh} />;
+
+    case "draft":
+    case "needs_changes":
+      return (
+        <AgentApplicationWizard
+          application={state.application}
+          onSubmitted={refresh}
+        />
+      );
+
+    case "submitted":
+      return <AgentApplicationStatus application={state.application} variant="submitted" />;
+
+    case "under_review":
+      return <AgentApplicationStatus application={state.application} variant="under_review" />;
+
+    case "declined":
+      return <AgentApplicationStatus application={state.application} variant="declined" />;
+
+    case "approved_pending_subscription":
+      return (
+        <AgentApplicationStatus
+          application={state.application}
+          profile={state.profile}
+          variant="approved_pending_subscription"
+        />
+      );
+
+    case "subscription_expired":
+      return (
+        <div className="space-y-5 pb-4 animate-fade-in">
+          <div className="glass-elevated rounded-2xl p-5 text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto">
+              <ShieldAlert className="h-5 w-5 text-warning" />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{b.title}</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{b.desc}</p>
+            <div>
+              <p className="text-sm font-bold text-foreground">Subscription expired</p>
+              <p className="text-[12px] text-muted-foreground/80 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                Your agent subscription has lapsed. Renew it to reactivate your storefront and reseller pricing.
+              </p>
+            </div>
+            <Button asChild className="w-full h-11 rounded-xl gap-2">
+              <Link to="/agent/subscription">Renew subscription <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+          </div>
+        </div>
+      );
+
+    case "suspended":
+      return (
+        <div className="space-y-5 pb-4 animate-fade-in">
+          <div className="glass-elevated rounded-2xl p-5 text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+              <ShieldAlert className="h-5 w-5 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Account suspended</p>
+              <p className="text-[12px] text-muted-foreground/80 mt-1 max-w-[300px] mx-auto leading-relaxed">
+                {state.profile.suspension_reason ||
+                  "Your agent account has been suspended. Please contact support for more information."}
+              </p>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      );
 
-      {/* Coming soon notice */}
-      <div className="glass-elevated rounded-2xl p-5 text-center space-y-3 animate-fade-in animate-stagger-2">
-        <div className="h-12 w-12 rounded-2xl glass-premium flex items-center justify-center mx-auto">
-          <Store className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-foreground">Applications opening soon</p>
-          <p className="text-[12px] text-muted-foreground/70 mt-1 max-w-[280px] mx-auto leading-relaxed">
-            We're polishing the application and approval flow. You'll be able
-            to apply directly from this page in the next update.
-          </p>
-        </div>
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/55 font-medium">
-          <ShieldCheck className="h-3 w-3 text-success/55" />
-          Subscription: GH₵50/month or GH₵400/year after approval
-        </div>
-      </div>
-
-      {/* CTA back to dashboard */}
-      <Link to="/dashboard" className="block animate-fade-in animate-stagger-3">
-        <Button variant="outline" className="w-full h-11 rounded-xl glass-card border-primary/20 gap-2">
-          Back to Dashboard
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </Link>
-    </div>
-  );
+    case "active":
+      // Handled by the navigate() above; render nothing while redirecting.
+      return null;
+  }
 }
