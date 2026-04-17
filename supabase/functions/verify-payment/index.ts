@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       await supabase
         .from("purchase_intents")
         .update({ status: failStatus })
-        .eq("id", intent.id);
+        .eq("id", intent.id as string);
 
       await supabase.from("payment_records").upsert(
         {
@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
             blocked_at: new Date().toISOString(),
           },
         })
-        .eq("id", intent.id);
+        .eq("id", intent.id as string);
 
       await supabase.from("audit_logs").insert({
         action: "payment_blocked_amount_mismatch",
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
     if (prErr) {
       console.error("Failed to create payment record:", prErr);
       // Release the intent back so it can be retried
-      await supabase.from("purchase_intents").update({ status: "pending_payment" }).eq("id", intent.id);
+      await supabase.from("purchase_intents").update({ status: "pending_payment" }).eq("id", intent.id as string);
       return json({ error: "Failed to record payment" }, 500);
     }
 
@@ -401,7 +401,7 @@ Deno.serve(async (req) => {
     await supabase
       .from("purchase_intents")
       .update({ status: "payment_confirmed" })
-      .eq("id", intent.id);
+      .eq("id", intent.id as string);
 
     // ═══ BRANCH: DEPOSIT vs PURCHASE ═══
     if (isDeposit) {
@@ -486,7 +486,7 @@ async function handleDeposit(
         completed_at: new Date().toISOString(),
       },
     })
-    .eq("id", intent.id);
+    .eq("id", intent.id as string);
 
   await supabase.from("audit_logs").insert({
     action: "wallet_deposit_completed",
@@ -593,7 +593,7 @@ async function handlePurchase(
         completed_at: new Date().toISOString(),
       },
     })
-    .eq("id", intent.id);
+    .eq("id", intent.id as string);
 
   await supabase.from("audit_logs").insert({
     action: "order_created_from_payment",
@@ -649,7 +649,7 @@ async function handlePurchase(
   const { data: updatedOrder } = await supabase
     .from("orders")
     .select("*")
-    .eq("id", order.id)
+    .eq("id", order.id as string)
     .single();
 
   return json({
