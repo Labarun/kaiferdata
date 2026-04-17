@@ -18,7 +18,10 @@ const corsHeaders = {
 const FINAL_STATUSES = ["delivered", "failed", "cancelled", "refunded"];
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+  return path.split(".").reduce<unknown>(
+    (o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined),
+    obj as unknown,
+  );
 }
 
 function buildAuthHeaders(authConfig: Record<string, unknown>): Record<string, string> {

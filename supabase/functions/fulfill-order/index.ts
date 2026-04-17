@@ -58,7 +58,10 @@ function outcomeToMessage(outcome: SupplierOutcome, network: string, volume: str
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+  return path.split(".").reduce<unknown>(
+    (o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined),
+    obj as unknown,
+  );
 }
 
 function normalizeToken(value: unknown): string {
@@ -122,7 +125,7 @@ async function submitToStubSupplier(
 async function submitToSupplierApi(
   order: Record<string, unknown>,
   supplier: Record<string, unknown>,
-  supabaseClient: ReturnType<typeof createClient>
+  supabaseClient: any
 ): Promise<SupplierResult> {
   const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
   const authConfig = (supplier.auth_config || {}) as Record<string, unknown>;
@@ -158,7 +161,7 @@ async function submitToSupplierApi(
     const { data: supplierPackages } = await supabaseClient
       .from("data_packages")
       .select("supplier_source_id, package_code, package_name, package_size_label, package_volume_value, source_metadata, updated_at")
-      .eq("network", order.network)
+      .eq("network", order.network as string)
       .eq("source_type", "supplier_api")
       .not("supplier_source_id", "is", null)
       .order("updated_at", { ascending: false });
@@ -179,10 +182,10 @@ async function submitToSupplierApi(
       const codeVolumeMatch = String(order.bundle_code || "").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
       if (codeVolumeMatch) addHint(codeVolumeMatch[1]);
 
-      let pkg = supplierPackages.find((p) => normalizeToken(p.package_code) === codeNeedle);
+      let pkg = supplierPackages.find((p: Record<string, unknown>) => normalizeToken(p.package_code) === codeNeedle);
 
       if (!pkg && sizeHints.size > 0) {
-        pkg = supplierPackages.find((p) => {
+        pkg = supplierPackages.find((p: Record<string, unknown>) => {
           const packageValues = [p.package_size_label, p.package_volume_value, p.package_name, p.package_code]
             .map((v) => normalizeSize(v))
             .filter(Boolean);
@@ -207,7 +210,7 @@ async function submitToSupplierApi(
       }
 
       if (!isUuid(supplierNetworkId)) {
-        const networkCarrier = supplierPackages.find((p) => {
+        const networkCarrier = supplierPackages.find((p: Record<string, unknown>) => {
           const meta = (p.source_metadata || {}) as Record<string, unknown>;
           const networkObj = meta.network as Record<string, unknown> | undefined;
           return Boolean(networkObj?.id || meta.network_id || meta.networkId || isUuid(meta.network));
@@ -323,7 +326,7 @@ async function submitToSupplierApi(
 
 /** ── Status history helper ── */
 async function logStatusChange(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   orderId: string,
   oldStatus: string | null,
   newStatus: string,
