@@ -1402,6 +1402,20 @@ export type Database = {
           subscription_id: string
         }[]
       }
+      admin_activate_agent_subscription: {
+        Args: {
+          _admin_id: string
+          _note?: string
+          _plan: Database["public"]["Enums"]["agent_subscription_plan"]
+          _target_user_id: string
+        }
+        Returns: {
+          agent_profile_id: string
+          expires_at: string
+          starts_at: string
+          subscription_id: string
+        }[]
+      }
       admin_credit_user_wallet: {
         Args: {
           _admin_id: string
@@ -1640,6 +1654,16 @@ export type Database = {
           new_balance: number
           order_id: string
           public_order_id: string
+          txn_id: string
+        }[]
+      }
+      refund_wallet_purchase_atomic: {
+        Args: { _actor_id?: string; _order_id: string; _reason?: string }
+        Returns: {
+          amount: number
+          new_balance: number
+          reason: string
+          refunded: boolean
           txn_id: string
         }[]
       }

@@ -615,15 +615,61 @@ Deno.serve(async (req) => {
       },
     });
 
+    // ═══ 7b. SAFE WALLET REFUND ═══
+    // If this was a wallet-funded order AND the supplier never produced a
+    // successful submission (no supplier_reference, no successful log), the
+    // user must not lose their balance. The atomic RPC enforces:
+    //   - only refunds wallet-paid orders
+    //   - never refunds when a successful supplier_request_log exists
+    //   - idempotent (safe to call repeatedly)
+    let refundResult: Record<string, unknown> | null = null;
+    const orderMeta = (order.metadata || {}) as Record<string, unknown>;
+    const isWalletPaid =
+      orderMeta.payment_method === "wallet" ||
+      orderMeta.wallet_paid === true ||
+      order.origin_type === "user_buy_wallet";
+    const supplierProducedReference = Boolean(result.supplier_reference);
+
+    if (result.outcome === "failed" && isWalletPaid && !supplierProducedReference) {
+      try {
+        const { data: refundRows, error: refundErr } = await supabase.rpc(
+          "refund_wallet_purchase_atomic",
+          {
+            _order_id: order_id,
+            _reason: result.error_message
+              ? `Order failed before supplier delivery: ${String(result.error_message).slice(0, 200)}`
+              : "Order failed before supplier delivery",
+            _actor_id: null,
+          }
+        );
+        if (refundErr) {
+          console.error(`[fulfill-order] wallet refund RPC failed for ${order_id}:`, refundErr);
+          await supabase.from("audit_logs").insert({
+            action: "wallet_refund_rpc_error",
+            actor_role: "system",
+            target_type: "order",
+            target_id: order_id,
+            metadata: { error: refundErr.message, public_order_id: order.public_order_id },
+          });
+        } else {
+          const row = Array.isArray(refundRows) ? refundRows[0] : refundRows;
+          refundResult = row || null;
+        }
+      } catch (refundEx) {
+        console.error(`[fulfill-order] refund attempt threw for ${order_id}:`, refundEx);
+      }
+    }
+
     // ═══ 8. RETURN RESULT ═══
     return json({
       success: result.outcome !== "failed",
       order_id: order_id,
       public_order_id: order.public_order_id,
-      status: newOrderStatus,
+      status: refundResult?.refunded ? "refunded" : newOrderStatus,
       supplier_outcome: result.outcome,
       delivery_message: result.delivery_message || deliveryMsg,
       supplier_reference: result.supplier_reference,
+      wallet_refund: refundResult,
     });
   } catch (err) {
     console.error("fulfill-order error:", err);

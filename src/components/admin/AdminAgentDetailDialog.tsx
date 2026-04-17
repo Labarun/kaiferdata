@@ -17,6 +17,7 @@ import { PageLoader } from "@/components/shared/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
+  adminActivateAgent,
   approveApplication,
   declineApplication,
   getApplicationDetail,
@@ -26,7 +27,7 @@ import {
   suspendAgent,
 } from "@/services/agentAdmin";
 import type { AgentApplication, AgentProfile, AgentSubscription } from "@/services/agent";
-import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store } from "lucide-react";
+import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap } from "lucide-react";
 
 interface Props {
   applicationId: string;
@@ -42,7 +43,8 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [subscriptions, setSubscriptions] = useState<AgentSubscription[]>([]);
   const [note, setNote] = useState("");
-  const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | null>(null);
+  const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | "activate" | null>(null);
+  const [activatePlan, setActivatePlan] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     let cancelled = false;
@@ -144,6 +146,28 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleManualActivate = async () => {
+    if (!user?.id || !application?.user_id) return;
+    setBusy(true);
+    try {
+      const res = await adminActivateAgent({
+        targetUserId: application.user_id,
+        adminId: user.id,
+        plan: activatePlan,
+        note: note.trim() || undefined,
+      });
+      const expires = new Date(res.expiresAt).toLocaleDateString();
+      toast.success(
+        `Activated for ${activatePlan === "monthly" ? "1 month" : "1 year"} — expires ${expires}`,
+      );
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Activation failed");
     } finally {
       setBusy(false);
     }
@@ -259,7 +283,53 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
             <Separator />
 
             {/* Action area */}
-            {activeForm && (
+            {activeForm === "activate" && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Manual activation</p>
+                  <p className="text-xs text-muted-foreground">
+                    Activates this agent's store immediately, even without a Paystack payment.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={activatePlan === "monthly" ? "default" : "outline"}
+                    onClick={() => setActivatePlan("monthly")}
+                    disabled={busy}
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={activatePlan === "yearly" ? "default" : "outline"}
+                    onClick={() => setActivatePlan("yearly")}
+                    disabled={busy}
+                  >
+                    1 Year
+                  </Button>
+                </div>
+                <Textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  placeholder="Optional internal note (audit log)"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" disabled={busy} onClick={handleManualActivate}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    {busy ? "Activating…" : `Activate ${activatePlan === "monthly" ? "1 Month" : "1 Year"}`}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeForm && activeForm !== "activate" && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">
                   {activeForm === "approve" ? "Optional internal note" : "Note (required)"}
@@ -321,6 +391,23 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
                       Approve
                     </Button>
                   </>
+                )}
+
+                {/* Manual admin activation — available for approved agents
+                    that aren't currently 'active' (and aren't suspended). */}
+                {profile && profile.status !== "active" && profile.status !== "suspended" && (
+                  <Button size="sm" variant="default" onClick={() => setActiveForm("activate")}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    Manually activate
+                  </Button>
+                )}
+
+                {/* Allow extending an already-active agent too */}
+                {profile && profile.status === "active" && (
+                  <Button size="sm" variant="outline" onClick={() => setActiveForm("activate")}>
+                    <Zap className="mr-1 h-4 w-4" />
+                    Extend activation
+                  </Button>
                 )}
 
                 {/* Profile-level actions */}
