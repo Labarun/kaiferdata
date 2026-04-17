@@ -214,7 +214,7 @@ async function processUpdate(
   let statusMapping: Record<string, string> = {};
   let supplierId: string | null = null;
   if (suppliers?.length) {
-    supplierId = suppliers[0].id;
+    supplierId = suppliers[0].id as string;
     const cfg = (suppliers[0].endpoint_config || {}) as Record<string, unknown>;
     statusMapping = (cfg.status_mapping || {}) as Record<string, string>;
   }
@@ -261,7 +261,7 @@ async function processUpdate(
       supplier_status: rawStatus,
       ...(deliveryMessage ? { delivery_message: deliveryMessage } : {}),
     })
-    .eq("id", order.id);
+    .eq("id", order.id as string);
 
   // Status history
   await supabase.from("order_status_history").insert({
