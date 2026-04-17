@@ -108,7 +108,7 @@ export default function AgentSubscriptionPage() {
     const renewSoon = daysLeft !== null && daysLeft <= 7;
 
     return (
-      <div className="space-y-5 pb-4 animate-fade-in">
+      <div className="space-y-5 pb-32 md:pb-8 animate-fade-in">
         <div className="glass-premium rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -174,7 +174,7 @@ export default function AgentSubscriptionPage() {
   /* ── APPROVED PENDING / EXPIRED: needs to pay ── */
   const isExpired = state.kind === "subscription_expired";
   return (
-    <div className="space-y-5 pb-4 animate-fade-in">
+    <div className="space-y-5 pb-32 md:pb-8 animate-fade-in">
       {/* Hero */}
       <div>
         <div className="flex items-center gap-2 mb-2">
