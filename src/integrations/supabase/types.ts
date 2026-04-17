@@ -14,6 +14,234 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_applications: {
+        Row: {
+          acknowledged_subscription: boolean
+          admin_note: string | null
+          agreed_to_terms: boolean
+          business_name: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          expected_customer_base: string | null
+          full_name: string | null
+          has_sold_data_before: boolean | null
+          id: string
+          internal_note: string | null
+          motivation: string | null
+          phone: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selling_channels: string | null
+          social_link: string | null
+          status: Database["public"]["Enums"]["agent_application_status"]
+          store_logo_url: string | null
+          store_name: string | null
+          store_slug: string | null
+          store_tagline: string | null
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_subscription?: boolean
+          admin_note?: string | null
+          agreed_to_terms?: boolean
+          business_name?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          expected_customer_base?: string | null
+          full_name?: string | null
+          has_sold_data_before?: boolean | null
+          id?: string
+          internal_note?: string | null
+          motivation?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selling_channels?: string | null
+          social_link?: string | null
+          status?: Database["public"]["Enums"]["agent_application_status"]
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_slug?: string | null
+          store_tagline?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_subscription?: boolean
+          admin_note?: string | null
+          agreed_to_terms?: boolean
+          business_name?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          expected_customer_base?: string | null
+          full_name?: string | null
+          has_sold_data_before?: boolean | null
+          id?: string
+          internal_note?: string | null
+          motivation?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selling_channels?: string | null
+          social_link?: string | null
+          status?: Database["public"]["Enums"]["agent_application_status"]
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_slug?: string | null
+          store_tagline?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_profiles: {
+        Row: {
+          application_id: string | null
+          approved_at: string
+          business_name: string | null
+          city: string | null
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["agent_profile_status"]
+          store_logo_url: string | null
+          store_name: string
+          store_slug: string
+          store_tagline: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
+          total_orders: number
+          total_profit: number
+          total_sales: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_id?: string | null
+          approved_at?: string
+          business_name?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["agent_profile_status"]
+          store_logo_url?: string | null
+          store_name: string
+          store_slug: string
+          store_tagline?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          total_orders?: number
+          total_profit?: number
+          total_sales?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string | null
+          approved_at?: string
+          business_name?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["agent_profile_status"]
+          store_logo_url?: string | null
+          store_name?: string
+          store_slug?: string
+          store_tagline?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          total_orders?: number
+          total_profit?: number
+          total_sales?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_profiles_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "agent_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_subscriptions: {
+        Row: {
+          agent_profile_id: string
+          amount_paid: number
+          created_at: string
+          currency: string
+          expires_at: string | null
+          id: string
+          intent_id: string | null
+          payment_record_id: string | null
+          plan: Database["public"]["Enums"]["agent_subscription_plan"]
+          starts_at: string | null
+          status: Database["public"]["Enums"]["agent_subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_profile_id: string
+          amount_paid: number
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          intent_id?: string | null
+          payment_record_id?: string | null
+          plan: Database["public"]["Enums"]["agent_subscription_plan"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["agent_subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_profile_id?: string
+          amount_paid?: number
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          intent_id?: string | null
+          payment_record_id?: string | null
+          plan?: Database["public"]["Enums"]["agent_subscription_plan"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["agent_subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_subscriptions_agent_profile_id_fkey"
+            columns: ["agent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "agent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_subscriptions_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_subscriptions_payment_record_id_fkey"
+            columns: ["payment_record_id"]
+            isOneToOne: false
+            referencedRelation: "payment_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -991,6 +1219,20 @@ export type Database = {
     }
     Enums: {
       account_status: "active" | "suspended" | "pending" | "disabled"
+      agent_application_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "needs_changes"
+        | "approved"
+        | "declined"
+      agent_profile_status:
+        | "pending_subscription"
+        | "active"
+        | "subscription_expired"
+        | "suspended"
+      agent_subscription_plan: "monthly" | "yearly"
+      agent_subscription_status: "pending" | "active" | "expired" | "cancelled"
       app_role: "user" | "agent" | "staff" | "admin"
       intent_status:
         | "created"
@@ -1155,6 +1397,22 @@ export const Constants = {
   public: {
     Enums: {
       account_status: ["active", "suspended", "pending", "disabled"],
+      agent_application_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "needs_changes",
+        "approved",
+        "declined",
+      ],
+      agent_profile_status: [
+        "pending_subscription",
+        "active",
+        "subscription_expired",
+        "suspended",
+      ],
+      agent_subscription_plan: ["monthly", "yearly"],
+      agent_subscription_status: ["pending", "active", "expired", "cancelled"],
       app_role: ["user", "agent", "staff", "admin"],
       intent_status: [
         "created",
