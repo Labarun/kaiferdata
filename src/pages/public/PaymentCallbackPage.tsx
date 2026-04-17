@@ -8,11 +8,11 @@ import { verifyPayment } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
 import {
   Loader2, CheckCircle2, XCircle, Copy, ArrowRight,
-  RotateCcw, AlertTriangle, ShieldCheck, Wallet,
+  RotateCcw, AlertTriangle, ShieldCheck, Wallet, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type PageState = "verifying" | "success" | "deposit_success" | "failed" | "error" | "generic_success";
+type PageState = "verifying" | "success" | "deposit_success" | "agent_success" | "failed" | "error" | "generic_success";
 
 export default function PaymentCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -48,6 +48,8 @@ export default function PaymentCallbackPage() {
           if (result.intent_type === "wallet_deposit") {
             setDeposit(result.deposit || null);
             setState("deposit_success");
+          } else if (result.intent_type === "agent_subscription") {
+            setState("agent_success");
           } else if (result.order) {
             setOrder(result.order);
             setState("success");
