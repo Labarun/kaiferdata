@@ -313,7 +313,7 @@ export default function UserDashboardHome() {
           </div>
         </Link>
         <a
-          href="https://wa.me/233000000000"
+          href="https://wa.me/233204471969"
           target="_blank"
           rel="noreferrer"
           className="glass-card rounded-xl p-3.5 flex items-center gap-3 hover:bg-primary/[0.03] transition-colors"
