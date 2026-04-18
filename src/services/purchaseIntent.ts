@@ -142,7 +142,12 @@ export async function createDepositIntent(params: {
   return data;
 }
 
-/** Initialize Paystack payment for a purchase/deposit intent */
+/** Initialize Paystack payment for a purchase/deposit intent.
+ *  Resilient error handling: when the edge function returns a non-2xx,
+ *  supabase-js wraps it in a FunctionsHttpError with a generic message and
+ *  the real response body sits on `error.context`. We unwrap it so users
+ *  see the actual reason ("Payments temporarily disabled", "Package not
+ *  found", "Too many attempts", etc.) instead of a confusing generic error. */
 export async function initializePayment(intentId: string): Promise<{
   authorization_url: string;
   access_code: string;
@@ -153,8 +158,35 @@ export async function initializePayment(intentId: string): Promise<{
     body: { intent_id: intentId },
   });
 
-  if (error) throw new Error(error.message || "Payment initialization failed");
-  if (!data?.success) throw new Error(data?.error || "Payment initialization failed");
+  if (error) {
+    // Try to extract the real edge-function JSON body
+    let serverMessage: string | null = null;
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        const body = await ctx.json();
+        if (body && typeof body === "object") {
+          serverMessage = (body.error as string) || null;
+          // If the server says it's already completed, treat as already-paid
+          if ((body as { already_completed?: boolean }).already_completed) {
+            throw new Error("This payment has already been completed.");
+          }
+        }
+      }
+    } catch (parseErr) {
+      // Fall through to generic message — never crash on parse failure
+      if (parseErr instanceof Error && parseErr.message === "This payment has already been completed.") {
+        throw parseErr;
+      }
+    }
+    console.error("[initializePayment] edge error:", error, "server:", serverMessage);
+    throw new Error(serverMessage || "Could not start payment. Please try again.");
+  }
+
+  if (!data?.success) {
+    console.error("[initializePayment] non-success response:", data);
+    throw new Error(data?.error || "Could not start payment. Please try again.");
+  }
   return data;
 }
 

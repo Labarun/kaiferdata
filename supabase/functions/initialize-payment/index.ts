@@ -87,11 +87,50 @@ Deno.serve(async (req) => {
 
     if (intentError || !intent) return json({ error: "Intent not found" }, 404);
 
-    if (intent.status !== "created") {
+    // Allow safe retries from `created` and `pending_payment` (user clicked Edit
+    // and came back). Block only states that mean payment is locked / done.
+    const RETRYABLE_STATES = new Set(["created", "pending_payment"]);
+    if (!RETRYABLE_STATES.has(intent.status)) {
+      // If already verified / processing / completed, surface a clean message
+      // instead of a generic non-2xx so the client UI doesn't look broken.
+      if (intent.status === "completed") {
+        return json({
+          error: "This payment has already been completed.",
+          intent_reference: intent.intent_reference,
+          already_completed: true,
+        }, 409);
+      }
       return json({
-        error: `This request is already in '${intent.status}' state`,
+        error: "This request can no longer be paid for. Please start a new order.",
         intent_reference: intent.intent_reference,
+        status: intent.status,
       }, 409);
+    }
+
+    // If we already have a valid Paystack init for this intent, reuse it
+    // instead of hitting Paystack again. Authorization URLs from Paystack
+    // remain valid until the transaction is completed/abandoned, so this is
+    // safe and avoids both rate-limit hits and duplicate references.
+    const existingCtx = (intent.order_context || {}) as Record<string, unknown>;
+    const existingAccessCode = typeof existingCtx.paystack_access_code === "string"
+      ? existingCtx.paystack_access_code
+      : null;
+    if (intent.status === "pending_payment" && existingAccessCode) {
+      const breakdownCtx = (existingCtx.fee_breakdown || {}) as Record<string, unknown>;
+      return json({
+        success: true,
+        authorization_url: `https://checkout.paystack.com/${existingAccessCode}`,
+        access_code: existingAccessCode,
+        reference: intent.intent_reference,
+        intent_reference: intent.intent_reference,
+        reused: true,
+        fee_breakdown: {
+          base_amount: Number(breakdownCtx.base_amount ?? intent.base_amount ?? intent.amount_expected),
+          fee_amount: Number(breakdownCtx.fee_amount ?? intent.fee_amount ?? 0),
+          fee_rate: Number(breakdownCtx.fee_rate ?? intent.fee_rate ?? 0),
+          total_amount: Number(breakdownCtx.total_amount ?? intent.total_amount ?? intent.amount_expected),
+        },
+      });
     }
 
     // Check guest checkout toggle
