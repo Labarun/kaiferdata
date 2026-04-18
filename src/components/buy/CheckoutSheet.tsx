@@ -63,6 +63,9 @@ interface CheckoutSheetProps {
    *  Defaults to true in Phase 1 since the wallet-debit edge function is not
    *  shipped yet. */
   walletComingSoon?: boolean;
+  /** When true, hides optional name/email fields and redundant review rows
+   *  (network/bundle/name/email). Used by logged-in dashboard flow. */
+  simplified?: boolean;
 }
 
 export function CheckoutSheet({
