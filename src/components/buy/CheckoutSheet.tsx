@@ -63,6 +63,9 @@ interface CheckoutSheetProps {
    *  Defaults to true in Phase 1 since the wallet-debit edge function is not
    *  shipped yet. */
   walletComingSoon?: boolean;
+  /** When true, hides optional name/email fields and redundant review rows
+   *  (network/bundle/name/email). Used by logged-in dashboard flow. */
+  simplified?: boolean;
 }
 
 export function CheckoutSheet({
@@ -85,6 +88,7 @@ export function CheckoutSheet({
   onPaymentMethodChange,
   walletBalance,
   walletComingSoon = true,
+  simplified = false,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
@@ -157,6 +161,7 @@ export function CheckoutSheet({
       <DrawerContent
         className={cn(
           "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
+          "flex flex-col",
           "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
           "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
           "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
@@ -289,47 +294,48 @@ export function CheckoutSheet({
                 )}
               </div>
 
-              <div className="space-y-3">
-                <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">
-                  Optional Details
-                </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="checkout-name"
-                      className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
-                    >
-                      <User className="h-2.5 w-2.5" /> Name
-                    </Label>
-                    <Input
-                      id="checkout-name"
-                      placeholder="Optional"
-                      value={customerName}
-                      onChange={(e) => onCustomerNameChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
-                      maxLength={100}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="checkout-email"
-                      className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
-                    >
-                      <Mail className="h-2.5 w-2.5" /> Email
-                    </Label>
-                    <Input
-                      id="checkout-email"
-                      type="email"
-                      placeholder="For receipt"
-                      value={customerEmail}
-                      onChange={(e) => onCustomerEmailChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
-                      maxLength={255}
-                    />
+              {!simplified && (
+                <div className="space-y-3">
+                  <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">
+                    Optional Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="checkout-name"
+                        className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
+                      >
+                        <User className="h-2.5 w-2.5" /> Name
+                      </Label>
+                      <Input
+                        id="checkout-name"
+                        placeholder="Optional"
+                        value={customerName}
+                        onChange={(e) => onCustomerNameChange(e.target.value)}
+                        className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                        maxLength={100}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="checkout-email"
+                        className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
+                      >
+                        <Mail className="h-2.5 w-2.5" /> Email
+                      </Label>
+                      <Input
+                        id="checkout-email"
+                        type="email"
+                        placeholder="For receipt"
+                        value={customerEmail}
+                        onChange={(e) => onCustomerEmailChange(e.target.value)}
+                        className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                        maxLength={255}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-
+              )}
               <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
               <Button
@@ -456,16 +462,16 @@ export function CheckoutSheet({
               )}
 
               <div className="rounded-2xl overflow-hidden glass-card">
-                <ReviewRow label="Network" value={network} />
-                <ReviewRow label="Bundle" value={plan.volume} />
+                {!simplified && <ReviewRow label="Network" value={network} />}
+                {!simplified && <ReviewRow label="Bundle" value={plan.volume} />}
                 <ReviewRow
                   label="Recipient"
                   value={formatPhone(phoneNumber)}
                   mono
                   icon={<span className="text-[10px] mr-1">🇬🇭</span>}
                 />
-                {customerName && <ReviewRow label="Name" value={customerName} />}
-                {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
+                {!simplified && customerName && <ReviewRow label="Name" value={customerName} />}
+                {!simplified && customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
                 {/* Fee breakdown */}
                 <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.25)] dark:bg-[hsl(213_30%_20%/0.3)]">
