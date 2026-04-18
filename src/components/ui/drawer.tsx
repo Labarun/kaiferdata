@@ -47,7 +47,7 @@ const DrawerContent = React.forwardRef<
       {...props}
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-      <div data-vaul-no-drag className="min-h-0 flex-1">
+      <div data-vaul-no-drag className="flex min-h-0 flex-1 flex-col">
         {children}
       </div>
     </DrawerPrimitive.Content>
