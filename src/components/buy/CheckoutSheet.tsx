@@ -88,6 +88,7 @@ export function CheckoutSheet({
   onPaymentMethodChange,
   walletBalance,
   walletComingSoon = true,
+  simplified = false,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
