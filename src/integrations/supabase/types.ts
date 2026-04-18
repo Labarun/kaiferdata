@@ -1624,6 +1624,16 @@ export type Database = {
           txn_id: string
         }[]
       }
+      ensure_user_scaffold: {
+        Args: {
+          _email?: string
+          _full_name?: string
+          _phone?: string
+          _user_id: string
+          _username?: string
+        }
+        Returns: Json
+      }
       get_account_status: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["account_status"]
