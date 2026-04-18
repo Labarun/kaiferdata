@@ -53,8 +53,9 @@ export default function UserBuyDataPage() {
   // Checkout sheet state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [customerName, setCustomerName] = useState(user?.fullName || "");
-  const [customerEmail, setCustomerEmail] = useState(user?.email || "");
+  // Logged-in users: name/email kept as empty no-ops (simplified flow hides fields)
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
