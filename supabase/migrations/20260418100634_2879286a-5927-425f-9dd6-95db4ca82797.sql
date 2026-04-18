@@ -1,0 +1,1 @@
+DO $$ BEGIN RAISE NOTICE 'Finishing auth hardening outside SQL.'; END $$;
