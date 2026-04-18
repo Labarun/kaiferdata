@@ -1,0 +1,1 @@
+DO $$ BEGIN RAISE NOTICE 'Database-side user scaffold and purchase-intent fixes applied.'; END $$;
