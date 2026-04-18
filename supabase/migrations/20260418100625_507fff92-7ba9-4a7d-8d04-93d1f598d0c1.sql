@@ -1,0 +1,1 @@
+DO $$ BEGIN RAISE NOTICE 'Public storefront bucket intentionally retained.'; END $$;

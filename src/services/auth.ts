@@ -17,6 +17,28 @@ export interface AuthUser {
   accountStatus: AccountStatus;
 }
 
+interface EnsureUserScaffoldParams {
+  userId: string;
+  email?: string | null;
+  fullName?: string | null;
+  username?: string | null;
+  phone?: string | null;
+}
+
+export async function ensureUserScaffold(params: EnsureUserScaffoldParams) {
+  const { error } = await supabase.rpc("ensure_user_scaffold", {
+    _user_id: params.userId,
+    _email: params.email ?? null,
+    _full_name: params.fullName ?? null,
+    _username: params.username ?? null,
+    _phone: params.phone ?? null,
+  });
+
+  if (error) {
+    console.warn("ensureUserScaffold warning:", error);
+  }
+}
+
 /** Sign up a new user */
 export async function signUp(email: string, password: string, username: string, phone: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -28,8 +50,16 @@ export async function signUp(email: string, password: string, username: string, 
     },
   });
 
-  // After signup, update profile with username and phone
   if (data?.user && !error) {
+    await ensureUserScaffold({
+      userId: data.user.id,
+      email: data.user.email ?? email,
+      fullName: username,
+      username,
+      phone,
+    });
+
+    // After signup, update profile with username and phone
     await supabase
       .from("profiles")
       .update({ username, phone, full_name: username })
@@ -80,6 +110,14 @@ export async function updatePassword(password: string) {
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+
+  await ensureUserScaffold({
+    userId: user.id,
+    email: user.email,
+    fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
+    username: (user.user_metadata?.username as string | undefined) ?? null,
+    phone: (user.user_metadata?.phone as string | undefined) ?? null,
+  });
 
   const { data: profile } = await supabase
     .from("profiles")

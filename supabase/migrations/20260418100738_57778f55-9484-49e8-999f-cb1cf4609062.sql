@@ -1,0 +1,1 @@
+DO $$ BEGIN RAISE NOTICE 'agent-stores bucket remains intentionally public for storefront media'; END $$;
