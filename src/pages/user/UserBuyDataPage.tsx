@@ -46,7 +46,8 @@ export default function UserBuyDataPage() {
 
   const [network, setNetwork] = useState<string | null>(null);
   const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("paystack");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
+  const [userTouchedPayment, setUserTouchedPayment] = useState(false);
 
   const [walletBalance, setWalletBalance] = useState<number>(0);
 
@@ -79,6 +80,23 @@ export default function UserBuyDataPage() {
         if (data) setWalletBalance(Number(data.current_balance));
       });
   }, [user]);
+
+  // Auto-pick payment method based on wallet sufficiency until the user
+  // explicitly chooses one. Wallet is the preferred default when affordable;
+  // Paystack auto-takes over when wallet can't cover the selected bundle.
+  useEffect(() => {
+    if (userTouchedPayment || !selectedPkg) return;
+    if (walletBalance >= Number(selectedPkg.selling_price)) {
+      setPaymentMethod("wallet");
+    } else {
+      setPaymentMethod("paystack");
+    }
+  }, [walletBalance, selectedPkg, userTouchedPayment]);
+
+  const handlePaymentMethodChange = useCallback((m: PaymentMethod) => {
+    setUserTouchedPayment(true);
+    setPaymentMethod(m);
+  }, []);
 
   const networks = useMemo(() => {
     const available = getPackageNetworks(packages);
@@ -380,7 +398,7 @@ export default function UserBuyDataPage() {
         paymentError={paymentError}
         onClearError={handleClearError}
         paymentMethod={paymentMethod}
-        onPaymentMethodChange={setPaymentMethod}
+        onPaymentMethodChange={handlePaymentMethodChange}
         walletBalance={walletBalance}
         walletComingSoon={false}
         simplified

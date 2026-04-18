@@ -22,10 +22,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Generate a short customer-facing order ID (`KD-XXXXX`).
+ * 5 alphanumeric chars from a 32-symbol Crockford-style alphabet.
+ */
 function generateOrderId(): string {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `KD-ORD-${ts}${rand}`;
+  const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  let id = "";
+  for (let i = 0; i < 5; i++) id += ALPHABET[bytes[i] % ALPHABET.length];
+  return `KD-${id}`;
 }
 
 Deno.serve(async (req) => {

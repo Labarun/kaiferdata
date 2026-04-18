@@ -31,10 +31,20 @@ export interface FinalizationResult {
   blocked?: boolean;
 }
 
+/**
+ * Generate a short customer-facing order ID like `KD-A3B7Q`.
+ * Uses 5 alphanumeric chars from a 32-symbol Crockford-style alphabet
+ * (no I/L/O/U) — ~33M combinations. The DB has a UNIQUE constraint on
+ * `public_order_id`, so the caller is responsible for retrying on the
+ * extremely rare collision (handled at the insert site).
+ */
 function generateOrderId(): string {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `KD-ORD-${ts}${rand}`;
+  const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  let id = "";
+  for (let i = 0; i < 5; i++) id += ALPHABET[bytes[i] % ALPHABET.length];
+  return `KD-${id}`;
 }
 
 /**

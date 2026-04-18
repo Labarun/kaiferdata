@@ -24,6 +24,7 @@ import {
   CreditCard,
   AlertCircle,
   Wallet,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -367,85 +368,109 @@ export function CheckoutSheet({
                     Pay with
                   </p>
                   <div className="grid grid-cols-2 gap-2.5">
-                    {/* Paystack tile */}
-                    <button
-                      type="button"
-                      onClick={() => onPaymentMethodChange("paystack")}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200",
-                        paymentMethod === "paystack"
-                          ? "glass-elevated ring-2 ring-primary/25"
-                          : "glass-card hover:glass-elevated active:scale-[0.98]"
-                      )}
-                    >
-                      <CreditCard
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          paymentMethod === "paystack" ? "text-primary" : "text-muted-foreground/55"
-                        )}
-                      />
-                      <div className="min-w-0">
-                        <p
+                    {/* Wallet tile — first/preferred */}
+                    {(() => {
+                      const walletInsufficient =
+                        typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount;
+                      const walletDisabled = walletComingSoon || walletInsufficient;
+                      const walletActive = paymentMethod === "wallet";
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (walletDisabled) return;
+                            onPaymentMethodChange("wallet");
+                          }}
+                          disabled={walletDisabled}
+                          aria-pressed={walletActive}
                           className={cn(
-                            "text-[12px] font-bold leading-tight",
-                            paymentMethod === "paystack" ? "text-foreground" : "text-foreground/70"
+                            "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200 relative overflow-hidden border",
+                            walletActive
+                              ? "glass-elevated border-primary/60 ring-2 ring-primary/40 shadow-[0_0_0_4px_hsl(215_72%_42%/0.08),0_6px_18px_-6px_hsl(215_72%_42%/0.35)] dark:shadow-[0_0_0_4px_hsl(213_73%_50%/0.18),0_6px_18px_-6px_hsl(213_73%_50%/0.45)]"
+                              : "glass-card border-transparent hover:glass-elevated active:scale-[0.98]",
+                            walletDisabled && "opacity-55 cursor-not-allowed hover:scale-100"
                           )}
                         >
-                          Paystack
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/55 mt-0.5">MoMo · Card</p>
-                      </div>
-                    </button>
+                          <Wallet
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              walletActive ? "text-primary" : "text-muted-foreground/55"
+                            )}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={cn(
+                                "text-[12px] font-bold leading-tight",
+                                walletActive ? "text-foreground" : "text-foreground/70"
+                              )}
+                            >
+                              Wallet
+                            </p>
+                            <p
+                              className={cn(
+                                "text-[10px] mt-0.5 tabular-nums",
+                                walletInsufficient ? "text-warning" : "text-muted-foreground/55"
+                              )}
+                            >
+                              {typeof walletBalance === "number"
+                                ? `GH₵${formatGHS(walletBalance)}`
+                                : "—"}
+                            </p>
+                          </div>
+                          {walletActive && (
+                            <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3.5} />
+                            </span>
+                          )}
+                          {walletComingSoon && (
+                            <span className="absolute top-1.5 right-1.5 text-[8px] font-bold uppercase tracking-wider text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded-md">
+                              Soon
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()}
 
-                    {/* Wallet tile */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (walletComingSoon) return;
-                        if (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount) return;
-                        onPaymentMethodChange("wallet");
-                      }}
-                      disabled={
-                        walletComingSoon ||
-                        (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount)
-                      }
-                      className={cn(
-                        "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200 relative overflow-hidden",
-                        paymentMethod === "wallet"
-                          ? "glass-elevated ring-2 ring-primary/25"
-                          : "glass-card hover:glass-elevated active:scale-[0.98]",
-                        (walletComingSoon ||
-                          (typeof walletBalance === "number" && walletBalance < feeBreakdown.baseAmount)) &&
-                          "opacity-55 cursor-not-allowed hover:scale-100"
-                      )}
-                    >
-                      <Wallet
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          paymentMethod === "wallet" ? "text-primary" : "text-muted-foreground/55"
-                        )}
-                      />
-                      <div className="min-w-0">
-                        <p
+                    {/* Paystack tile */}
+                    {(() => {
+                      const paystackActive = paymentMethod === "paystack";
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => onPaymentMethodChange("paystack")}
+                          aria-pressed={paystackActive}
                           className={cn(
-                            "text-[12px] font-bold leading-tight",
-                            paymentMethod === "wallet" ? "text-foreground" : "text-foreground/70"
+                            "flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all duration-200 border",
+                            paystackActive
+                              ? "glass-elevated border-primary/60 ring-2 ring-primary/40 shadow-[0_0_0_4px_hsl(215_72%_42%/0.08),0_6px_18px_-6px_hsl(215_72%_42%/0.35)] dark:shadow-[0_0_0_4px_hsl(213_73%_50%/0.18),0_6px_18px_-6px_hsl(213_73%_50%/0.45)]"
+                              : "glass-card border-transparent hover:glass-elevated active:scale-[0.98]"
                           )}
                         >
-                          Wallet
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/55 mt-0.5 tabular-nums">
-                          {typeof walletBalance === "number"
-                            ? `GH₵${formatGHS(walletBalance)}`
-                            : "—"}
-                        </p>
-                      </div>
-                      {walletComingSoon && (
-                        <span className="absolute top-1.5 right-1.5 text-[8px] font-bold uppercase tracking-wider text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded-md">
-                          Soon
-                        </span>
-                      )}
-                    </button>
+                          <CreditCard
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              paystackActive ? "text-primary" : "text-muted-foreground/55"
+                            )}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={cn(
+                                "text-[12px] font-bold leading-tight",
+                                paystackActive ? "text-foreground" : "text-foreground/70"
+                              )}
+                            >
+                              Paystack
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/55 mt-0.5">MoMo · Card</p>
+                          </div>
+                          {paystackActive && (
+                            <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3.5} />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
 
                   {/* Insufficient balance / coming soon hint */}
@@ -565,23 +590,32 @@ export function CheckoutSheet({
               </div>
               <div>
                 <h3 className="text-[15px] font-bold text-foreground/85 tracking-tight">
-                  {processingLabel || "Preparing Payment…"}
+                  {processingLabel ||
+                    (paymentMethod === "wallet" ? "Placing your order…" : "Preparing payment…")}
                 </h3>
-                <p className="text-[11px] text-muted-foreground/50 mt-2 leading-relaxed max-w-[220px] mx-auto">
-                  Securing your order and connecting to Paystack. Please don't close this screen.
+                <p className="text-[11px] text-muted-foreground/50 mt-2 leading-relaxed max-w-[240px] mx-auto">
+                  {paymentMethod === "wallet"
+                    ? "Confirming wallet payment and creating your order. Please don't close this screen."
+                    : "Securing your order and connecting to Paystack. Please don't close this screen."}
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2">
-                {["Order Created", "Initializing", "Redirecting"].map((label, i) => {
-                  const active = processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
+                {(paymentMethod === "wallet"
+                  ? ["Charging", "Sending", "Done"]
+                  : ["Order Created", "Initializing", "Redirecting"]
+                ).map((label, i) => {
+                  const active =
+                    processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
                     (!processingLabel && i === 0);
                   return (
                     <div key={label} className="flex items-center gap-2">
                       {i > 0 && <div className="h-px w-4 bg-border/30" />}
-                      <div className={cn(
-                        "h-2 w-2 rounded-full transition-all duration-300",
-                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
-                      )} />
+                      <div
+                        className={cn(
+                          "h-2 w-2 rounded-full transition-all duration-300",
+                          active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
+                        )}
+                      />
                     </div>
                   );
                 })}

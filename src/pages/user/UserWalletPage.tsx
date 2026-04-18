@@ -192,12 +192,14 @@ export default function UserWalletPage() {
           <DrawerContent
             className={cn(
               "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
-              "bg-[hsl(214_42%_97%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
+              "flex flex-col",
+              "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
               "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+              "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
             )}
           >
             <div className="flex justify-center pt-3.5 pb-2 shrink-0">
-              <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)]" />
+              <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)] dark:bg-[hsl(213_25%_40%/0.35)]" />
             </div>
 
             <div className="px-5 pb-8 pt-2 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -234,9 +236,9 @@ export default function UserWalletPage() {
                       onChange={(e) => setDepositAmount(e.target.value)}
                       className={cn(
                         "h-16 text-[28px] font-bold tracking-tight rounded-2xl pl-14 pr-4 text-center",
-                        "bg-[hsl(0_0%_100%/0.6)] border-[hsl(228_20%_84%/0.5)]",
-                        "focus:bg-[hsl(0_0%_100%/0.75)] focus:border-primary/25",
-                        "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06)]",
+                        "bg-[hsl(0_0%_100%/0.6)] dark:bg-[hsl(213_30%_16%/0.6)] border-[hsl(228_20%_84%/0.5)] dark:border-[hsl(213_30%_26%/0.5)]",
+                        "focus:bg-[hsl(0_0%_100%/0.75)] dark:focus:bg-[hsl(213_30%_16%/0.8)] focus:border-primary/25",
+                        "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06)] dark:focus:shadow-[0_0_0_4px_hsl(213_73%_50%/0.15)]",
                         "placeholder:text-muted-foreground/20 placeholder:font-normal",
                       )}
                       min={1}
@@ -280,18 +282,18 @@ export default function UserWalletPage() {
                       <span className="text-[11px] text-muted-foreground/55 font-medium">Deposit Amount</span>
                       <span className="text-[12px] font-semibold text-foreground/70 tabular-nums">GH₵{formatGHS(depositFee.baseAmount)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[hsl(215_40%_96%/0.2)]">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[hsl(215_40%_96%/0.2)] dark:bg-[hsl(213_30%_20%/0.25)]">
                       <span className="text-[11px] text-muted-foreground/55 font-medium flex items-center gap-1">
                         Processing Fee <span className="text-[9px] text-muted-foreground/35">(3%)</span>
                       </span>
                       <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">GH₵{formatGHS(depositFee.feeAmount)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-3.5 py-3 bg-[hsl(215_40%_96%/0.35)]">
+                    <div className="flex items-center justify-between px-3.5 py-3 bg-[hsl(215_40%_96%/0.35)] dark:bg-[hsl(213_30%_20%/0.4)]">
                       <span className="text-[10px] text-muted-foreground/55 font-semibold uppercase tracking-wider">Total Charge</span>
                       <span className="text-[14px] font-bold text-foreground/80 tabular-nums">GH₵{formatGHS(depositFee.totalAmount)}</span>
                     </div>
-                    <div className="px-3.5 py-2 bg-primary/5">
-                      <p className="text-[10px] text-primary/70 font-medium text-center">
+                    <div className="px-3.5 py-2 bg-primary/5 dark:bg-primary/10">
+                      <p className="text-[10px] text-primary/70 dark:text-primary/80 font-medium text-center">
                         💰 GH₵{formatGHS(depositFee.baseAmount)} will be credited to your wallet
                       </p>
                     </div>
