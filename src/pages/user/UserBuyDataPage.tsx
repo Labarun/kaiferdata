@@ -383,6 +383,7 @@ export default function UserBuyDataPage() {
         onPaymentMethodChange={setPaymentMethod}
         walletBalance={walletBalance}
         walletComingSoon={false}
+        simplified
       />
     </div>
   );
