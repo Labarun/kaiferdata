@@ -590,23 +590,32 @@ export function CheckoutSheet({
               </div>
               <div>
                 <h3 className="text-[15px] font-bold text-foreground/85 tracking-tight">
-                  {processingLabel || "Preparing Payment…"}
+                  {processingLabel ||
+                    (paymentMethod === "wallet" ? "Placing your order…" : "Preparing payment…")}
                 </h3>
-                <p className="text-[11px] text-muted-foreground/50 mt-2 leading-relaxed max-w-[220px] mx-auto">
-                  Securing your order and connecting to Paystack. Please don't close this screen.
+                <p className="text-[11px] text-muted-foreground/50 mt-2 leading-relaxed max-w-[240px] mx-auto">
+                  {paymentMethod === "wallet"
+                    ? "Confirming wallet payment and creating your order. Please don't close this screen."
+                    : "Securing your order and connecting to Paystack. Please don't close this screen."}
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2">
-                {["Order Created", "Initializing", "Redirecting"].map((label, i) => {
-                  const active = processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
+                {(paymentMethod === "wallet"
+                  ? ["Charging", "Sending", "Done"]
+                  : ["Order Created", "Initializing", "Redirecting"]
+                ).map((label, i) => {
+                  const active =
+                    processingLabel?.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()) ||
                     (!processingLabel && i === 0);
                   return (
                     <div key={label} className="flex items-center gap-2">
                       {i > 0 && <div className="h-px w-4 bg-border/30" />}
-                      <div className={cn(
-                        "h-2 w-2 rounded-full transition-all duration-300",
-                        active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
-                      )} />
+                      <div
+                        className={cn(
+                          "h-2 w-2 rounded-full transition-all duration-300",
+                          active ? "bg-primary scale-125 shadow-[0_0_8px_hsl(215_72%_42%/0.4)]" : "bg-border/40"
+                        )}
+                      />
                     </div>
                   );
                 })}
