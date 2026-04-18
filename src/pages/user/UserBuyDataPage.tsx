@@ -46,7 +46,8 @@ export default function UserBuyDataPage() {
 
   const [network, setNetwork] = useState<string | null>(null);
   const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("paystack");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
+  const [userTouchedPayment, setUserTouchedPayment] = useState(false);
 
   const [walletBalance, setWalletBalance] = useState<number>(0);
 
