@@ -7,6 +7,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { ensureUserScaffold } from "@/services/auth";
 
 export type DataPlan = Database["public"]["Tables"]["data_plans"]["Row"];
 export type PurchaseIntent = Database["public"]["Tables"]["purchase_intents"]["Row"];
@@ -59,6 +60,20 @@ export async function createPurchaseIntent(params: {
     store_name: string;
   };
 }): Promise<PurchaseIntent> {
+  if (params.actorType === "user" && params.actorId) {
+    const { data: authData } = await supabase.auth.getUser();
+    const authUser = authData.user;
+    if (authUser && authUser.id === params.actorId) {
+      await ensureUserScaffold({
+        userId: authUser.id,
+        email: authUser.email,
+        fullName: (authUser.user_metadata?.full_name as string | undefined) ?? params.customerName ?? null,
+        username: (authUser.user_metadata?.username as string | undefined) ?? null,
+        phone: (authUser.user_metadata?.phone as string | undefined) ?? null,
+      });
+    }
+  }
+
   const intentRef = generateIntentRef("KD");
 
   const planSnapshot = {
@@ -110,6 +125,12 @@ export async function createDepositIntent(params: {
   userEmail?: string;
   userName?: string;
 }): Promise<PurchaseIntent> {
+  await ensureUserScaffold({
+    userId: params.userId,
+    email: params.userEmail ?? null,
+    fullName: params.userName ?? null,
+  });
+
   const intentRef = generateIntentRef("DEP");
 
   const { data, error } = await supabase
