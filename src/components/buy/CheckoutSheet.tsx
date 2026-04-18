@@ -293,47 +293,48 @@ export function CheckoutSheet({
                 )}
               </div>
 
-              <div className="space-y-3">
-                <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">
-                  Optional Details
-                </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="checkout-name"
-                      className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
-                    >
-                      <User className="h-2.5 w-2.5" /> Name
-                    </Label>
-                    <Input
-                      id="checkout-name"
-                      placeholder="Optional"
-                      value={customerName}
-                      onChange={(e) => onCustomerNameChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
-                      maxLength={100}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="checkout-email"
-                      className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
-                    >
-                      <Mail className="h-2.5 w-2.5" /> Email
-                    </Label>
-                    <Input
-                      id="checkout-email"
-                      type="email"
-                      placeholder="For receipt"
-                      value={customerEmail}
-                      onChange={(e) => onCustomerEmailChange(e.target.value)}
-                      className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
-                      maxLength={255}
-                    />
+              {!simplified && (
+                <div className="space-y-3">
+                  <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">
+                    Optional Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="checkout-name"
+                        className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
+                      >
+                        <User className="h-2.5 w-2.5" /> Name
+                      </Label>
+                      <Input
+                        id="checkout-name"
+                        placeholder="Optional"
+                        value={customerName}
+                        onChange={(e) => onCustomerNameChange(e.target.value)}
+                        className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                        maxLength={100}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="checkout-email"
+                        className="text-[10px] text-muted-foreground/45 flex items-center gap-1 font-medium"
+                      >
+                        <Mail className="h-2.5 w-2.5" /> Email
+                      </Label>
+                      <Input
+                        id="checkout-email"
+                        type="email"
+                        placeholder="For receipt"
+                        value={customerEmail}
+                        onChange={(e) => onCustomerEmailChange(e.target.value)}
+                        className="h-11 rounded-xl text-base md:text-sm bg-[hsl(0_0%_100%/0.5)] dark:bg-[hsl(213_30%_16%/0.5)] border-[hsl(228_20%_86%/0.45)] dark:border-[hsl(213_30%_26%/0.45)] focus:border-primary/20 placeholder:text-muted-foreground/25"
+                        maxLength={255}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-
+              )}
               <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
               <Button
