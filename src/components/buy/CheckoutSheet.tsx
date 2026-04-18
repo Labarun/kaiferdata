@@ -161,6 +161,7 @@ export function CheckoutSheet({
       <DrawerContent
         className={cn(
           "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
+          "flex flex-col",
           "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
           "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
           "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
