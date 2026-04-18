@@ -81,6 +81,23 @@ export default function UserBuyDataPage() {
       });
   }, [user]);
 
+  // Auto-pick payment method based on wallet sufficiency until the user
+  // explicitly chooses one. Wallet is the preferred default when affordable;
+  // Paystack auto-takes over when wallet can't cover the selected bundle.
+  useEffect(() => {
+    if (userTouchedPayment || !selectedPkg) return;
+    if (walletBalance >= Number(selectedPkg.selling_price)) {
+      setPaymentMethod("wallet");
+    } else {
+      setPaymentMethod("paystack");
+    }
+  }, [walletBalance, selectedPkg, userTouchedPayment]);
+
+  const handlePaymentMethodChange = useCallback((m: PaymentMethod) => {
+    setUserTouchedPayment(true);
+    setPaymentMethod(m);
+  }, []);
+
   const networks = useMemo(() => {
     const available = getPackageNetworks(packages);
     return GHANA_NETWORKS.filter((n) => available.includes(n));
@@ -381,7 +398,7 @@ export default function UserBuyDataPage() {
         paymentError={paymentError}
         onClearError={handleClearError}
         paymentMethod={paymentMethod}
-        onPaymentMethodChange={setPaymentMethod}
+        onPaymentMethodChange={handlePaymentMethodChange}
         walletBalance={walletBalance}
         walletComingSoon={false}
         simplified
