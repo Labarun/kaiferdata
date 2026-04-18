@@ -461,16 +461,16 @@ export function CheckoutSheet({
               )}
 
               <div className="rounded-2xl overflow-hidden glass-card">
-                <ReviewRow label="Network" value={network} />
-                <ReviewRow label="Bundle" value={plan.volume} />
+                {!simplified && <ReviewRow label="Network" value={network} />}
+                {!simplified && <ReviewRow label="Bundle" value={plan.volume} />}
                 <ReviewRow
                   label="Recipient"
                   value={formatPhone(phoneNumber)}
                   mono
                   icon={<span className="text-[10px] mr-1">🇬🇭</span>}
                 />
-                {customerName && <ReviewRow label="Name" value={customerName} />}
-                {customerEmail && <ReviewRow label="Email" value={customerEmail} />}
+                {!simplified && customerName && <ReviewRow label="Name" value={customerName} />}
+                {!simplified && customerEmail && <ReviewRow label="Email" value={customerEmail} />}
 
                 {/* Fee breakdown */}
                 <div className="px-4 py-2.5 bg-[hsl(215_40%_96%/0.25)] dark:bg-[hsl(213_30%_20%/0.3)]">
