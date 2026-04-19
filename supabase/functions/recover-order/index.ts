@@ -159,7 +159,10 @@ Deno.serve(async (req) => {
     // 3. CREATE ORDER (same path as verify-payment)
     // ═══════════════════════════════════════════════════
     const snapshot = (intent!.plan_snapshot as Record<string, unknown>) || {};
-    const publicOrderId = generateOrderId();
+    const intentCtxRec = (intent!.order_context as Record<string, unknown>) || {};
+    const intentReferralRec = (intentCtxRec.referral || null) as Record<string, unknown> | null;
+    const isStorefrontRec = !!(intentReferralRec && intentReferralRec.agent_profile_id);
+    const publicOrderId = generateOrderId(isStorefrontRec ? "KS" : "KD");
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")
