@@ -106,9 +106,13 @@ export default function TrackOrderPage() {
   }, [order?.id]);
 
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
-  const status = String(order?.status || "");
-  const statusConf = STATUS_CONFIG[status] || STATUS_CONFIG.processing;
-  const StatusIcon = statusConf?.icon || Clock;
+  const rawStatus = String(order?.status || "");
+  const statusKey = toCustomerStatusKey(rawStatus);
+  const statusConf = STATUS_ICONS[statusKey] || STATUS_ICONS.processing;
+  const StatusIcon = statusConf.icon;
+  const statusLabel = customerStatusLabel(rawStatus);
+  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null) ||
+    customerStatusHelper(rawStatus);
 
   const copyId = () => {
     const id = order?.public_order_id as string;
