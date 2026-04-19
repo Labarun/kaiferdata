@@ -207,12 +207,25 @@ Deno.serve(async (req) => {
         return json({ error: "Invalid package reference. Please start a new order." }, 422);
       }
 
+      // ── AGENT STOREFRONT PRICING SUPPORT ──
+      // If this intent originated from an agent storefront (referral context
+      // present), the authoritative selling price comes from
+      // agent_bundle_prices for that agent+package — NOT from
+      // data_packages.selling_price (which is the main public price).
+      const orderCtx = (intent.order_context || {}) as Record<string, unknown>;
+      const referral = (orderCtx.referral || null) as Record<string, unknown> | null;
+      const agentProfileIdForPrice =
+        referral && typeof referral.agent_profile_id === "string"
+          ? (referral.agent_profile_id as string)
+          : null;
+
       let resolvedPrice: number | null = null;
       let packageValid = false;
+      let priceSource: "agent_storefront" | "data_packages" | "data_plans" = "data_packages";
 
       const { data: pkg } = await supabase
         .from("data_packages")
-        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name")
+        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, is_agent_resaleable, agent_base_price")
         .eq("id", packageId)
         .single();
 
@@ -220,10 +233,38 @@ Deno.serve(async (req) => {
         if (!pkg.is_active) {
           return json({ error: "This package is no longer available." }, 422);
         }
-        if (intent.actor_type === "guest" && !pkg.visible_on_public) {
+        if (intent.actor_type === "guest" && !pkg.visible_on_public && !agentProfileIdForPrice) {
+          // Agent storefront purchases are allowed for guests even when the
+          // package isn't on the main public catalog — the agent has chosen
+          // to resell it.
           return json({ error: "This package is not available for guest purchase." }, 422);
         }
-        resolvedPrice = Number(pkg.selling_price);
+
+        // Try the agent's published price first when this is a storefront sale.
+        if (agentProfileIdForPrice) {
+          if (!pkg.is_agent_resaleable) {
+            return json({ error: "This package is no longer resaleable from this store." }, 422);
+          }
+          const { data: agentPriceRow } = await supabase
+            .from("agent_bundle_prices")
+            .select("selling_price, is_published")
+            .eq("agent_profile_id", agentProfileIdForPrice)
+            .eq("package_id", packageId)
+            .maybeSingle();
+
+          if (agentPriceRow && agentPriceRow.is_published) {
+            resolvedPrice = Number(agentPriceRow.selling_price);
+            priceSource = "agent_storefront";
+          } else {
+            // Fallback: agent has not (re)published a price for this bundle —
+            // use the public selling price so the storefront still works.
+            resolvedPrice = Number(pkg.selling_price);
+            priceSource = "data_packages";
+          }
+        } else {
+          resolvedPrice = Number(pkg.selling_price);
+          priceSource = "data_packages";
+        }
         packageValid = true;
       }
 
@@ -239,6 +280,7 @@ Deno.serve(async (req) => {
             return json({ error: "This plan is no longer available." }, 422);
           }
           resolvedPrice = Number(plan.amount);
+          priceSource = "data_plans";
           packageValid = true;
         }
       }
@@ -254,54 +296,106 @@ Deno.serve(async (req) => {
             package_id: packageId,
             frontend_amount: intent.amount_expected,
             intent_reference: intent.intent_reference,
+            agent_profile_id: agentProfileIdForPrice,
+            price_source: priceSource,
           },
         });
         return json({ error: "Package not found. Please start a new order." }, 422);
       }
 
       const frontendAmount = Number(intent.amount_expected);
-      if (Math.abs(frontendAmount - resolvedPrice) > 0.01) {
-        console.error(`SECURITY: Price manipulation detected! Frontend sent ${frontendAmount}, server price is ${resolvedPrice}. Intent: ${intent.intent_reference}`);
-        
-        await supabase
-          .from("purchase_intents")
-          .update({
-            status: "failed",
-            order_context: {
-              ...((intent.order_context as Record<string, unknown>) || {}),
-              security_blocked: true,
-              reason: "price_manipulation_detected",
+      const priceDelta = Math.abs(frontendAmount - resolvedPrice);
+
+      if (priceDelta > 0.01) {
+        // ── AGENT STOREFRONT SELF-HEAL ──
+        // For agent storefront purchases, the agent may have updated their
+        // selling price between intent creation and payment init. Server is
+        // still the source of truth, so silently re-resolve to the agent's
+        // current published price instead of dead-ending the customer.
+        // Audit the auto-correction for visibility.
+        if (priceSource === "agent_storefront") {
+          await supabase.from("audit_logs").insert({
+            action: "agent_storefront_price_resynced",
+            actor_role: "system",
+            target_type: "purchase_intent",
+            target_id: intent.id,
+            metadata: {
+              package_id: packageId,
               frontend_amount: frontendAmount,
               server_price: resolvedPrice,
-              blocked_at: new Date().toISOString(),
+              delta: priceDelta,
+              intent_reference: intent.intent_reference,
+              agent_profile_id: agentProfileIdForPrice,
+              actor_type: intent.actor_type,
+              actor_id: intent.actor_id,
             },
-          })
-          .eq("id", intent_id);
+          });
+          // fall through — resolvedPrice is authoritative
+        } else {
+          console.error(`SECURITY: Price manipulation detected! Frontend sent ${frontendAmount}, server price is ${resolvedPrice}. Intent: ${intent.intent_reference}`);
 
-        await supabase.from("audit_logs").insert({
-          action: "payment_blocked_price_manipulation",
-          actor_role: "system",
-          target_type: "purchase_intent",
-          target_id: intent.id,
-          metadata: {
-            package_id: packageId,
-            frontend_amount: frontendAmount,
-            server_price: resolvedPrice,
-            intent_reference: intent.intent_reference,
-            actor_type: intent.actor_type,
-            actor_id: intent.actor_id,
-          },
-        });
+          await supabase
+            .from("purchase_intents")
+            .update({
+              status: "failed",
+              order_context: {
+                ...((intent.order_context as Record<string, unknown>) || {}),
+                security_blocked: true,
+                reason: "price_manipulation_detected",
+                frontend_amount: frontendAmount,
+                server_price: resolvedPrice,
+                price_source: priceSource,
+                blocked_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", intent_id);
 
-        return json({ error: "Price has changed. Please start a new order." }, 422);
+          await supabase.from("audit_logs").insert({
+            action: "payment_blocked_price_manipulation",
+            actor_role: "system",
+            target_type: "purchase_intent",
+            target_id: intent.id,
+            metadata: {
+              package_id: packageId,
+              frontend_amount: frontendAmount,
+              server_price: resolvedPrice,
+              price_source: priceSource,
+              intent_reference: intent.intent_reference,
+              actor_type: intent.actor_type,
+              actor_id: intent.actor_id,
+            },
+          });
+
+          return json({ error: "Price has changed. Please start a new order." }, 422);
+        }
       }
 
       authoritative_base_amount = resolvedPrice;
 
-      if (Math.abs(frontendAmount - resolvedPrice) > 0) {
+      // Persist the authoritative resolved price + refreshed agent snapshot
+      // back into the intent so all downstream stages (Paystack init,
+      // finalization, commission calc) see the same number.
+      const intentPatch: Record<string, unknown> = {};
+      if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
+      if (priceSource === "agent_storefront") {
+        const existingCtx2 = (intent.order_context || {}) as Record<string, unknown>;
+        const existingReferral = (existingCtx2.referral || {}) as Record<string, unknown>;
+        intentPatch.order_context = {
+          ...existingCtx2,
+          referral: {
+            ...existingReferral,
+            agent_selling_price: resolvedPrice,
+            agent_base_price: pkg
+              ? Number(pkg.agent_base_price ?? existingReferral.agent_base_price ?? 0)
+              : Number(existingReferral.agent_base_price ?? 0),
+          },
+          server_resolved_price_source: priceSource,
+        };
+      }
+      if (Object.keys(intentPatch).length > 0) {
         await supabase
           .from("purchase_intents")
-          .update({ amount_expected: resolvedPrice })
+          .update(intentPatch)
           .eq("id", intent_id);
       }
     }
