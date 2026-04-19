@@ -348,6 +348,12 @@ export default function AgentStorefrontPage() {
         paymentError={paymentError}
         onClearError={handleClearError}
       />
+
+      <StorefrontTrackOrderSheet
+        open={trackOpen}
+        onOpenChange={setTrackOpen}
+        storeName={store?.store_name}
+      />
     </div>
   );
 }
