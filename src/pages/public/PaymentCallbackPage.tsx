@@ -11,6 +11,7 @@ import {
   RotateCcw, AlertTriangle, ShieldCheck, Wallet, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { customerStatusLabel } from "@/lib/customerStatus";
 
 type PageState = "verifying" | "success" | "deposit_success" | "agent_success" | "failed" | "error" | "generic_success";
 
@@ -262,8 +263,8 @@ export default function PaymentCallbackPage() {
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs text-muted-foreground font-medium">Status</span>
-              <span className="text-[11px] font-semibold capitalize px-3 py-1 rounded-full text-success bg-success/8 border border-success/15">
-                {String(order.status).replace(/_/g, " ")}
+              <span className="text-[11px] font-semibold px-3 py-1 rounded-full text-success bg-success/8 border border-success/15">
+                {customerStatusLabel(String(order.status))}
               </span>
             </div>
           </div>

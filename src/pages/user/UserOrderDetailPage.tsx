@@ -1,17 +1,46 @@
 /**
  * User Order Detail — Premium glass detail surface
+ *
+ * Customer-facing only. Internal supplier references / statuses /
+ * notes are sanitized via @/lib/customerStatus before display.
  */
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Copy, Package, Clock, CheckCircle2, XCircle, Truck } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Package, Clock, CheckCircle2, XCircle, Truck, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  customerStatusLabel,
+  customerStatusHelper,
+  toCustomerStatusKey,
+  sanitizeCustomerMessage,
+} from "@/lib/customerStatus";
 
-const STATUS_ICON: Record<string, typeof Clock> = {
-  paid: Clock, queued: Clock, processing: Truck, delivered: CheckCircle2,
-  failed: XCircle, cancelled: XCircle,
+const STATUS_ICONS: Record<string, { icon: typeof Clock; color: string; tone: string }> = {
+  placed: { icon: Clock, color: "text-primary", tone: "bg-primary/10 text-primary border-primary/20" },
+  processing: { icon: Truck, color: "text-amber-500", tone: "bg-amber-50 text-amber-700 border-amber-200" },
+  delivered: { icon: CheckCircle2, color: "text-success", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  failed: { icon: XCircle, color: "text-destructive", tone: "bg-red-50 text-red-700 border-red-200" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground", tone: "bg-gray-50 text-gray-600 border-gray-200" },
+  refunded: { icon: RotateCcw, color: "text-muted-foreground", tone: "bg-purple-50 text-purple-700 border-purple-200" },
 };
+
+function CustomerStatusBadge({ status, className }: { status: string; className?: string }) {
+  const key = toCustomerStatusKey(status);
+  const conf = STATUS_ICONS[key] || STATUS_ICONS.processing;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border",
+        conf.tone,
+        className,
+      )}
+    >
+      {customerStatusLabel(status)}
+    </span>
+  );
+}
 
 export default function UserOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -38,6 +67,27 @@ export default function UserOrderDetailPage() {
   if (!order) return <div className="text-center py-20 text-sm text-muted-foreground">Order not found.</div>;
 
   const snap = (order.bundle_snapshot || {}) as Record<string, unknown>;
+  const rawStatus = String(order.status || "");
+  const safeDeliveryMsg = sanitizeCustomerMessage(order.delivery_message as string | null) ||
+    customerStatusHelper(rawStatus);
+
+  // Collapse internal/supplier statuses and dedupe consecutive duplicates
+  // so customers see only "Order Placed → Processing → Delivered" stages.
+  const cleanedTimeline: Array<{ id: string; key: string; label: string; note: string | null; at: string }> = [];
+  let lastKey = "";
+  for (const entry of timeline) {
+    const raw = String(entry.new_status || "");
+    const k = toCustomerStatusKey(raw);
+    if (k === lastKey) continue;
+    lastKey = k;
+    cleanedTimeline.push({
+      id: entry.id as string,
+      key: k,
+      label: customerStatusLabel(raw),
+      note: sanitizeCustomerMessage(entry.note as string | null),
+      at: entry.changed_at as string,
+    });
+  }
 
   const copyId = () => {
     navigator.clipboard.writeText(order.public_order_id as string);
@@ -66,7 +116,10 @@ export default function UserOrderDetailPage() {
       <div className="glass-wallet-hero rounded-2xl p-5 flex items-center justify-between animate-fade-in animate-stagger-1">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Status</p>
-          <OperationsBadge status={order.status as string} className="text-xs px-3 py-1" />
+          <CustomerStatusBadge status={rawStatus} className="text-xs px-3 py-1" />
+          <p className="text-[10.5px] text-muted-foreground/70 mt-2 max-w-[200px] leading-relaxed">
+            {safeDeliveryMsg}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Amount</p>
@@ -84,31 +137,31 @@ export default function UserOrderDetailPage() {
           <DetailRow label="Bundle" value={`${snap.volume || ""} — ${snap.plan_name || ""}`} />
           <DetailRow label="Recipient" value={order.beneficiary_number as string} mono />
           <DetailRow label="Date" value={new Date(order.created_at as string).toLocaleString()} />
-          {order.delivery_message && <DetailRow label="Delivery" value={order.delivery_message as string} />}
         </div>
       </div>
 
       {/* Timeline */}
-      {timeline.length > 0 && (
+      {cleanedTimeline.length > 0 && (
         <div className="glass-card rounded-xl overflow-hidden animate-fade-in animate-stagger-3">
           <div className="px-4 py-3 border-b border-border/20">
             <h3 className="section-label flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> Status History</h3>
           </div>
           <div className="p-4 space-y-4">
-            {timeline.map((entry, i) => {
-              const Icon = STATUS_ICON[entry.new_status as string] || Clock;
+            {cleanedTimeline.map((entry, i) => {
+              const conf = STATUS_ICONS[entry.key] || STATUS_ICONS.processing;
+              const Icon = conf.icon;
               return (
-                <div key={entry.id as string} className="flex items-start gap-3">
+                <div key={entry.id} className="flex items-start gap-3">
                   <div className="relative">
                     <div className="h-7 w-7 rounded-lg bg-muted/60 flex items-center justify-center">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Icon className={cn("h-3.5 w-3.5", conf.color)} />
                     </div>
-                    {i < timeline.length - 1 && <div className="absolute top-7 left-1/2 -translate-x-1/2 w-px h-5 bg-border/30" />}
+                    {i < cleanedTimeline.length - 1 && <div className="absolute top-7 left-1/2 -translate-x-1/2 w-px h-5 bg-border/30" />}
                   </div>
                   <div className="flex-1 pt-0.5">
-                    <OperationsBadge status={entry.new_status as string} />
-                    {entry.note && <p className="text-[11px] text-muted-foreground mt-0.5">{entry.note as string}</p>}
-                    <p className="text-[10px] text-muted-foreground/40 mt-0.5">{new Date(entry.changed_at as string).toLocaleString()}</p>
+                    <CustomerStatusBadge status={entry.key} />
+                    {entry.note && <p className="text-[11px] text-muted-foreground mt-0.5">{entry.note}</p>}
+                    <p className="text-[10px] text-muted-foreground/40 mt-0.5">{new Date(entry.at).toLocaleString()}</p>
                   </div>
                 </div>
               );

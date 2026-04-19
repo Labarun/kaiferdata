@@ -25,15 +25,22 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  customerStatusLabel,
+  customerStatusHelper,
+  toCustomerStatusKey,
+  sanitizeCustomerMessage,
+} from "@/lib/customerStatus";
 
-const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  paid: { icon: Clock, color: "text-primary", label: "Paid" },
-  queued: { icon: Clock, color: "text-primary", label: "Queued" },
-  processing: { icon: Truck, color: "text-amber-500", label: "Processing" },
-  delivered: { icon: CheckCircle2, color: "text-success", label: "Delivered" },
-  failed: { icon: XCircle, color: "text-destructive", label: "Failed" },
-  cancelled: { icon: XCircle, color: "text-muted-foreground", label: "Cancelled" },
-  refunded: { icon: RotateCcw, color: "text-muted-foreground", label: "Refunded" },
+// Customer-safe icons keyed by sanitized status. Internal supplier
+// statuses are mapped before lookup — customers only see clean stages.
+const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; color: string }> = {
+  placed: { icon: Clock, color: "text-primary" },
+  processing: { icon: Truck, color: "text-amber-500" },
+  delivered: { icon: CheckCircle2, color: "text-success" },
+  failed: { icon: XCircle, color: "text-destructive" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground" },
+  refunded: { icon: RotateCcw, color: "text-muted-foreground" },
 };
 
 interface Props {
@@ -111,9 +118,13 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
   }, [order?.id, open]);
 
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
-  const status = String(order?.status || "");
-  const conf = STATUS_CONFIG[status] || STATUS_CONFIG.processing;
+  const rawStatus = String(order?.status || "");
+  const statusKey = toCustomerStatusKey(rawStatus);
+  const conf = STATUS_ICONS[statusKey] || STATUS_ICONS.processing;
   const StatusIcon = conf.icon;
+  const statusLabel = customerStatusLabel(rawStatus);
+  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null) ||
+    customerStatusHelper(rawStatus);
 
   const copyId = () => {
     const id = order?.public_order_id as string;
@@ -176,16 +187,14 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
                 <div className="text-center">
                   <div className={cn(
                     "h-14 w-14 rounded-2xl glass-elevated flex items-center justify-center mx-auto mb-2",
-                    status === "delivered" && "shadow-[0_0_20px_hsl(152_52%_36%/0.15)]"
+                    statusKey === "delivered" && "shadow-[0_0_20px_hsl(152_52%_36%/0.15)]"
                   )}>
                     <StatusIcon className={cn("h-7 w-7", conf.color)} />
                   </div>
-                  <p className={cn("text-[14px] font-bold tracking-tight", conf.color)}>{conf.label}</p>
-                  {order.delivery_message && (
-                    <p className="text-[11.5px] text-muted-foreground/70 mt-1 leading-relaxed max-w-[280px] mx-auto">
-                      {order.delivery_message as string}
-                    </p>
-                  )}
+                  <p className={cn("text-[14px] font-bold tracking-tight", conf.color)}>{statusLabel}</p>
+                  <p className="text-[11.5px] text-muted-foreground/70 mt-1 leading-relaxed max-w-[280px] mx-auto">
+                    {safeDeliveryMsg}
+                  </p>
                 </div>
 
                 <div className="glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3">
@@ -216,42 +225,59 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
                   <Row label="Created" value={new Date(order.created_at as string).toLocaleString()} />
                 </div>
 
-                {timeline.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[9.5px] text-muted-foreground/55 uppercase tracking-widest font-semibold px-1">Timeline</p>
-                    <div className="glass-card rounded-2xl p-3.5 space-y-3">
-                      {timeline.map((entry, i) => {
-                        const es = entry.new_status as string;
-                        const ec = STATUS_CONFIG[es];
-                        const Icon = ec?.icon || Clock;
-                        return (
-                          <div key={entry.id as string} className="flex items-start gap-3">
-                            <div className="relative">
-                              <div className={cn(
-                                "h-6 w-6 rounded-lg flex items-center justify-center",
-                                i === timeline.length - 1 ? "bg-primary/10" : "bg-muted/30"
-                              )}>
-                                <Icon className={cn("h-3 w-3", ec?.color || "text-muted-foreground/50")} />
+                {(() => {
+                  const cleaned: Array<{ id: string; key: string; label: string; note: string | null; at: string }> = [];
+                  let lastKey = "";
+                  for (const entry of timeline) {
+                    const rawEntryStatus = entry.new_status as string;
+                    const k = toCustomerStatusKey(rawEntryStatus);
+                    if (k === lastKey) continue;
+                    lastKey = k;
+                    cleaned.push({
+                      id: entry.id as string,
+                      key: k,
+                      label: customerStatusLabel(rawEntryStatus),
+                      note: sanitizeCustomerMessage(entry.note as string | null),
+                      at: entry.changed_at as string,
+                    });
+                  }
+                  if (cleaned.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-[9.5px] text-muted-foreground/55 uppercase tracking-widest font-semibold px-1">Timeline</p>
+                      <div className="glass-card rounded-2xl p-3.5 space-y-3">
+                        {cleaned.map((entry, i) => {
+                          const ec = STATUS_ICONS[entry.key] || STATUS_ICONS.processing;
+                          const Icon = ec.icon;
+                          return (
+                            <div key={entry.id} className="flex items-start gap-3">
+                              <div className="relative">
+                                <div className={cn(
+                                  "h-6 w-6 rounded-lg flex items-center justify-center",
+                                  i === cleaned.length - 1 ? "bg-primary/10" : "bg-muted/30"
+                                )}>
+                                  <Icon className={cn("h-3 w-3", ec.color)} />
+                                </div>
+                                {i < cleaned.length - 1 && (
+                                  <div className="absolute top-6 left-1/2 -translate-x-1/2 w-px h-4 bg-border/30" />
+                                )}
                               </div>
-                              {i < timeline.length - 1 && (
-                                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-px h-4 bg-border/30" />
-                              )}
+                              <div className="min-w-0 flex-1 pt-0.5">
+                                <p className="text-[11.5px] font-semibold">{entry.label}</p>
+                                {entry.note && (
+                                  <p className="text-[10px] text-muted-foreground/55 mt-0.5 truncate">{entry.note}</p>
+                                )}
+                              </div>
+                              <span className="text-[9px] text-muted-foreground/40 font-mono shrink-0 pt-1">
+                                {new Date(entry.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
                             </div>
-                            <div className="min-w-0 flex-1 pt-0.5">
-                              <p className="text-[11.5px] font-semibold capitalize">{es.replace(/_/g, " ")}</p>
-                              {entry.note && (
-                                <p className="text-[10px] text-muted-foreground/55 mt-0.5 truncate">{entry.note as string}</p>
-                              )}
-                            </div>
-                            <span className="text-[9px] text-muted-foreground/40 font-mono shrink-0 pt-1">
-                              {new Date(entry.changed_at as string).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <Button variant="outline" onClick={() => handleSearch()} className="w-full h-10">
                   <Search className="mr-1.5 h-3.5 w-3.5" />

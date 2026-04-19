@@ -51,7 +51,7 @@ const BENEFITS = [
   {
     icon: ShieldCheck,
     title: "Trusted infrastructure",
-    desc: "Same secure Paystack flow & supplier delivery as the main Kaiferdata platform.",
+    desc: "Same secure Paystack flow & fast bundle delivery as the main Kaiferdata platform.",
   },
 ];
 
