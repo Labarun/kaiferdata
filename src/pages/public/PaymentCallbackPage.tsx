@@ -11,7 +11,8 @@ import {
   RotateCcw, AlertTriangle, ShieldCheck, Wallet, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { customerStatusLabel } from "@/lib/customerStatus";
+import { customerStatusLabel, customerStatusHelper, customerBundleLabel, toCustomerStatusKey } from "@/lib/customerStatus";
+import { CheckCircle2 as DeliveredIcon } from "lucide-react";
 
 type PageState = "verifying" | "success" | "deposit_success" | "agent_success" | "failed" | "error" | "generic_success";
 
@@ -201,18 +202,45 @@ export default function PaymentCallbackPage() {
 
   /* ── Purchase Success ── */
   if (state === "success" && order) {
+    const rawStatus = String(order.status || "");
+    const statusKey = toCustomerStatusKey(rawStatus);
+    const isDelivered = statusKey === "delivered";
+    const isFailed = statusKey === "failed" || statusKey === "cancelled";
+    const heroIconClass = isDelivered
+      ? "text-success"
+      : isFailed
+        ? "text-destructive/70"
+        : "text-success";
+    const HeroIcon = isFailed ? XCircle : CheckCircle2;
+    const heroTitle = isDelivered
+      ? "Order Delivered!"
+      : isFailed
+        ? "Order Could Not Complete"
+        : "Payment Successful!";
+    const heroBody = customerStatusHelper(rawStatus);
+    const statusBadgeClass = isDelivered
+      ? "text-success bg-success/8 border border-success/15"
+      : isFailed
+        ? "text-destructive bg-destructive/8 border border-destructive/15"
+        : "text-amber-600 bg-amber-50 border border-amber-200";
+    const footerHint = isDelivered
+      ? "Your bundle has been delivered. Use your Order ID for any future reference."
+      : isFailed
+        ? "Any charge will be reversed automatically. Contact support if you need help."
+        : "Your data bundle will be delivered shortly. Use your Order ID to track progress.";
+
     return (
       <div className="container py-8 sm:py-12">
         <div className="max-w-md mx-auto space-y-6 animate-fade-in">
           <div className="text-center">
             <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
-              <CheckCircle2 className="h-8 w-8 text-success" />
+              <HeroIcon className={cn("h-8 w-8", heroIconClass)} />
             </div>
             <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
-              Payment Successful!
+              {heroTitle}
             </h2>
             <p className="text-[12.5px] text-muted-foreground/55 mt-1.5 leading-relaxed max-w-[280px] mx-auto">
-              Your order has been created and is being processed.
+              {heroBody}
             </p>
           </div>
 
@@ -246,7 +274,7 @@ export default function PaymentCallbackPage() {
             <Row label="Network" value={order.network as string} />
             <Row
               label="Bundle"
-              value={`${String(snapshot.volume || "")} — ${String(snapshot.plan_name || "")}`}
+              value={customerBundleLabel(snapshot, order.network as string)}
             />
             <Row
               label="Recipient"
@@ -263,17 +291,19 @@ export default function PaymentCallbackPage() {
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs text-muted-foreground font-medium">Status</span>
-              <span className="text-[11px] font-semibold px-3 py-1 rounded-full text-success bg-success/8 border border-success/15">
-                {customerStatusLabel(String(order.status))}
+              <span className={cn("text-[11px] font-semibold px-3 py-1 rounded-full", statusBadgeClass)}>
+                {customerStatusLabel(rawStatus)}
               </span>
             </div>
           </div>
 
           <div className="flex items-start gap-2.5 text-[10.5px] text-muted-foreground/50 px-1">
-            <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
-            <span className="leading-relaxed">
-              Your data bundle will be delivered shortly. Use your Order ID to track progress.
-            </span>
+            {isDelivered ? (
+              <DeliveredIcon className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
+            ) : (
+              <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
+            )}
+            <span className="leading-relaxed">{footerHint}</span>
           </div>
 
           <div className="flex gap-3">

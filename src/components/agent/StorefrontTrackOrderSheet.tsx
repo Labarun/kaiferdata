@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import {
   customerStatusLabel,
   customerStatusHelper,
+  customerBundleLabel,
   toCustomerStatusKey,
   sanitizeCustomerMessage,
 } from "@/lib/customerStatus";
@@ -123,7 +124,7 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
   const conf = STATUS_ICONS[statusKey] || STATUS_ICONS.processing;
   const StatusIcon = conf.icon;
   const statusLabel = customerStatusLabel(rawStatus);
-  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null) ||
+  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null, rawStatus) ||
     customerStatusHelper(rawStatus);
 
   const copyId = () => {
@@ -214,7 +215,7 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
 
                 <div className="rounded-2xl glass-card divide-y divide-border/20 overflow-hidden">
                   <Row label="Network" value={String(order.network || "")} />
-                  <Row label="Bundle" value={`${String(snapshot.volume || snapshot.package_size_label || "")} — ${String(snapshot.plan_name || snapshot.package_name || "")}`} />
+                  <Row label="Bundle" value={customerBundleLabel(snapshot, String(order.network || ""))} />
                   <Row label="Recipient" value={String(order.beneficiary_number || "")} mono />
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[11.5px] text-muted-foreground font-medium">Amount</span>
@@ -237,7 +238,7 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
                       id: entry.id as string,
                       key: k,
                       label: customerStatusLabel(rawEntryStatus),
-                      note: sanitizeCustomerMessage(entry.note as string | null),
+                      note: sanitizeCustomerMessage(entry.note as string | null, rawEntryStatus),
                       at: entry.changed_at as string,
                     });
                   }
