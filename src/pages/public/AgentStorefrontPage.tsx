@@ -8,15 +8,16 @@
  * commission trigger can compute exact profit on delivery.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
-import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock } from "lucide-react";
+import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { StorefrontTrackOrderSheet } from "@/components/agent/StorefrontTrackOrderSheet";
 import {
   fetchPublicPackages,
   getPackageNetworks,
@@ -32,6 +33,15 @@ import {
 import { getStoreBySlug, type AgentProfile } from "@/services/agent";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
+
+/** Build a wa.me URL from a Ghanaian phone (auto-prefixes 233). */
+function buildWhatsAppHref(phone: string, message: string): string {
+  let digits = phone.replace(/[^\d+]/g, "");
+  if (digits.startsWith("+")) digits = digits.slice(1);
+  if (digits.startsWith("0")) digits = "233" + digits.slice(1);
+  if (!digits.startsWith("233") && digits.length === 9) digits = "233" + digits;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
 
 function packageToPlan(pkg: DataPackage): DataPlan {
   return {
@@ -69,6 +79,7 @@ export default function AgentStorefrontPage() {
   const [processingLabel, setProcessingLabel] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [plansKey, setPlansKey] = useState(0);
+  const [trackOpen, setTrackOpen] = useState(false);
 
   // Load store
   useEffect(() => {
@@ -236,10 +247,8 @@ export default function AgentStorefrontPage() {
                 {store.store_tagline}
               </p>
             )}
-            {(store.city || store.business_name) && (
+            {store.business_name && (
               <p className="mt-2.5 text-[11px] text-muted-foreground/55">
-                {store.city}
-                {store.city && store.business_name ? " · " : ""}
                 {store.business_name}
               </p>
             )}
@@ -251,9 +260,9 @@ export default function AgentStorefrontPage() {
           <div className="container py-3.5">
             <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
-                { icon: Zap, label: "Instant", accent: "text-primary/60" },
-                { icon: Shield, label: "Secure", accent: "text-success/60" },
-                { icon: Clock, label: "24/7", accent: "text-info/60" },
+                { icon: Zap, label: "Fast Delivery", accent: "text-primary/60" },
+                { icon: Shield, label: "Secure Pay", accent: "text-success/60" },
+                { icon: Clock, label: "24/7 Open", accent: "text-info/60" },
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
                   {i > 0 && <span className="h-3 w-px bg-border/30 -ml-2.5 mr-0.5 sm:-ml-4 sm:mr-0" />}
