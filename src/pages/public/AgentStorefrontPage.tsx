@@ -195,20 +195,14 @@ export default function AgentStorefrontPage() {
           </div>
           <h1 className="text-lg font-semibold text-foreground">Store not found</h1>
           <p className="text-sm text-muted-foreground mt-1.5">
-            The store <span className="font-mono text-foreground">/store/{slug}</span> doesn't exist or is inactive.
+            This store doesn't exist or is currently unavailable.
           </p>
-          <Button asChild variant="outline" size="sm" className="mt-5 rounded-full">
-            <Link to="/buy">
-              <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-              Browse all bundles
-            </Link>
-          </Button>
         </div>
       </div>
     );
   }
 
-  const pageTitle = `${store.store_name} · Buy Data on Kaiferdata`;
+  const pageTitle = `${store.store_name} · Buy Data`;
   if (typeof document !== "undefined") document.title = pageTitle;
 
   return (
