@@ -207,12 +207,25 @@ Deno.serve(async (req) => {
         return json({ error: "Invalid package reference. Please start a new order." }, 422);
       }
 
+      // ── AGENT STOREFRONT PRICING SUPPORT ──
+      // If this intent originated from an agent storefront (referral context
+      // present), the authoritative selling price comes from
+      // agent_bundle_prices for that agent+package — NOT from
+      // data_packages.selling_price (which is the main public price).
+      const orderCtx = (intent.order_context || {}) as Record<string, unknown>;
+      const referral = (orderCtx.referral || null) as Record<string, unknown> | null;
+      const agentProfileIdForPrice =
+        referral && typeof referral.agent_profile_id === "string"
+          ? (referral.agent_profile_id as string)
+          : null;
+
       let resolvedPrice: number | null = null;
       let packageValid = false;
+      let priceSource: "agent_storefront" | "data_packages" | "data_plans" = "data_packages";
 
       const { data: pkg } = await supabase
         .from("data_packages")
-        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name")
+        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, is_agent_resaleable, agent_base_price")
         .eq("id", packageId)
         .single();
 
@@ -220,10 +233,38 @@ Deno.serve(async (req) => {
         if (!pkg.is_active) {
           return json({ error: "This package is no longer available." }, 422);
         }
-        if (intent.actor_type === "guest" && !pkg.visible_on_public) {
+        if (intent.actor_type === "guest" && !pkg.visible_on_public && !agentProfileIdForPrice) {
+          // Agent storefront purchases are allowed for guests even when the
+          // package isn't on the main public catalog — the agent has chosen
+          // to resell it.
           return json({ error: "This package is not available for guest purchase." }, 422);
         }
-        resolvedPrice = Number(pkg.selling_price);
+
+        // Try the agent's published price first when this is a storefront sale.
+        if (agentProfileIdForPrice) {
+          if (!pkg.is_agent_resaleable) {
+            return json({ error: "This package is no longer resaleable from this store." }, 422);
+          }
+          const { data: agentPriceRow } = await supabase
+            .from("agent_bundle_prices")
+            .select("selling_price, is_published")
+            .eq("agent_profile_id", agentProfileIdForPrice)
+            .eq("package_id", packageId)
+            .maybeSingle();
+
+          if (agentPriceRow && agentPriceRow.is_published) {
+            resolvedPrice = Number(agentPriceRow.selling_price);
+            priceSource = "agent_storefront";
+          } else {
+            // Fallback: agent has not (re)published a price for this bundle —
+            // use the public selling price so the storefront still works.
+            resolvedPrice = Number(pkg.selling_price);
+            priceSource = "data_packages";
+          }
+        } else {
+          resolvedPrice = Number(pkg.selling_price);
+          priceSource = "data_packages";
+        }
         packageValid = true;
       }
 
@@ -239,6 +280,7 @@ Deno.serve(async (req) => {
             return json({ error: "This plan is no longer available." }, 422);
           }
           resolvedPrice = Number(plan.amount);
+          priceSource = "data_plans";
           packageValid = true;
         }
       }
