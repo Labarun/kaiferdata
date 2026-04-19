@@ -38,6 +38,7 @@ export default function AgentStorePage() {
   const [storeName, setStoreName] = useState("");
   const [tagline, setTagline] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [contactPhone, setContactPhone] = useState("");
 
   useEffect(() => {
     if (!user?.id) return;
@@ -54,6 +55,7 @@ export default function AgentStorePage() {
         setStoreName(data.store_name || "");
         setTagline(data.store_tagline || "");
         setLogoUrl(data.store_logo_url);
+        setContactPhone(((data as any).contact_phone as string) || "");
       }
       setLoading(false);
     })();
@@ -70,6 +72,12 @@ export default function AgentStorePage() {
       toast({ title: "Store name required", variant: "destructive" });
       return;
     }
+    // Basic phone validation (allow blank, otherwise digits/+ only, 7-15 chars)
+    const trimmedPhone = contactPhone.trim();
+    if (trimmedPhone && !/^\+?\d{7,15}$/.test(trimmedPhone.replace(/[\s-]/g, ""))) {
+      toast({ title: "Invalid phone", description: "Use digits only, e.g. 0244123456 or +233244123456", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("agent_profiles")
@@ -77,7 +85,8 @@ export default function AgentStorePage() {
         store_name: storeName.trim(),
         store_tagline: tagline.trim() || null,
         store_logo_url: logoUrl,
-      })
+        contact_phone: trimmedPhone || null,
+      } as any)
       .eq("id", profile.id);
 
     setSaving(false);
@@ -238,6 +247,25 @@ export default function AgentStorePage() {
               className="text-base md:text-sm"
             />
             <p className="text-[10px] text-muted-foreground/60 text-right">{tagline.length}/140</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-phone" className="text-xs">
+              Contact phone (WhatsApp) <span className="text-muted-foreground/60">— optional</span>
+            </Label>
+            <Input
+              id="contact-phone"
+              type="tel"
+              inputMode="tel"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="0244123456 or +233244123456"
+              maxLength={20}
+              className="text-base md:text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground/60">
+              Shown as a WhatsApp contact button on your storefront so customers can reach you directly.
+            </p>
           </div>
 
           <div className="space-y-2">

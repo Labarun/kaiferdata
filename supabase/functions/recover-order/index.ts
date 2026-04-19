@@ -23,16 +23,17 @@ const corsHeaders = {
 };
 
 /**
- * Generate a short customer-facing order ID (`KD-XXXXX`).
- * 5 alphanumeric chars from a 32-symbol Crockford-style alphabet.
+ * Generate a short customer-facing order ID.
+ *  - `KS-XXXXX` for orders originating from an agent storefront
+ *  - `KD-XXXXX` for direct/main-platform orders
  */
-function generateOrderId(): string {
+function generateOrderId(prefix: "KD" | "KS" = "KD"): string {
   const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const bytes = new Uint8Array(5);
   crypto.getRandomValues(bytes);
   let id = "";
   for (let i = 0; i < 5; i++) id += ALPHABET[bytes[i] % ALPHABET.length];
-  return `KD-${id}`;
+  return `${prefix}-${id}`;
 }
 
 Deno.serve(async (req) => {
@@ -158,7 +159,10 @@ Deno.serve(async (req) => {
     // 3. CREATE ORDER (same path as verify-payment)
     // ═══════════════════════════════════════════════════
     const snapshot = (intent!.plan_snapshot as Record<string, unknown>) || {};
-    const publicOrderId = generateOrderId();
+    const intentCtxRec = (intent!.order_context as Record<string, unknown>) || {};
+    const intentReferralRec = (intentCtxRec.referral || null) as Record<string, unknown> | null;
+    const isStorefrontRec = !!(intentReferralRec && intentReferralRec.agent_profile_id);
+    const publicOrderId = generateOrderId(isStorefrontRec ? "KS" : "KD");
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")

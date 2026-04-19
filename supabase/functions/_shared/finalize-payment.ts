@@ -32,19 +32,20 @@ export interface FinalizationResult {
 }
 
 /**
- * Generate a short customer-facing order ID like `KD-A3B7Q`.
+ * Generate a short customer-facing order ID.
+ *  - `KS-XXXXX` for orders originating from an agent storefront (referral)
+ *  - `KD-XXXXX` for main-platform / direct orders
  * Uses 5 alphanumeric chars from a 32-symbol Crockford-style alphabet
- * (no I/L/O/U) — ~33M combinations. The DB has a UNIQUE constraint on
- * `public_order_id`, so the caller is responsible for retrying on the
- * extremely rare collision (handled at the insert site).
+ * (no I/L/O/U) — ~33M combinations per prefix. The DB has a UNIQUE
+ * constraint on `public_order_id`.
  */
-function generateOrderId(): string {
+function generateOrderId(prefix: "KD" | "KS" = "KD"): string {
   const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
   const bytes = new Uint8Array(5);
   crypto.getRandomValues(bytes);
   let id = "";
   for (let i = 0; i < 5; i++) id += ALPHABET[bytes[i] % ALPHABET.length];
-  return `KD-${id}`;
+  return `${prefix}-${id}`;
 }
 
 /**
@@ -755,7 +756,11 @@ async function handlePurchase(
   }
 
   const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
-  const publicOrderId = generateOrderId();
+  // Distinct prefix for agent storefront orders (KS-) vs main platform (KD-)
+  const intentCtx = (intent.order_context as Record<string, unknown>) || {};
+  const intentReferral = (intentCtx.referral || null) as Record<string, unknown> | null;
+  const isStorefrontOrder = !!(intentReferral && intentReferral.agent_profile_id);
+  const publicOrderId = generateOrderId(isStorefrontOrder ? "KS" : "KD");
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")

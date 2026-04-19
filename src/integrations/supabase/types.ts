@@ -252,6 +252,7 @@ export type Database = {
           approved_at: string
           business_name: string | null
           city: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           status: Database["public"]["Enums"]["agent_profile_status"]
@@ -272,6 +273,7 @@ export type Database = {
           approved_at?: string
           business_name?: string | null
           city?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["agent_profile_status"]
@@ -292,6 +294,7 @@ export type Database = {
           approved_at?: string
           business_name?: string | null
           city?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["agent_profile_status"]
