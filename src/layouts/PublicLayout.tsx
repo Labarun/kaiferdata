@@ -22,6 +22,10 @@ export function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
   const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
   const location = useLocation();
+  // Agent storefronts must feel self-contained — hide the main Kaiferdata
+  // header, footer and floating WhatsApp so visitors cannot navigate into
+  // the main platform from inside an agent's store.
+  const isAgentStorefront = location.pathname.startsWith("/store/");
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);
@@ -43,7 +47,8 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Floating glass header */}
+      {/* Floating glass header — hidden on agent storefronts for isolation */}
+      {!isAgentStorefront && (
       <header
         className={`sticky top-0 z-50 transition-[background,backdrop-filter,border-color,box-shadow] duration-500 will-change-[backdrop-filter] ${
           scrolled ? "glass-strong" : "bg-transparent"
@@ -156,6 +161,7 @@ export function PublicLayout() {
           </div>
         )}
       </header>
+      )}
 
       <main
         className="flex-1"
@@ -164,7 +170,8 @@ export function PublicLayout() {
         <Outlet />
       </main>
 
-      {/* WhatsApp Channel FAB */}
+      {/* WhatsApp Channel FAB — hidden on agent storefronts */}
+      {!isAgentStorefront && (
       <Tooltip open={showWhatsAppTooltip} onOpenChange={setShowWhatsAppTooltip}>
         <TooltipTrigger asChild>
           <a
@@ -190,8 +197,10 @@ export function PublicLayout() {
           <p>Join our WhatsApp Channel for updates!</p>
         </TooltipContent>
       </Tooltip>
+      )}
 
-      {/* Footer */}
+      {/* Footer — hidden on agent storefronts so customers stay in the agent's store */}
+      {!isAgentStorefront && (
       <footer className="border-t border-border/30 bg-black/5 dark:bg-black/20 backdrop-blur-sm py-6 mt-auto">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-6 text-sm text-muted-foreground font-medium">
@@ -229,6 +238,24 @@ export function PublicLayout() {
           </p>
         </div>
       </footer>
+      )}
+
+      {/* Minimal storefront credit (only shown on agent storefronts) */}
+      {isAgentStorefront && (
+        <div className="py-5 text-center">
+          <p className="text-[10px] text-muted-foreground/40 tracking-wide">
+            Developed by{" "}
+            <a
+              href="https://jjsolutionsdigital.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/55 hover:text-primary transition-colors duration-200"
+            >
+              JJ Solutions
+            </a>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
