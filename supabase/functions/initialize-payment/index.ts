@@ -296,54 +296,106 @@ Deno.serve(async (req) => {
             package_id: packageId,
             frontend_amount: intent.amount_expected,
             intent_reference: intent.intent_reference,
+            agent_profile_id: agentProfileIdForPrice,
+            price_source: priceSource,
           },
         });
         return json({ error: "Package not found. Please start a new order." }, 422);
       }
 
       const frontendAmount = Number(intent.amount_expected);
-      if (Math.abs(frontendAmount - resolvedPrice) > 0.01) {
-        console.error(`SECURITY: Price manipulation detected! Frontend sent ${frontendAmount}, server price is ${resolvedPrice}. Intent: ${intent.intent_reference}`);
-        
-        await supabase
-          .from("purchase_intents")
-          .update({
-            status: "failed",
-            order_context: {
-              ...((intent.order_context as Record<string, unknown>) || {}),
-              security_blocked: true,
-              reason: "price_manipulation_detected",
+      const priceDelta = Math.abs(frontendAmount - resolvedPrice);
+
+      if (priceDelta > 0.01) {
+        // ── AGENT STOREFRONT SELF-HEAL ──
+        // For agent storefront purchases, the agent may have updated their
+        // selling price between intent creation and payment init. Server is
+        // still the source of truth, so silently re-resolve to the agent's
+        // current published price instead of dead-ending the customer.
+        // Audit the auto-correction for visibility.
+        if (priceSource === "agent_storefront") {
+          await supabase.from("audit_logs").insert({
+            action: "agent_storefront_price_resynced",
+            actor_role: "system",
+            target_type: "purchase_intent",
+            target_id: intent.id,
+            metadata: {
+              package_id: packageId,
               frontend_amount: frontendAmount,
               server_price: resolvedPrice,
-              blocked_at: new Date().toISOString(),
+              delta: priceDelta,
+              intent_reference: intent.intent_reference,
+              agent_profile_id: agentProfileIdForPrice,
+              actor_type: intent.actor_type,
+              actor_id: intent.actor_id,
             },
-          })
-          .eq("id", intent_id);
+          });
+          // fall through — resolvedPrice is authoritative
+        } else {
+          console.error(`SECURITY: Price manipulation detected! Frontend sent ${frontendAmount}, server price is ${resolvedPrice}. Intent: ${intent.intent_reference}`);
 
-        await supabase.from("audit_logs").insert({
-          action: "payment_blocked_price_manipulation",
-          actor_role: "system",
-          target_type: "purchase_intent",
-          target_id: intent.id,
-          metadata: {
-            package_id: packageId,
-            frontend_amount: frontendAmount,
-            server_price: resolvedPrice,
-            intent_reference: intent.intent_reference,
-            actor_type: intent.actor_type,
-            actor_id: intent.actor_id,
-          },
-        });
+          await supabase
+            .from("purchase_intents")
+            .update({
+              status: "failed",
+              order_context: {
+                ...((intent.order_context as Record<string, unknown>) || {}),
+                security_blocked: true,
+                reason: "price_manipulation_detected",
+                frontend_amount: frontendAmount,
+                server_price: resolvedPrice,
+                price_source: priceSource,
+                blocked_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", intent_id);
 
-        return json({ error: "Price has changed. Please start a new order." }, 422);
+          await supabase.from("audit_logs").insert({
+            action: "payment_blocked_price_manipulation",
+            actor_role: "system",
+            target_type: "purchase_intent",
+            target_id: intent.id,
+            metadata: {
+              package_id: packageId,
+              frontend_amount: frontendAmount,
+              server_price: resolvedPrice,
+              price_source: priceSource,
+              intent_reference: intent.intent_reference,
+              actor_type: intent.actor_type,
+              actor_id: intent.actor_id,
+            },
+          });
+
+          return json({ error: "Price has changed. Please start a new order." }, 422);
+        }
       }
 
       authoritative_base_amount = resolvedPrice;
 
-      if (Math.abs(frontendAmount - resolvedPrice) > 0) {
+      // Persist the authoritative resolved price + refreshed agent snapshot
+      // back into the intent so all downstream stages (Paystack init,
+      // finalization, commission calc) see the same number.
+      const intentPatch: Record<string, unknown> = {};
+      if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
+      if (priceSource === "agent_storefront") {
+        const existingCtx2 = (intent.order_context || {}) as Record<string, unknown>;
+        const existingReferral = (existingCtx2.referral || {}) as Record<string, unknown>;
+        intentPatch.order_context = {
+          ...existingCtx2,
+          referral: {
+            ...existingReferral,
+            agent_selling_price: resolvedPrice,
+            agent_base_price: pkg
+              ? Number(pkg.agent_base_price ?? existingReferral.agent_base_price ?? 0)
+              : Number(existingReferral.agent_base_price ?? 0),
+          },
+          server_resolved_price_source: priceSource,
+        };
+      }
+      if (Object.keys(intentPatch).length > 0) {
         await supabase
           .from("purchase_intents")
-          .update({ amount_expected: resolvedPrice })
+          .update(intentPatch)
           .eq("id", intent_id);
       }
     }
