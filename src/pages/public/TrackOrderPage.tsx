@@ -21,14 +21,23 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  customerStatusLabel,
+  customerStatusHelper,
+  toCustomerStatusKey,
+  sanitizeCustomerMessage,
+} from "@/lib/customerStatus";
 
-const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  paid: { icon: Clock, color: "text-primary", label: "Paid" },
-  queued: { icon: Clock, color: "text-primary", label: "Queued" },
-  processing: { icon: Truck, color: "text-amber-500", label: "Processing" },
-  delivered: { icon: CheckCircle2, color: "text-success", label: "Delivered" },
-  failed: { icon: XCircle, color: "text-destructive", label: "Failed" },
-  cancelled: { icon: XCircle, color: "text-muted-foreground", label: "Cancelled" },
+// Customer-facing icons keyed by sanitized status. Internal supplier
+// statuses are mapped (via toCustomerStatusKey) before lookup so customers
+// only ever see "Order Placed / Processing / Delivered / Failed / Cancelled".
+const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; color: string }> = {
+  placed: { icon: Clock, color: "text-primary" },
+  processing: { icon: Truck, color: "text-amber-500" },
+  delivered: { icon: CheckCircle2, color: "text-success" },
+  failed: { icon: XCircle, color: "text-destructive" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground" },
+  refunded: { icon: RotateCcw, color: "text-muted-foreground" },
 };
 
 export default function TrackOrderPage() {
