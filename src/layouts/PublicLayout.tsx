@@ -22,6 +22,10 @@ export function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
   const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
   const location = useLocation();
+  // Agent storefronts must feel self-contained — hide the main Kaiferdata
+  // header, footer and floating WhatsApp so visitors cannot navigate into
+  // the main platform from inside an agent's store.
+  const isAgentStorefront = location.pathname.startsWith("/store/");
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);

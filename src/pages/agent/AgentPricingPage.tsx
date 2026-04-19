@@ -76,6 +76,8 @@ function PricingInner() {
     });
   }, [rows, networkTab, search]);
 
+  const [savedFlash, setSavedFlash] = useState<Record<string, number>>({});
+
   const handleSave = async (row: PricingRow) => {
     const raw = edits[row.pkg.id] ?? (row.selling != null ? String(row.selling) : String(row.base));
     const value = Number(raw);
@@ -86,9 +88,26 @@ function PricingInner() {
     setSavingId(row.pkg.id);
     try {
       await saveAgentBundlePrice(row.pkg.id, value);
+      // Optimistic in-place update — DO NOT refetch the whole matrix (causes
+      // jarring full-page rebuild). Just patch this row so the saved value
+      // remains visible immediately.
+      setRows((prev) =>
+        prev.map((r) =>
+          r.pkg.id === row.pkg.id
+            ? {
+                ...r,
+                selling: value,
+                profit: Math.max(value - r.base, 0),
+                isPublished: true,
+              }
+            : r,
+        ),
+      );
+      // Sync the edit state to the saved value (don't blank it out)
+      setEdits((e) => ({ ...e, [row.pkg.id]: String(value) }));
+      // Trigger inline success flash on this row
+      setSavedFlash((s) => ({ ...s, [row.pkg.id]: Date.now() }));
       toast({ title: "Price saved", description: `${row.pkg.network} ${row.pkg.package_size_label} → GH₵ ${fmt(value)}` });
-      setEdits((e) => ({ ...e, [row.pkg.id]: "" }));
-      await refresh();
     } catch (e: any) {
       toast({ title: "Save failed", description: e?.message || "Try again", variant: "destructive" });
     } finally {
@@ -148,6 +167,8 @@ function PricingInner() {
             const profit = Number.isFinite(numeric) ? Math.max(numeric - row.base, 0) : 0;
             const dirty = editValue !== undefined && editValue !== "" && Number(editValue) !== row.selling;
             const belowBase = Number.isFinite(numeric) && numeric < row.base;
+            const flashedAt = savedFlash[row.pkg.id];
+            const justSaved = flashedAt && Date.now() - flashedAt < 2500;
 
             return (
               <Card key={row.pkg.id} className="glass-card rounded-xl">
@@ -203,11 +224,14 @@ function PricingInner() {
                   <Button
                     size="sm"
                     onClick={() => handleSave(row)}
-                    disabled={savingId === row.pkg.id || belowBase || (!dirty && row.selling != null)}
-                    className="w-full"
+                    disabled={savingId === row.pkg.id || belowBase || (!dirty && row.selling != null && !justSaved)}
+                    variant={justSaved ? "secondary" : "default"}
+                    className={`w-full transition-colors ${justSaved ? "!bg-success/15 !text-success hover:!bg-success/20" : ""}`}
                   >
                     {savingId === row.pkg.id ? (
                       <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Saving…</>
+                    ) : justSaved ? (
+                      <>✓ Saved</>
                     ) : row.selling == null ? (
                       <><Save className="h-3.5 w-3.5 mr-1.5" /> Publish price</>
                     ) : (
