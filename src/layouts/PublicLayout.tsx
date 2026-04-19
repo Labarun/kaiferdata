@@ -47,7 +47,8 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Floating glass header */}
+      {/* Floating glass header — hidden on agent storefronts for isolation */}
+      {!isAgentStorefront && (
       <header
         className={`sticky top-0 z-50 transition-[background,backdrop-filter,border-color,box-shadow] duration-500 will-change-[backdrop-filter] ${
           scrolled ? "glass-strong" : "bg-transparent"
