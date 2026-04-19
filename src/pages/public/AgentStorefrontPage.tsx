@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 
-import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, ArrowLeft } from "lucide-react";
+import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
@@ -237,9 +237,10 @@ export default function AgentStorefrontPage() {
               </p>
             )}
             {(store.city || store.business_name) && (
-              <p className="mt-2.5 text-[11px] text-muted-foreground/55 inline-flex items-center gap-1.5">
-                {store.city && <><MapPinDot /> {store.city}</>}
-                {store.business_name && <span>· {store.business_name}</span>}
+              <p className="mt-2.5 text-[11px] text-muted-foreground/55">
+                {store.city}
+                {store.city && store.business_name ? " · " : ""}
+                {store.business_name}
               </p>
             )}
           </div>
