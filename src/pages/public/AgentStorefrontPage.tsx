@@ -316,11 +316,14 @@ export default function AgentStorefrontPage() {
               )}
 
               <div className="flex items-center justify-center pt-2 pb-2">
-                <Button variant="ghost" size="sm" asChild className="text-[11px] text-muted-foreground/45 h-8 font-medium">
-                  <Link to="/track">
-                    <Search className="h-3 w-3 mr-1.5" />
-                    Track Order
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTrackOpen(true)}
+                  className="text-[11px] text-muted-foreground/45 h-8 font-medium"
+                >
+                  <Search className="h-3 w-3 mr-1.5" />
+                  Track Order
                 </Button>
               </div>
             </>
