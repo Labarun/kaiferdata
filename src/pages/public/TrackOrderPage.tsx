@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import {
   customerStatusLabel,
   customerStatusHelper,
+  customerBundleLabel,
   toCustomerStatusKey,
   sanitizeCustomerMessage,
 } from "@/lib/customerStatus";
@@ -111,7 +112,7 @@ export default function TrackOrderPage() {
   const statusConf = STATUS_ICONS[statusKey] || STATUS_ICONS.processing;
   const StatusIcon = statusConf.icon;
   const statusLabel = customerStatusLabel(rawStatus);
-  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null) ||
+  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null, rawStatus) ||
     customerStatusHelper(rawStatus);
 
   const copyId = () => {
@@ -226,7 +227,7 @@ export default function TrackOrderPage() {
                 <TrackRow label="Network" value={order.network as string} />
                 <TrackRow
                   label="Bundle"
-                  value={`${String(snapshot.volume || "")} — ${String(snapshot.plan_name || "")}`}
+                  value={customerBundleLabel(snapshot, order.network as string)}
                 />
                 <TrackRow
                   label="Recipient"
@@ -257,7 +258,7 @@ export default function TrackOrderPage() {
                     id: entry.id as string,
                     key,
                     label: customerStatusLabel(rawEntryStatus),
-                    note: sanitizeCustomerMessage(entry.note as string | null),
+                    note: sanitizeCustomerMessage(entry.note as string | null, rawEntryStatus),
                     at: entry.changed_at as string,
                   });
                 }

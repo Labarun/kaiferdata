@@ -73,8 +73,15 @@ export function customerStatusHelper(raw: string | null | undefined): string {
  * Strip supplier / internal-leak phrases from any free-form message
  * shown to customers (e.g. delivery_message, status history note).
  * Returns null if nothing customer-safe is left.
+ *
+ * Pass `currentStatus` (raw or customer key) so stale phrases like
+ * "being processed" or "will arrive shortly" can be dropped when the
+ * order has already moved past processing (e.g. is now Delivered).
  */
-export function sanitizeCustomerMessage(raw: string | null | undefined): string | null {
+export function sanitizeCustomerMessage(
+  raw: string | null | undefined,
+  currentStatus?: string | null,
+): string | null {
   if (!raw) return null;
   let text = String(raw);
 
@@ -95,5 +102,56 @@ export function sanitizeCustomerMessage(raw: string | null | undefined): string 
   // Also drop if it's just a status word we already show separately.
   if (/^(paid|queued|processing|delivered|failed|cancelled|refunded|completed)$/i.test(text)) return null;
 
+  // Drop stale "still processing" phrasing once the order has actually
+  // moved past processing — otherwise a Delivered order shows
+  // "Your bundle is being processed. It will arrive shortly." which
+  // contradicts the badge above it.
+  if (currentStatus) {
+    const key = toCustomerStatusKey(currentStatus);
+    if (key !== "processing" && key !== "placed") {
+      const stale = /(being processed|is processing|will arrive shortly|arriving shortly|in progress|currently processing)/i;
+      if (stale.test(text)) return null;
+    }
+  }
+
   return text;
+}
+
+/**
+ * Build a clean customer-facing bundle label from a snapshot, removing
+ * duplicated network words. Avoids "MTN 2GB MTN" by stripping any
+ * occurrence of the network name from the plan/bundle name before
+ * combining it with the volume.
+ *
+ * Output format: "<volume> <PlanName>" (e.g. "2GB Heavy") or just
+ * the plan name if volume is missing.
+ */
+export function customerBundleLabel(
+  snapshot: Record<string, unknown> | null | undefined,
+  network?: string | null,
+): string {
+  const snap = (snapshot || {}) as Record<string, unknown>;
+  const volume = String(snap.volume ?? snap.package_size_label ?? snap.package_volume_value ?? "").trim();
+  let name = String(snap.plan_name ?? snap.package_name ?? snap.bundle_name ?? "").trim();
+
+  // Strip the network name (e.g. "MTN", "Telecel", "AirtelTigo") so we
+  // don't end up with "MTN 2GB MTN bundle".
+  if (network) {
+    const net = String(network).trim();
+    if (net) {
+      const escaped = net.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      name = name.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "").trim();
+    }
+  }
+  // Also strip the volume token from the name to avoid "2GB 2GB Heavy".
+  if (volume) {
+    const escaped = volume.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    name = name.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "").trim();
+  }
+  // Collapse leftover punctuation / whitespace from removals.
+  name = name.replace(/\s*[-—–:]\s*$/g, "").replace(/^\s*[-—–:]\s*/g, "").replace(/\s{2,}/g, " ").trim();
+
+  if (volume && name) return `${volume} ${name}`;
+  if (volume) return volume;
+  return name || "Data bundle";
 }

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   customerStatusLabel,
   customerStatusHelper,
+  customerBundleLabel,
   toCustomerStatusKey,
   sanitizeCustomerMessage,
 } from "@/lib/customerStatus";
@@ -68,7 +69,7 @@ export default function UserOrderDetailPage() {
 
   const snap = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const rawStatus = String(order.status || "");
-  const safeDeliveryMsg = sanitizeCustomerMessage(order.delivery_message as string | null) ||
+  const safeDeliveryMsg = sanitizeCustomerMessage(order.delivery_message as string | null, rawStatus) ||
     customerStatusHelper(rawStatus);
 
   // Collapse internal/supplier statuses and dedupe consecutive duplicates
@@ -84,7 +85,7 @@ export default function UserOrderDetailPage() {
       id: entry.id as string,
       key: k,
       label: customerStatusLabel(raw),
-      note: sanitizeCustomerMessage(entry.note as string | null),
+      note: sanitizeCustomerMessage(entry.note as string | null, raw),
       at: entry.changed_at as string,
     });
   }
@@ -134,7 +135,7 @@ export default function UserOrderDetailPage() {
         </div>
         <div className="divide-y divide-border/20">
           <DetailRow label="Network" value={order.network as string} />
-          <DetailRow label="Bundle" value={`${snap.volume || ""} — ${snap.plan_name || ""}`} />
+          <DetailRow label="Bundle" value={customerBundleLabel(snap, order.network as string)} />
           <DetailRow label="Recipient" value={order.beneficiary_number as string} mono />
           <DetailRow label="Date" value={new Date(order.created_at as string).toLocaleString()} />
         </div>
