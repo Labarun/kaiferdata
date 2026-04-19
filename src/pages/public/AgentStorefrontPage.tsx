@@ -213,32 +213,33 @@ export default function AgentStorefrontPage() {
           <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[60px]" />
         </div>
 
-        <div className="container relative pt-10 pb-7 sm:pt-14 sm:pb-9">
+        <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-premium text-[10px] mb-5 refraction-rim overflow-hidden">
-              <StoreIcon className="h-3 w-3 text-primary" />
-              <span className="font-semibold text-foreground/65 tracking-wide uppercase">Agent Store</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-premium text-[9.5px] mb-6 refraction-rim overflow-hidden">
+              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+              <span className="font-semibold text-foreground/65 tracking-[0.12em] uppercase">Open · Verified Store</span>
             </div>
 
-            <div className="mx-auto mb-4 h-20 w-20 rounded-2xl glass-elevated flex items-center justify-center overflow-hidden">
+            <div className="mx-auto mb-5 h-24 w-24 rounded-3xl glass-elevated flex items-center justify-center overflow-hidden ring-1 ring-primary/10 shadow-[0_18px_40px_-18px_hsl(213_55%_50%/0.35)]">
               {store.store_logo_url ? (
                 <img src={store.store_logo_url} alt={`${store.store_name} logo`} className="h-full w-full object-cover" />
               ) : (
-                <StoreIcon className="h-8 w-8 text-primary/70" />
+                <StoreIcon className="h-9 w-9 text-primary/70" />
               )}
             </div>
 
-            <h1 className="text-[1.75rem] sm:text-[2rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.1]">
+            <h1 className="text-[1.85rem] sm:text-[2.15rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.05]">
               {store.store_name}
             </h1>
             {store.store_tagline && (
-              <p className="mt-2.5 text-[13.5px] text-muted-foreground/75 leading-[1.6] max-w-[320px] mx-auto">
+              <p className="mt-3 text-[14px] text-muted-foreground/80 leading-[1.6] max-w-[330px] mx-auto">
                 {store.store_tagline}
               </p>
             )}
-            {store.city && (
-              <p className="mt-2 text-[11px] text-muted-foreground/55">
-                {store.city}{store.business_name ? ` · ${store.business_name}` : ""}
+            {(store.city || store.business_name) && (
+              <p className="mt-2.5 text-[11px] text-muted-foreground/55 inline-flex items-center gap-1.5">
+                {store.city && <><MapPinDot /> {store.city}</>}
+                {store.business_name && <span>· {store.business_name}</span>}
               </p>
             )}
           </div>
