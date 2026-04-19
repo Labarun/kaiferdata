@@ -188,18 +188,16 @@ export default function TrackOrderPage() {
               <div className="text-center">
                 <div className={cn(
                   "h-14 w-14 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-3",
-                  status === "delivered" && "shadow-[0_0_20px_hsl(152_52%_36%/0.12)]"
+                  statusKey === "delivered" && "shadow-[0_0_20px_hsl(152_52%_36%/0.12)]"
                 )}>
                   <StatusIcon className={cn("h-7 w-7", statusConf.color)} />
                 </div>
                 <p className={cn("text-[15px] font-bold tracking-tight", statusConf.color)}>
-                  {statusConf.label}
+                  {statusLabel}
                 </p>
-                {order.delivery_message && (
-                  <p className="text-[12px] text-muted-foreground/60 mt-1 max-w-[280px] mx-auto leading-relaxed">
-                    {order.delivery_message as string}
-                  </p>
-                )}
+                <p className="text-[12px] text-muted-foreground/60 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                  {safeDeliveryMsg}
+                </p>
               </div>
 
               {/* Order ID card */}
@@ -245,49 +243,67 @@ export default function TrackOrderPage() {
                 <TrackRow label="Created" value={new Date(order.created_at as string).toLocaleString()} />
               </div>
 
-              {/* Timeline */}
-              {timeline.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] text-muted-foreground/45 uppercase tracking-widest font-semibold px-1">
-                    Order Timeline
-                  </p>
-                  <div className="glass-card rounded-2xl p-4 space-y-3">
-                    {timeline.map((entry, i) => {
-                      const entryStatus = entry.new_status as string;
-                      const conf = STATUS_CONFIG[entryStatus];
-                      const Icon = conf?.icon || Clock;
-                      return (
-                        <div key={entry.id as string} className="flex items-start gap-3">
-                          <div className="relative">
-                            <div className={cn(
-                              "h-6 w-6 rounded-lg flex items-center justify-center",
-                              i === timeline.length - 1 ? "bg-primary/10" : "bg-muted/30"
-                            )}>
-                              <Icon className={cn("h-3 w-3", conf?.color || "text-muted-foreground/50")} />
+              {/* Timeline — collapsed to customer-safe stages, supplier text stripped */}
+              {(() => {
+                const cleaned: Array<{ id: string; key: string; label: string; note: string | null; at: string }> = [];
+                let lastKey = "";
+                for (const entry of timeline) {
+                  const rawEntryStatus = entry.new_status as string;
+                  const key = toCustomerStatusKey(rawEntryStatus);
+                  // Collapse consecutive duplicates (e.g. supplier_submitted -> supplier_processing -> processing).
+                  if (key === lastKey) continue;
+                  lastKey = key;
+                  cleaned.push({
+                    id: entry.id as string,
+                    key,
+                    label: customerStatusLabel(rawEntryStatus),
+                    note: sanitizeCustomerMessage(entry.note as string | null),
+                    at: entry.changed_at as string,
+                  });
+                }
+                if (cleaned.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-muted-foreground/45 uppercase tracking-widest font-semibold px-1">
+                      Order Timeline
+                    </p>
+                    <div className="glass-card rounded-2xl p-4 space-y-3">
+                      {cleaned.map((entry, i) => {
+                        const conf = STATUS_ICONS[entry.key] || STATUS_ICONS.processing;
+                        const Icon = conf.icon;
+                        return (
+                          <div key={entry.id} className="flex items-start gap-3">
+                            <div className="relative">
+                              <div className={cn(
+                                "h-6 w-6 rounded-lg flex items-center justify-center",
+                                i === cleaned.length - 1 ? "bg-primary/10" : "bg-muted/30"
+                              )}>
+                                <Icon className={cn("h-3 w-3", conf.color)} />
+                              </div>
+                              {i < cleaned.length - 1 && (
+                                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-px h-4 bg-border/30" />
+                              )}
                             </div>
-                            {i < timeline.length - 1 && (
-                              <div className="absolute top-6 left-1/2 -translate-x-1/2 w-px h-4 bg-border/30" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1 pt-0.5">
-                            <p className="text-[12px] font-semibold text-foreground/75 capitalize">
-                              {entryStatus.replace(/_/g, " ")}
-                            </p>
-                            {entry.note && (
-                              <p className="text-[10px] text-muted-foreground/45 mt-0.5 truncate">
-                                {entry.note as string}
+                            <div className="min-w-0 flex-1 pt-0.5">
+                              <p className="text-[12px] font-semibold text-foreground/75">
+                                {entry.label}
                               </p>
-                            )}
+                              {entry.note && (
+                                <p className="text-[10px] text-muted-foreground/45 mt-0.5 truncate">
+                                  {entry.note}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground/35 font-mono shrink-0 pt-1">
+                              {new Date(entry.at).toLocaleTimeString()}
+                            </span>
                           </div>
-                          <span className="text-[9px] text-muted-foreground/35 font-mono shrink-0 pt-1">
-                            {new Date(entry.changed_at as string).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Actions */}
               <div className="flex gap-3 pt-1">
