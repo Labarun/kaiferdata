@@ -325,33 +325,62 @@ export async function finalizePaystackPayment(
   }
 
   // ── 5b. PURCHASE: re-verify package price server-side ──
+  // For agent storefront purchases, re-resolve from agent_bundle_prices
+  // (the agent's published selling price). For main-platform purchases,
+  // re-resolve from data_packages.selling_price as before.
   if (!isDeposit && !isAgentSubscription) {
     const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
     const packageId = snapshot.id as string;
+    const orderCtx2 = (intent.order_context || {}) as Record<string, unknown>;
+    const referral2 = (orderCtx2.referral || null) as Record<string, unknown> | null;
+    const agentProfileIdForCheck =
+      referral2 && typeof referral2.agent_profile_id === "string"
+        ? (referral2.agent_profile_id as string)
+        : null;
 
     if (packageId) {
       let serverPrice: number | null = null;
+      let serverPriceSource: "agent_storefront" | "data_packages" | "data_plans" = "data_packages";
 
-      const { data: pkg } = await supabase
-        .from("data_packages")
-        .select("selling_price, is_active")
-        .eq("id", packageId)
-        .maybeSingle();
+      if (agentProfileIdForCheck) {
+        const { data: agentPriceRow } = await supabase
+          .from("agent_bundle_prices")
+          .select("selling_price, is_published")
+          .eq("agent_profile_id", agentProfileIdForCheck)
+          .eq("package_id", packageId)
+          .maybeSingle();
+        if (agentPriceRow && agentPriceRow.is_published) {
+          serverPrice = Number(agentPriceRow.selling_price);
+          serverPriceSource = "agent_storefront";
+        }
+      }
 
-      if (pkg?.is_active) {
-        serverPrice = Number(pkg.selling_price);
-      } else {
-        const { data: plan } = await supabase
-          .from("data_plans")
-          .select("amount, is_active")
+      if (serverPrice === null) {
+        const { data: pkg } = await supabase
+          .from("data_packages")
+          .select("selling_price, is_active")
           .eq("id", packageId)
           .maybeSingle();
-        if (plan?.is_active) serverPrice = Number(plan.amount);
+
+        if (pkg?.is_active) {
+          serverPrice = Number(pkg.selling_price);
+          serverPriceSource = "data_packages";
+        } else {
+          const { data: plan } = await supabase
+            .from("data_plans")
+            .select("amount, is_active")
+            .eq("id", packageId)
+            .maybeSingle();
+          if (plan?.is_active) {
+            serverPrice = Number(plan.amount);
+            serverPriceSource = "data_plans";
+          }
+        }
       }
 
       if (serverPrice !== null && Math.abs(serverPrice - intentBaseAmount) > 0.01) {
         await supabase.from("audit_logs").insert({
-          action: "payment_blocked_price_changed",
+          action: "payment_finalize_price_drift",
           actor_role: "system",
           target_type: "purchase_intent",
           target_id: intent.id,
@@ -361,6 +390,8 @@ export async function finalizePaystackPayment(
             server_price_at_finalize: serverPrice,
             intent_base_amount: intentBaseAmount,
             paid_amount: amountPaidGhs,
+            price_source: serverPriceSource,
+            agent_profile_id: agentProfileIdForCheck,
           },
         });
       }
