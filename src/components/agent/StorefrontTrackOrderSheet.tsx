@@ -25,15 +25,22 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  customerStatusLabel,
+  customerStatusHelper,
+  toCustomerStatusKey,
+  sanitizeCustomerMessage,
+} from "@/lib/customerStatus";
 
-const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  paid: { icon: Clock, color: "text-primary", label: "Paid" },
-  queued: { icon: Clock, color: "text-primary", label: "Queued" },
-  processing: { icon: Truck, color: "text-amber-500", label: "Processing" },
-  delivered: { icon: CheckCircle2, color: "text-success", label: "Delivered" },
-  failed: { icon: XCircle, color: "text-destructive", label: "Failed" },
-  cancelled: { icon: XCircle, color: "text-muted-foreground", label: "Cancelled" },
-  refunded: { icon: RotateCcw, color: "text-muted-foreground", label: "Refunded" },
+// Customer-safe icons keyed by sanitized status. Internal supplier
+// statuses are mapped before lookup — customers only see clean stages.
+const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; color: string }> = {
+  placed: { icon: Clock, color: "text-primary" },
+  processing: { icon: Truck, color: "text-amber-500" },
+  delivered: { icon: CheckCircle2, color: "text-success" },
+  failed: { icon: XCircle, color: "text-destructive" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground" },
+  refunded: { icon: RotateCcw, color: "text-muted-foreground" },
 };
 
 interface Props {
@@ -111,9 +118,13 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
   }, [order?.id, open]);
 
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
-  const status = String(order?.status || "");
-  const conf = STATUS_CONFIG[status] || STATUS_CONFIG.processing;
+  const rawStatus = String(order?.status || "");
+  const statusKey = toCustomerStatusKey(rawStatus);
+  const conf = STATUS_ICONS[statusKey] || STATUS_ICONS.processing;
   const StatusIcon = conf.icon;
+  const statusLabel = customerStatusLabel(rawStatus);
+  const safeDeliveryMsg = sanitizeCustomerMessage(order?.delivery_message as string | null) ||
+    customerStatusHelper(rawStatus);
 
   const copyId = () => {
     const id = order?.public_order_id as string;
