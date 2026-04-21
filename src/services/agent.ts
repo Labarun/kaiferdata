@@ -25,10 +25,16 @@ export type AgentApplicationUpdate = Database["public"]["Tables"]["agent_applica
 export type AgentProfile = Database["public"]["Tables"]["agent_profiles"]["Row"];
 export type AgentSubscription = Database["public"]["Tables"]["agent_subscriptions"]["Row"];
 
-/* ── Plan catalogue ─────────────────────────────────────── */
+/* ── Plan catalogue ─────────────────────────────────────────
+ * IMPORTANT: These prices MUST match the server-authoritative
+ * values in `supabase/functions/initialize-payment/index.ts`
+ * (GHS 50/mo, GHS 400/yr). Any mismatch is treated by the
+ * backend as a price-manipulation attempt and the intent is
+ * marked failed → user sees "Edge Function returned non-2xx".
+ * ────────────────────────────────────────────────────────── */
 export const AGENT_PLANS = {
-  monthly: { code: "monthly" as const, label: "Monthly", price: 30, periodDays: 30 },
-  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 300, periodDays: 365 },
+  monthly: { code: "monthly" as const, label: "Monthly", price: 50,  periodDays: 30 },
+  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 400, periodDays: 365 },
 } as const;
 export type AgentPlanCode = keyof typeof AGENT_PLANS;
 
