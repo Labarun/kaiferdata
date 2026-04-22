@@ -13,8 +13,7 @@
  *    purchase_intents, payment_records, or wallet tables.
  *  - Subscription payment flows route through the existing Paystack
  *    pipeline by creating a `purchase_intents` row with
- *    intent_type="agent_subscription" — the webhook will need to be
- *    extended in a follow-up sub-phase to activate the subscription.
+ *    intent_type="agent_subscription".
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -28,13 +27,13 @@ export type AgentSubscription = Database["public"]["Tables"]["agent_subscription
 /* ── Plan catalogue ─────────────────────────────────────────
  * IMPORTANT: These prices MUST match the server-authoritative
  * values in `supabase/functions/initialize-payment/index.ts`
- * (GHS 50/mo, GHS 400/yr). Any mismatch is treated by the
+ * (GHS 30/mo, GHS 300/yr). Any mismatch is treated by the
  * backend as a price-manipulation attempt and the intent is
  * marked failed → user sees "Edge Function returned non-2xx".
  * ────────────────────────────────────────────────────────── */
 export const AGENT_PLANS = {
-  monthly: { code: "monthly" as const, label: "Monthly", price: 50,  periodDays: 30 },
-  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 400, periodDays: 365 },
+  monthly: { code: "monthly" as const, label: "Monthly", price: 30,  periodDays: 30 },
+  yearly:  { code: "yearly"  as const, label: "Yearly",  price: 300, periodDays: 365 },
 } as const;
 export type AgentPlanCode = keyof typeof AGENT_PLANS;
 
@@ -325,7 +324,13 @@ export async function initializeSubscriptionCheckout(intentId: string): Promise<
   const { data, error } = await supabase.functions.invoke("initialize-payment", {
     body: { intent_id: intentId },
   });
-  if (error) throw new Error(error.message);
-  if (!data?.authorization_url) throw new Error(data?.error || "Could not start checkout.");
+  if (error) {
+    console.error("[agentSubscription] initialize-payment failed:", error);
+    throw new Error("Could not start activation payment. Please try again.");
+  }
+  if (!data?.authorization_url) {
+    console.error("[agentSubscription] missing authorization_url:", data);
+    throw new Error("Could not start activation payment. Please try again.");
+  }
   return data.authorization_url as string;
 }
