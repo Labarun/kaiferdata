@@ -107,6 +107,10 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
+    const isDeposit = intent.intent_type === "wallet_deposit";
+    const isAgentSubscription = intent.intent_type === "agent_subscription";
+    const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
+
     // If we already have a valid Paystack init for this intent, reuse it
     // instead of hitting Paystack again. Authorization URLs from Paystack
     // remain valid until the transaction is completed/abandoned, so this is
@@ -115,7 +119,7 @@ Deno.serve(async (req) => {
     const existingAccessCode = typeof existingCtx.paystack_access_code === "string"
       ? existingCtx.paystack_access_code
       : null;
-    if (intent.status === "pending_payment" && existingAccessCode) {
+    if (intent.status === "pending_payment" && existingAccessCode && !isAgentSubscription) {
       const breakdownCtx = (existingCtx.fee_breakdown || {}) as Record<string, unknown>;
       return json({
         success: true,
@@ -146,10 +150,6 @@ Deno.serve(async (req) => {
         .eq("id", intent_id);
       return json({ error: "This request has expired. Please start again." }, 410);
     }
-
-    const isDeposit = intent.intent_type === "wallet_deposit";
-    const isAgentSubscription = intent.intent_type === "agent_subscription";
-    const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
 
     // ── 2. SERVER-SIDE PRICE RESOLUTION (CRITICAL SECURITY) ──
     let authoritative_base_amount: number;
