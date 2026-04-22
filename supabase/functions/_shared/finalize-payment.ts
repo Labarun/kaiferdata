@@ -481,7 +481,7 @@ async function handleAgentSubscription(
     return { success: false, status: 422, payment_verified: true, error: `Invalid agent plan: ${plan}` };
   }
 
-  // Server-side authoritative pricing (50/month, 400/year).
+  // Server-side authoritative pricing (30/month, 300/year).
   const expectedPrice = plan === "monthly" ? 30 : 300;
   if (Math.abs(baseAmount - expectedPrice) > 0.01) {
     await supabase.from("audit_logs").insert({
@@ -518,6 +518,20 @@ async function handleAgentSubscription(
 
   const row = Array.isArray(activation) ? activation[0] : activation;
 
+  console.log(`[finalize:${source}] agent subscription activated`, {
+    intent_id: intent.id,
+    intent_reference: intent.intent_reference,
+    user_id: userId,
+    plan,
+    amount_paid: baseAmount,
+    payment_record_id: paymentRecord.id,
+    subscription_id: row?.subscription_id,
+    agent_profile_id: row?.agent_profile_id,
+    starts_at: row?.starts_at,
+    expires_at: row?.expires_at,
+    already_processed: row?.already_processed || false,
+  });
+
   await supabase
     .from("purchase_intents")
     .update({
@@ -549,8 +563,13 @@ async function handleAgentSubscription(
       plan,
       amount_paid: baseAmount,
       reference,
+        activation_status_before: intentLookup.status,
+        activation_status_after: "completed",
+        payment_record_id: paymentRecord.id,
+        intent_id: intent.id,
       starts_at: row?.starts_at,
       expires_at: row?.expires_at,
+        agent_profile_id: row?.agent_profile_id,
     },
   });
 
