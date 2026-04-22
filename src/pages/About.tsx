@@ -21,15 +21,19 @@ const faqs = [
   },
   {
     question: "Can I become a reseller or agent?",
-    answer: "Yes! Our team is currently optimizing the platform to support an Agent tier, this will allow you to access wholesale prices and earn commissions on your sales. The update will be live soon."
+    answer: "Yes! You can apply to be an agent now. Just sign up or login to your free kaifer account - Navigate to the agent tab and present the requisite information. Your agent application will be approved after a review and from there you can choose a subscription suitable for ypu and start selling."
+  },
+  {
+    question: "What Perks do I enjoy as an Agent?",
+    answer: "As an agent, you will have access to exclusive wholesale prices, the ability to earn commissions on your sales, and dedicated support to help you succeed in your reselling endeavors.You will also have a dashboard to track your sales, commissions, and manage your customers effectively. We also allow agents to literally create a website for their customers to buy from them directly, and we handle the backend and order fulfillment for them. This means you can create your own brand and customer base while we take care of the technical aspects and ensure smooth transactions and every commission is assigned to your agent account balance seamlessly."
   },
   {
     question: "Why do my orders not go through sometimes even after payment?",
-    answer: "Most of the time, this is due to system delays or temporary issues. But a relevant quick fix is that you wait on the website until your order is processed and you are assigned a tracking number. Sometimes it just doesn't go through and when that persists we recommend contacting our support team."
+    answer: "Our system is optimized to and extent that once your payment is made your order is created right away: so if you encounter a netwrok issue or delay, please be rest assured that ypur order is beng processed regardless you were assigned an order ID or not. And to prevent you from blidnly hoping to receive your order we recommend you create an account. That way there is an order history you can rely on."
   },
   {
     question: "How long does it take for order to be delivered?",
-    answer: "Most orders are processed within the first hour of placement, but in rare cases, it could take longer, and this is dependent on the network provider most of the time. Sometimes it is just a case of an unfulfilled order and we recomment you reach out to our support if you do not receive your  order within the first 10-24 hours of purchase."
+    answer: "Most orders are processed within the first hour of placement, but in rare cases, it could take longer, and this is dependent on the network provider most of the time. We recommend you only reach out to our support if you have not received your order within the first 10-24 hours of purchase."
   },
   {
     question: "What is the refund policy?",
