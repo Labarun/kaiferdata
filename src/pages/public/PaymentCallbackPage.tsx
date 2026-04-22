@@ -13,10 +13,12 @@ import {
 import { cn } from "@/lib/utils";
 import { customerStatusLabel, customerStatusHelper, customerBundleLabel, toCustomerStatusKey } from "@/lib/customerStatus";
 import { CheckCircle2 as DeliveredIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 type PageState = "verifying" | "success" | "deposit_success" | "agent_success" | "failed" | "error" | "generic_success";
 
 export default function PaymentCallbackPage() {
+  const { refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const ref =
     searchParams.get("ref") ||
@@ -51,6 +53,7 @@ export default function PaymentCallbackPage() {
             setDeposit(result.deposit || null);
             setState("deposit_success");
           } else if (result.intent_type === "agent_subscription") {
+            void refreshUser();
             setState("agent_success");
           } else if (result.order) {
             setOrder(result.order);
@@ -175,7 +178,7 @@ export default function PaymentCallbackPage() {
               You're an Agent!
             </h2>
             <p className="text-[12.5px] text-muted-foreground/55 mt-1.5 leading-relaxed max-w-[300px] mx-auto">
-              Your agent subscription is active. Your storefront is live and reseller pricing has been unlocked.
+              Your agent subscription is active. Your storefront is now live and your agent tools have been unlocked.
             </p>
           </div>
 

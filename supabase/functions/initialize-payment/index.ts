@@ -107,6 +107,10 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
+    const isDeposit = intent.intent_type === "wallet_deposit";
+    const isAgentSubscription = intent.intent_type === "agent_subscription";
+    const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
+
     // If we already have a valid Paystack init for this intent, reuse it
     // instead of hitting Paystack again. Authorization URLs from Paystack
     // remain valid until the transaction is completed/abandoned, so this is
@@ -115,7 +119,7 @@ Deno.serve(async (req) => {
     const existingAccessCode = typeof existingCtx.paystack_access_code === "string"
       ? existingCtx.paystack_access_code
       : null;
-    if (intent.status === "pending_payment" && existingAccessCode) {
+    if (intent.status === "pending_payment" && existingAccessCode && !isAgentSubscription) {
       const breakdownCtx = (existingCtx.fee_breakdown || {}) as Record<string, unknown>;
       return json({
         success: true,
@@ -147,10 +151,6 @@ Deno.serve(async (req) => {
       return json({ error: "This request has expired. Please start again." }, 410);
     }
 
-    const isDeposit = intent.intent_type === "wallet_deposit";
-    const isAgentSubscription = intent.intent_type === "agent_subscription";
-    const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
-
     // ── 2. SERVER-SIDE PRICE RESOLUTION (CRITICAL SECURITY) ──
     let authoritative_base_amount: number;
 
@@ -161,14 +161,22 @@ Deno.serve(async (req) => {
       }
       authoritative_base_amount = Math.round(depositAmount * 100) / 100;
     } else if (isAgentSubscription) {
-      // Agent subscription: server-authoritative pricing (50/mo, 400/yr).
+      // Agent subscription: server-authoritative pricing (30/mo, 300/yr).
       const plan = String(snapshot.plan || "");
-      const expected = plan === "monthly" ? 50 : plan === "yearly" ? 400 : null;
+      const expected = plan === "monthly" ? 30 : plan === "yearly" ? 300 : null;
       if (expected === null) {
         return json({ error: "Invalid agent plan." }, 422);
       }
       const frontendAmount = Number(intent.amount_expected);
       if (Math.abs(frontendAmount - expected) > 0.01) {
+        console.error("[initialize-payment] agent subscription price mismatch", {
+          intent_id,
+          intent_reference: intent.intent_reference,
+          actor_id: intent.actor_id,
+          plan,
+          frontend_amount: frontendAmount,
+          expected,
+        });
         await supabase
           .from("purchase_intents")
           .update({
@@ -401,7 +409,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 3. Calculate Paystack fee — 3% on bundles & deposits, 0% on agent subscriptions
-    //    (subscription is flat-priced: GHS 50/mo, GHS 400/yr).
+    //    (subscription is flat-priced: GHS 30/mo, GHS 300/yr).
     const breakdown = isAgentSubscription
       ? {
           baseAmount: authoritative_base_amount,
@@ -457,6 +465,18 @@ Deno.serve(async (req) => {
       },
     };
 
+    if (isAgentSubscription) {
+      console.log("[initialize-payment] agent subscription init", {
+        intent_id,
+        intent_reference: intent.intent_reference,
+        actor_id: intent.actor_id,
+        plan: String(snapshot.plan || ""),
+        resolved_amount: breakdown.totalAmount,
+        callback_url: callbackUrl,
+        intent_status: intent.status,
+      });
+    }
+
     // ── 6. Initialize Paystack transaction ──
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -470,7 +490,13 @@ Deno.serve(async (req) => {
     const paystackData = await paystackRes.json();
 
     if (!paystackRes.ok || !paystackData.status) {
-      console.error("Paystack init failed:", paystackData);
+      console.error("Paystack init failed:", {
+        intent_id,
+        intent_reference: intent.intent_reference,
+        intent_type: intent.intent_type,
+        actor_id: intent.actor_id,
+        response: paystackData,
+      });
       return json({ error: "Payment initialization failed. Please try again." }, 502);
     }
 

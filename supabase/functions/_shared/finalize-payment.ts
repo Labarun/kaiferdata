@@ -481,18 +481,35 @@ async function handleAgentSubscription(
     return { success: false, status: 422, payment_verified: true, error: `Invalid agent plan: ${plan}` };
   }
 
-  // Server-side authoritative pricing (50/month, 400/year).
-  const expectedPrice = plan === "monthly" ? 30 : 300;
-  if (Math.abs(baseAmount - expectedPrice) > 0.01) {
+  // Server-side authoritative pricing is 30/month and 300/year.
+  // Legacy successful payments that were initialized before the pricing fix
+  // may still arrive as 50/month or 400/year; allow those exact historic
+  // amounts so already-paid activations do not get stranded.
+  const canonicalPrice = plan === "monthly" ? 30 : 300;
+  const legacyPrice = plan === "monthly" ? 50 : 400;
+  const matchedCanonical = Math.abs(baseAmount - canonicalPrice) <= 0.01;
+  const matchedLegacy = Math.abs(baseAmount - legacyPrice) <= 0.01;
+  if (!matchedCanonical && !matchedLegacy) {
     await supabase.from("audit_logs").insert({
       action: "agent_subscription_price_mismatch",
       actor_id: userId,
       actor_role: "system",
       target_type: "purchase_intent",
       target_id: intent.id,
-      metadata: { source, plan, paid: baseAmount, expected: expectedPrice, reference },
+      metadata: { source, plan, paid: baseAmount, expected: canonicalPrice, legacy_expected: legacyPrice, reference },
     });
     return { success: false, status: 422, blocked: true, payment_verified: true, error: "Agent subscription price mismatch." };
+  }
+
+  if (matchedLegacy) {
+    await supabase.from("audit_logs").insert({
+      action: "agent_subscription_legacy_price_honored",
+      actor_id: userId,
+      actor_role: "system",
+      target_type: "purchase_intent",
+      target_id: intent.id,
+      metadata: { source, plan, paid: baseAmount, canonical_price: canonicalPrice, legacy_price: legacyPrice, reference },
+    });
   }
 
   const { data: activation, error: actErr } = await supabase.rpc("activate_agent_subscription_atomic", {
@@ -517,6 +534,20 @@ async function handleAgentSubscription(
   }
 
   const row = Array.isArray(activation) ? activation[0] : activation;
+
+  console.log(`[finalize:${source}] agent subscription activated`, {
+    intent_id: intent.id,
+    intent_reference: intent.intent_reference,
+    user_id: userId,
+    plan,
+    amount_paid: baseAmount,
+    payment_record_id: paymentRecord.id,
+    subscription_id: row?.subscription_id,
+    agent_profile_id: row?.agent_profile_id,
+    starts_at: row?.starts_at,
+    expires_at: row?.expires_at,
+    already_processed: row?.already_processed || false,
+  });
 
   await supabase
     .from("purchase_intents")
@@ -549,8 +580,13 @@ async function handleAgentSubscription(
       plan,
       amount_paid: baseAmount,
       reference,
+        activation_status_before: intentLookup.status,
+        activation_status_after: "completed",
+        payment_record_id: paymentRecord.id,
+        intent_id: intent.id,
       starts_at: row?.starts_at,
       expires_at: row?.expires_at,
+        agent_profile_id: row?.agent_profile_id,
     },
   });
 
