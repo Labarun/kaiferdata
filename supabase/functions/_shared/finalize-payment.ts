@@ -481,18 +481,35 @@ async function handleAgentSubscription(
     return { success: false, status: 422, payment_verified: true, error: `Invalid agent plan: ${plan}` };
   }
 
-  // Server-side authoritative pricing (30/month, 300/year).
-  const expectedPrice = plan === "monthly" ? 30 : 300;
-  if (Math.abs(baseAmount - expectedPrice) > 0.01) {
+  // Server-side authoritative pricing is 30/month and 300/year.
+  // Legacy successful payments that were initialized before the pricing fix
+  // may still arrive as 50/month or 400/year; allow those exact historic
+  // amounts so already-paid activations do not get stranded.
+  const canonicalPrice = plan === "monthly" ? 30 : 300;
+  const legacyPrice = plan === "monthly" ? 50 : 400;
+  const matchedCanonical = Math.abs(baseAmount - canonicalPrice) <= 0.01;
+  const matchedLegacy = Math.abs(baseAmount - legacyPrice) <= 0.01;
+  if (!matchedCanonical && !matchedLegacy) {
     await supabase.from("audit_logs").insert({
       action: "agent_subscription_price_mismatch",
       actor_id: userId,
       actor_role: "system",
       target_type: "purchase_intent",
       target_id: intent.id,
-      metadata: { source, plan, paid: baseAmount, expected: expectedPrice, reference },
+      metadata: { source, plan, paid: baseAmount, expected: canonicalPrice, legacy_expected: legacyPrice, reference },
     });
     return { success: false, status: 422, blocked: true, payment_verified: true, error: "Agent subscription price mismatch." };
+  }
+
+  if (matchedLegacy) {
+    await supabase.from("audit_logs").insert({
+      action: "agent_subscription_legacy_price_honored",
+      actor_id: userId,
+      actor_role: "system",
+      target_type: "purchase_intent",
+      target_id: intent.id,
+      metadata: { source, plan, paid: baseAmount, canonical_price: canonicalPrice, legacy_price: legacyPrice, reference },
+    });
   }
 
   const { data: activation, error: actErr } = await supabase.rpc("activate_agent_subscription_atomic", {
