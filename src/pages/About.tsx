@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     question: "Are my transactions secure?",
-    answer: "Absolutely. We employ industry-standard security protocols and robust reconciliation systems to ensure your funds and data are always protected."
+    answer: "Absolutely. As a registered business, we employ industry-standard security protocols and robust reconciliation systems to ensure your funds and data are always protected."
   },
   {
     question: "Can I become a reseller or agent?",
