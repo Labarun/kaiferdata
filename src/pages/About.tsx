@@ -33,7 +33,7 @@ const faqs = [
   },
   {
     question: "How long does it take for order to be delivered?",
-    answer: "Most orders are processed within the first hour of placement, sometimes it could take longer, and this is dependent on the network provider most of the time. We recommend you only reach out to our support if you have not received your order within the first 10-24 hours of purchase."
+    answer: "Most orders are processed within the first hour of placement but sometimes it can take longer. This is dependent on the network provider most of the time and not us. We recommend you only reach out to our support if you have not received your order within the first 10-24 hours of purchase."
   },
   {
     question: "What is the refund policy?",
