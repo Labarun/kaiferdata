@@ -9,7 +9,7 @@ import {
 const faqs = [
   {
     question: "What is Kaifer Data?",
-    answer: "Kaifer Data, is a modern platform designed to help customers stay connected by offering affordable data packages. We literally coined our name from an ancient hebrew word which means to cover, and that is exactly what we do. "
+    answer: "Kaifer Data, is a modern platform designed to help customers stay connected by offering affordable data packages. We literally coined our name from an ancient hebrew word which means to cover, and that is exactly what we do: we cover your data needs with the best offers in the market, ensuring you get the most value for your money while enjoying a seamless and secure experience."
   },
   {
     question: "How do I purchase data?",
