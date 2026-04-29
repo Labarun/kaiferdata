@@ -9,7 +9,7 @@ import {
 const faqs = [
   {
     question: "What is Kaifer Data?",
-    answer: "Kaifer Data, is a modern platform designed to help customers stay connected by offering affordable data packages. We literally coined our name from an ancient hebrew word which means to cover, and that is exactly what we do. "
+    answer: "Kaifer Data, is a modern platform designed to help customers stay connected by offering affordable data packages. We literally coined our name from an ancient hebrew word which means to cover, and that is exactly what we do: we cover your data needs with the best offers in the market, ensuring you get the most value for your money while enjoying a seamless and secure experience."
   },
   {
     question: "How do I purchase data?",
@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     question: "Are my transactions secure?",
-    answer: "Absolutely. We employ industry-standard security protocols and robust reconciliation systems to ensure your funds and data are always protected."
+    answer: "Absolutely. As a registered business, we employ industry-standard security protocols and robust reconciliation systems to ensure your funds and data are always protected."
   },
   {
     question: "Can I become a reseller or agent?",
@@ -29,15 +29,15 @@ const faqs = [
   },
   {
     question: "Why do my orders not go through sometimes even after payment?",
-    answer: "Our system is optimized to and extent that once your payment is made your order is created right away: so if you encounter a netwrok issue or delay, please be rest assured that ypur order is beng processed regardless you were assigned an order ID or not. And to prevent you from blidnly hoping to receive your order we recommend you create an account. That way there is an order history you can rely on."
+    answer: "Our system is optimized to and extent that once your payment is made your order is created right away: so if you encounter a netwrok issue or delay, please be rest assured that your order is being processed regardless you were assigned an order ID or not. And to prevent you from blindly hoping to receive your order we recommend you create an account. That way there is an order history you can rely on."
   },
   {
     question: "How long does it take for order to be delivered?",
-    answer: "Most orders are processed within the first hour of placement, but in rare cases, it could take longer, and this is dependent on the network provider most of the time. We recommend you only reach out to our support if you have not received your order within the first 10-24 hours of purchase."
+    answer: "Most orders are processed within the first hour of placement but sometimes it can take longer. This is dependent on the network provider most of the time and not us. We recommend you only reach out to our support if you have not received your order within the first 10-24 hours of purchase."
   },
   {
     question: "What is the refund policy?",
-    answer: "We do not offer a refund policy as the data services are non-refundable on the supplier side once activated, if you enter a wrong number as recipient, we cannot be held responsible. Therefore, we recommend being careful when entering your recipient information."
+    answer: "We do not offer a refund policy as the data services are non-refundable on the provider side once activated, if you enter a wrong number as recipient, we cannot be held responsible. Therefore, we recommend being careful when entering your recipient information."
   }
 ];
 
