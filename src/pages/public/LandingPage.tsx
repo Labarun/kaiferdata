@@ -21,7 +21,7 @@ export default function LandingPage() {
         .single();
 
       if (!error && data?.setting_value) {
-        setDeliverySpeed(`Current delivery speed: ${data.setting_value}`);
+        setDeliverySpeed(data.setting_value);
       }
     }
     fetchSettings();
@@ -31,10 +31,10 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center overflow-x-hidden">
 
       {/* ── HERO SECTION ── */}
-      <section className="w-full relative flex flex-col items-center justify-center pt-24 pb-16 md:pt-32 md:pb-24 px-4 text-center bg-hero-gradient overflow-hidden border-b border-border/30">
+      <section className="w-full relative flex flex-col items-center justify-center pt-10 pb-10 md:pt-24 md:pb-24 px-4 text-center bg-hero-gradient overflow-hidden border-b border-border/30">
         {/* Layered ambient orbs — deeper, richer */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[850px] h-[480px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[100px] will-change-transform" />
+          <div className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[850px] h-[480px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[100px] will-change-transform" />
           <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[80px] will-change-transform" />
           <div className="absolute top-[45%] left-[-8%] w-[340px] h-[340px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[60px] will-change-transform" />
         </div>
@@ -48,7 +48,7 @@ export default function LandingPage() {
           {/* Dynamic Badge */}
           <div className="glass-elevated px-4 py-1.5 rounded-full flex items-center gap-2 mb-8 border border-primary/20 bg-background/40 backdrop-blur-md">
             <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+            <span className="text-[10px] sm:text-[11px] whitespace-nowrap uppercase tracking-wider font-semibold text-muted-foreground">
               System Online · <span className="text-foreground">{deliverySpeed}</span>
             </span>
           </div>
