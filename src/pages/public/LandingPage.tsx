@@ -54,12 +54,12 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl md:text-4xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">
-            Purchase Mobile Data <br />
+            Purchase Mobile Data<br />
             <span className="text-gradient-brand">Swift Speed & Affordable Prices</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10">
-            KaiferData is a platform for Ghanaian data bundles. Trusted  by over 20,000 users, Kaifer has grown to be a prominent hub for reloading mobile data for MTN, TELECEL & AT.
+            KaiferData is a platform for Ghanaian data bundles. Trusted by over 20,000 users, Kaifer has grown to be a prominent hub for reloading mobile data for MTN, TELECEL & AT. No need for registrations.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
