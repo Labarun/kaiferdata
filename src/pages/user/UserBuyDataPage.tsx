@@ -78,11 +78,26 @@ export default function UserBuyDataPage() {
   const [processingLabel, setProcessingLabel] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  const [deliverySpeed, setDeliverySpeed] = useState("Fast Delivery");
+
   useEffect(() => {
     fetchLoggedInPackages()
       .then(setPackages)
       .catch(() => toast({ title: "Error", description: "Failed to load packages", variant: "destructive" }))
       .finally(() => setLoading(false));
+
+    async function fetchSettings() {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("setting_value")
+        .eq("setting_key", "delivery_speed")
+        .single();
+      
+      if (!error && data?.setting_value) {
+        setDeliverySpeed(data.setting_value);
+      }
+    }
+    fetchSettings();
   }, []);
 
   // Auto-pick payment method based on wallet sufficiency until the user
@@ -289,9 +304,20 @@ export default function UserBuyDataPage() {
 
   return (
     <div className="space-y-6 pb-4">
-      <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Buy Data</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
+      <div className="animate-fade-in flex flex-col items-start gap-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle text-[11px] font-medium border-primary/20">
+          <div className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
+          </div>
+          <span className="text-muted-foreground">System Online</span>
+          <span className="text-border mx-0.5">•</span>
+          <span className="text-primary/80 font-semibold">{deliverySpeed}</span>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Buy Data</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
+        </div>
       </div>
 
       <NoticeBanner audience="users" />

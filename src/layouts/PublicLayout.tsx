@@ -208,6 +208,7 @@ export function PublicLayout() {
       <footer className="border-t border-border/30 bg-black/5 dark:bg-black/20 backdrop-blur-sm py-6 mt-auto">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-6 text-sm text-muted-foreground font-medium">
+            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
             <Link to="/buy" className="hover:text-foreground transition-colors">Buy Data</Link>
             <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
             <Link to="/agent-perks" className="hover:text-primary transition-colors text-primary/90 font-semibold">Kaifer Agents</Link>
