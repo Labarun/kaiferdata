@@ -220,7 +220,7 @@ export default function LandingPage() {
             className="rounded-full px-10 font-bold h-14 text-base"
             onClick={() => navigate("/register")}
           >
-            Create Your Free Account Today →
+            Create A Free Account Today
           </Button>
         </motion.div>
       </section>
