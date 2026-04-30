@@ -31,15 +31,19 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center overflow-x-hidden">
 
       {/* ── HERO SECTION ── */}
-      <section className="w-full relative flex flex-col items-center justify-center pt-24 pb-16 md:pt-32 md:pb-24 px-4 text-center">
-        {/* Background ambient glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <section className="w-full relative flex flex-col items-center justify-center pt-24 pb-16 md:pt-32 md:pb-24 px-4 text-center bg-hero-gradient overflow-hidden border-b border-border/30">
+        {/* Layered ambient orbs — deeper, richer */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[850px] h-[480px] rounded-full bg-[hsl(213_55%_82%/0.4)] blur-[100px] will-change-transform" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] rounded-full bg-[hsl(192_45%_84%/0.3)] blur-[80px] will-change-transform" />
+          <div className="absolute top-[45%] left-[-8%] w-[340px] h-[340px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[60px] will-change-transform" />
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col items-center"
+          className="flex flex-col items-center relative z-10 w-full max-w-5xl mx-auto glass-hero rounded-[3rem] p-8 sm:p-12 md:p-16 border border-border/50 shadow-2xl shadow-primary/5"
         >
           {/* Dynamic Badge */}
           <div className="glass-elevated px-4 py-1.5 rounded-full flex items-center gap-2 mb-8 border border-primary/20 bg-background/40 backdrop-blur-md">
@@ -94,7 +98,7 @@ export default function LandingPage() {
         >
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Networks</p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Choose Your Network</h2>
-          <p className="text-muted-foreground mt-2">Select your network to view available data bundles tailored for you needs.</p>
+          <p className="text-muted-foreground mt-2">Select your network to view available data bundles tailored for your needs.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
@@ -146,7 +150,7 @@ export default function LandingPage() {
             {
               icon: Store,
               title: "Kaifer Agent Program",
-              desc: " At Kaifer Data, we provide an affiliate program for agents and any registred user can sign up and start earning commissions off every sales they make.",
+              desc: " At Kaifer Data, we provide an affiliate program for agents and any registered user can sign up and start earning commissions off every sales they make.",
               color: "text-primary",
               link: "/agent-perks",
               linkText: "Learn More About Kaifer Agents →"
@@ -188,10 +192,10 @@ export default function LandingPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 blur-[80px] rounded-full pointer-events-none" />
 
-          <p className="text-xs font-bold uppercase tracking-widest text-warning mb-3">Free Account</p>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Unlock the Full Experience</h2>
+          <p className="text-xs font-bold uppercase tracking-widest text-warning mb-3">Free Kaifer Account</p>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Get Access to More Exclusive Features</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-12">
-            You can buy data as a guest anytime — but creating a free account gives you access to more powerful features.
+            You can buy data as a guest anytime — but creating a free Kaifer account gives you access to more exclusive features.
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-12">
@@ -199,7 +203,7 @@ export default function LandingPage() {
               { icon: Wallet, label: "Wallet System", desc: "Load wallet, enjoy fee-free transfers and purchases." },
               { icon: Map, label: "Order History", desc: "Track past purchases and have access to order history " },
               { icon: Zap, label: "Faster Checkout", desc: "Skip the hassle of re-entering details everytime you shop" },
-              { icon: Headset, label: "Priority Support", desc: "Get faster, more personalized support when you need help." }
+              { icon: Headset, label: "Get Support", desc: "Get help when you need it. With an account you will have access to all the requisite information we will need to assist you track unfulfilled orders and resolve any issues." }
             ].map((item, i) => (
               <div key={item.label} className="flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-2xl glass-elevated flex items-center justify-center mb-3 text-primary">
@@ -216,7 +220,7 @@ export default function LandingPage() {
             className="rounded-full px-10 font-bold h-14 text-base"
             onClick={() => navigate("/register")}
           >
-            Create Your Free Account
+            Create Your Free Account Today →
           </Button>
         </motion.div>
       </section>
