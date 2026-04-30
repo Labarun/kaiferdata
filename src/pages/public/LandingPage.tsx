@@ -138,6 +138,11 @@ export default function LandingPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Why Kaifer Data?</p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">We Provide The Best Offers in Ghana</h2>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">We understand the competitive nature of the telecom industry, hence we provide the best data bundle prices that are affordable and reliable.</p>
+          <div className="mt-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+            <Button variant="outline" size="lg" className="rounded-full glass-subtle border-border/50 text-foreground/80 hover:text-foreground" asChild>
+              <Link to="/about">More About Kaifer Data</Link>
+            </Button>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
