@@ -8,7 +8,7 @@
  */
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import BuyDataPage from "@/pages/public/BuyDataPage";
+import LandingPage from "@/pages/public/LandingPage";
 
 // Supabase persists its session in localStorage under `sb-<project-ref>-auth-token`.
 // Detecting its presence synchronously lets us redirect logged-in users before
@@ -57,6 +57,6 @@ export default function Index() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Guests see the public buy page (existing behavior preserved).
-  return <BuyDataPage />;
+  // Guests see the public landing page (replaces the direct buy page).
+  return <LandingPage />;
 }

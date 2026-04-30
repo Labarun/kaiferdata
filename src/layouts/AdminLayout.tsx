@@ -48,7 +48,7 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-screen h-[100dvh] flex bg-background overflow-hidden">
       {/* Sidebar */}
       <aside
         className={`hidden md:flex flex-col shrink-0 border-r bg-sidebar transition-all duration-200 ${

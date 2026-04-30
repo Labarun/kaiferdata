@@ -142,8 +142,8 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
       </header>
 
       {/* ── Desktop sidebar + content ── */}
-      <div className="flex-1 flex">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col p-4 space-y-1 glass-subtle border-r-0">
+      <div className="flex-1 flex items-start">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col p-4 space-y-1 glass-subtle border-r-0 fixed top-14 bottom-0 overflow-y-auto custom-scrollbar">
           <div className="space-y-0.5 mt-2">
             {allDesktopNav.map((item) => (
               <Link
@@ -162,7 +162,7 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 pb-24 md:pb-6 overflow-x-clip">
+        <main className="flex-1 min-w-0 pb-24 md:pb-6 overflow-x-clip md:ml-60">
           <div className="container py-5 sm:py-6 max-w-2xl min-w-0">
             <NoticeBanner audience={audienceFilter} />
             <AnimatePresence mode="wait">
