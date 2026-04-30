@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone } from "lucide-react";
+import { Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
@@ -192,11 +192,6 @@ export default function BuyDataPage() {
             >
               Pick a network, choose your bundle, receive data in minutes.
             </p>
-          <div className="mt-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
-            <Button variant="outline" size="sm" className="rounded-full glass-subtle border-border/50 text-foreground/80 hover:text-foreground" asChild>
-              <Link to="/about">About Kaifer Data</Link>
-            </Button>
-          </div>
           </div>
         </div>
 
@@ -206,8 +201,8 @@ export default function BuyDataPage() {
           <div className="container py-3.5">
             <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
-                { icon: Zap, label: "Instant", accent: "text-primary/60" },
-                { icon: Shield, label: "Secure", accent: "text-success/60" },
+              { icon: Truck, label: "Trusted Delivery", accent: "text-destructive/60" },
+                { icon: Shield, label: "Secure Payments", accent: "text-success/60" },
                 { icon: Clock, label: "24/7", accent: "text-info/60" },
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
