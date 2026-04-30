@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   Accordion,
   AccordionContent,
@@ -21,7 +22,15 @@ const faqs = [
   },
   {
     question: "Can I become a reseller or agent?",
-    answer: "Yes! You can apply to be an agent now. Just sign up or login to your free kaifer account - Navigate to the agent tab and present the requisite information. Your agent application will be approved after a review and from there you can choose a subscription suitable for ypu and start selling."
+    answer: (
+      <>
+        Yes! You can apply to be an agent now. Just sign up or login to your free kaifer account - Navigate to the agent tab and present the requisite information. Your agent application will be approved after a review and from there you can choose a subscription suitable for you and start selling.
+        <br /><br />
+        <Link to="/agent-perks" className="text-primary hover:underline font-medium inline-flex items-center gap-1">
+          Read more about the Agent Perks and exclusive offers here &rarr;
+        </Link>
+      </>
+    )
   },
   {
     question: "What Perks do I enjoy as an Agent?",

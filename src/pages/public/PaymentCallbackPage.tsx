@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { customerStatusLabel, customerStatusHelper, customerBundleLabel, toCustomerStatusKey } from "@/lib/customerStatus";
-import { CheckCircle2 as DeliveredIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { AnimatedCheckmark } from "@/components/shared/AnimatedCheckmark";
 
 type PageState = "verifying" | "success" | "deposit_success" | "agent_success" | "failed" | "error" | "generic_success";
 
@@ -121,7 +121,7 @@ export default function PaymentCallbackPage() {
         <div className="max-w-md mx-auto space-y-6 animate-fade-in">
           <div className="text-center">
             <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
-              <CheckCircle2 className="h-8 w-8 text-success" />
+              <AnimatedCheckmark size={32} className="text-success" strokeWidth={4} />
             </div>
             <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
               Deposit Successful!
@@ -237,7 +237,11 @@ export default function PaymentCallbackPage() {
         <div className="max-w-md mx-auto space-y-6 animate-fade-in">
           <div className="text-center">
             <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
-              <HeroIcon className={cn("h-8 w-8", heroIconClass)} />
+              {isDelivered || !isFailed ? (
+                <AnimatedCheckmark size={32} className={heroIconClass} strokeWidth={4} />
+              ) : (
+                <HeroIcon className={cn("h-8 w-8", heroIconClass)} />
+              )}
             </div>
             <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
               {heroTitle}
@@ -302,7 +306,7 @@ export default function PaymentCallbackPage() {
 
           <div className="flex items-start gap-2.5 text-[10.5px] text-muted-foreground/50 px-1">
             {isDelivered ? (
-              <DeliveredIcon className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
             ) : (
               <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-success/55" />
             )}
@@ -335,7 +339,7 @@ export default function PaymentCallbackPage() {
         <div className="max-w-md mx-auto space-y-6 animate-fade-in">
           <div className="text-center">
             <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 shadow-[0_0_24px_hsl(152_52%_36%/0.15)]">
-              <CheckCircle2 className="h-8 w-8 text-success" />
+              <AnimatedCheckmark size={32} className="text-success" strokeWidth={4} />
             </div>
             <h2 className="text-xl font-bold text-foreground/90 tracking-tight">
               Payment Successful!

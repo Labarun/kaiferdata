@@ -12,6 +12,7 @@ import {
   ShoppingCart, CreditCard, AlertTriangle, CheckCircle2, Clock, XCircle,
   Users, Activity, ArrowRight, Package,
 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/shared/LoadingState";
 
 interface DashStats {
   totalOrders: number;
@@ -70,23 +71,27 @@ export default function AdminDashboardHome() {
     fetch();
   }, []);
 
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader title="Admin Dashboard" description="Platform operations overview" />
 
       {/* Stats grid */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Orders" value={loading ? "…" : stats.totalOrders} icon={ShoppingCart} variant="primary" />
-        <StatCard title="Delivered" value={loading ? "…" : stats.deliveredOrders} icon={CheckCircle2} variant="success" />
-        <StatCard title="Pending / Processing" value={loading ? "…" : stats.pendingOrders} icon={Clock} variant="warning" />
-        <StatCard title="Failed" value={loading ? "…" : stats.failedOrders} icon={XCircle} variant="destructive" />
+        <StatCard title="Total Orders" value={stats.totalOrders} icon={ShoppingCart} variant="primary" size="sm" />
+        <StatCard title="Delivered" value={stats.deliveredOrders} icon={CheckCircle2} variant="success" size="sm" />
+        <StatCard title="Pending / Processing" value={stats.pendingOrders} icon={Clock} variant="warning" size="sm" />
+        <StatCard title="Failed" value={stats.failedOrders} icon={XCircle} variant="destructive" size="sm" />
       </div>
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Payments" value={loading ? "…" : stats.totalPayments} icon={CreditCard} />
-        <StatCard title="Verified" value={loading ? "…" : stats.verifiedPayments} icon={CheckCircle2} variant="success" />
-        <StatCard title="Failed Payments" value={loading ? "…" : stats.failedPayments} icon={XCircle} variant="destructive" />
-        <StatCard title="Needs Attention" value={loading ? "…" : stats.attentionItems} icon={AlertTriangle} variant={stats.attentionItems > 0 ? "warning" : "default"} />
+        <StatCard title="Total Payments" value={stats.totalPayments} icon={CreditCard} size="sm" />
+        <StatCard title="Verified" value={stats.verifiedPayments} icon={CheckCircle2} variant="success" size="sm" />
+        <StatCard title="Failed Payments" value={stats.failedPayments} icon={XCircle} variant="destructive" size="sm" />
+        <StatCard title="Needs Attention" value={stats.attentionItems} icon={AlertTriangle} variant={stats.attentionItems > 0 ? "warning" : "default"} size="sm" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

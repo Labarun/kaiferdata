@@ -22,6 +22,7 @@ import { User, LogOut, ChevronDown, UserCircle, Shield, Store, Headset, LayoutDa
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
+import { AnimatePresence, motion } from "framer-motion";
 
 export interface NavItem {
   label: string;
@@ -164,9 +165,19 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
         <main className="flex-1 min-w-0 pb-24 md:pb-6 overflow-x-clip">
           <div className="container py-5 sm:py-6 max-w-2xl min-w-0">
             <NoticeBanner audience={audienceFilter} />
-            <Suspense fallback={<PageLoader />}>
-              <Outlet />
-            </Suspense>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+              >
+                <Suspense fallback={<PageLoader />}>
+                  <Outlet />
+                </Suspense>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>

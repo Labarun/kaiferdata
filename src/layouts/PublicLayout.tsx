@@ -72,6 +72,7 @@ export function PublicLayout() {
               { label: "Buy Data", path: "/" },
               { label: "Track Order", path: "/track" },
               { label: "About", path: "/about" },
+              { label: "Kaifer Agents", path: "/agent-perks" },
             ].map((link) => (
               <Link
                 key={link.path}
@@ -128,6 +129,7 @@ export function PublicLayout() {
                 { label: "Buy Data", path: "/" },
                 { label: "Track Order", path: "/track" },
                 { label: "About", path: "/about" },
+                { label: "Kaifer Agents", path: "/agent-perks" },
               ].map((link) => (
                 <Link
                   key={link.path}
@@ -206,6 +208,7 @@ export function PublicLayout() {
           <div className="flex items-center gap-6 text-sm text-muted-foreground font-medium">
             <Link to="/" className="hover:text-foreground transition-colors">Buy Data</Link>
             <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+            <Link to="/agent-perks" className="hover:text-primary transition-colors text-primary/90 font-semibold">Kaifer Agents</Link>
           </div>
           
           <div className="flex items-center gap-4">
