@@ -142,8 +142,8 @@ export function DashboardLayout({ navItems, desktopExtraNav, title, audienceFilt
       </header>
 
       {/* ── Desktop sidebar + content ── */}
-      <div className="flex-1 flex">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col p-4 space-y-1 glass-subtle border-r-0">
+      <div className="flex-1 flex items-start">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col p-4 space-y-1 glass-subtle border-r-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto custom-scrollbar">
           <div className="space-y-0.5 mt-2">
             {allDesktopNav.map((item) => (
               <Link
