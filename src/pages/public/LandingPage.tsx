@@ -54,8 +54,8 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl md:text-4xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">
-            Purchase Mobile Data<br />
-            <span className="text-gradient-brand">Swift Speed & Affordable Prices</span>
+            Buy Cheap Data<br />
+            <span className="text-gradient-brand">Swift & Reliable</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10">
