@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getOrCreateDraft } from "@/services/agent";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 interface Props {
   onStarted: () => void;
@@ -169,7 +170,7 @@ export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props)
 
       {/* CTA — sticky, sits clear of the mobile bottom dock and safe area */}
       <div
-        className="sticky z-30 pt-2 animate-fade-in animate-stagger-4"
+        className="sticky z-30 pt-2 animate-fade-in animate-stagger-4 space-y-3"
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)" }}
       >
         <Button
@@ -182,6 +183,13 @@ export function AgentOnboardingHero({ onStarted, resumeMode, adminNote }: Props)
           ) : (
             <>Start my application <ArrowRight className="h-4 w-4" /></>
           )}
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full h-12 rounded-xl text-[14px] font-semibold gap-2 bg-background/50 backdrop-blur-sm hover:bg-accent/50"
+          asChild
+        >
+          <Link to="/agent-perks">How it works</Link>
         </Button>
       </div>
     </div>

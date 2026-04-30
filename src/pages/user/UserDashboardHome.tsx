@@ -24,7 +24,8 @@ import {
   ArrowRightLeft, ArrowDownLeft, ArrowUpRight, Repeat,
   CheckCircle2, Package, LifeBuoy, MapPin,
 } from "lucide-react";
-import { ListSkeleton } from "@/components/shared/LoadingState";
+import { ListSkeleton, DashboardSkeleton } from "@/components/shared/LoadingState";
+import { StatCard } from "@/components/shared/StatCard";
 
 type OrderRow = Record<string, unknown>;
 type TxnRow = Record<string, unknown>;
@@ -88,6 +89,10 @@ export default function UserDashboardHome() {
 
   const firstName = user?.fullName?.split(" ")[0] || user?.username || "there";
 
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome header */}
@@ -105,28 +110,37 @@ export default function UserDashboardHome() {
         <WalletCard />
       </div>
 
-      {/* KPI tiles */}
       <div className="grid grid-cols-3 gap-2.5 animate-fade-in animate-stagger-2">
-        <KpiTile
-          icon={Package}
-          label="Orders"
-          value={stats.totalOrders}
-          loading={loading}
-        />
-        <KpiTile
-          icon={CheckCircle2}
-          label="Delivered"
-          value={stats.delivered}
-          accent
-          loading={loading}
-        />
-        <KpiTile
-          icon={Clock}
-          label="In flight"
-          value={stats.inFlight}
-          warn={stats.inFlight > 0}
-          loading={loading}
-        />
+        {loading ? (
+          <>
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              icon={Package}
+              title="Orders"
+              value={stats.totalOrders}
+              size="sm"
+            />
+            <StatCard
+              icon={CheckCircle2}
+              title="Delivered"
+              value={stats.delivered}
+              variant="success"
+              size="sm"
+            />
+            <StatCard
+              icon={Clock}
+              title="In flight"
+              value={stats.inFlight}
+              variant={stats.inFlight > 0 ? "warning" : "default"}
+              size="sm"
+            />
+          </>
+        )}
       </div>
 
       {/* Total spent strip */}
@@ -331,45 +345,4 @@ export default function UserDashboardHome() {
   );
 }
 
-/* ─────────── Subcomponent: KPI tile ─────────── */
-function KpiTile({
-  icon: Icon,
-  label,
-  value,
-  accent,
-  warn,
-  loading,
-}: {
-  icon: typeof Package;
-  label: string;
-  value: number;
-  accent?: boolean;
-  warn?: boolean;
-  loading?: boolean;
-}) {
-  return (
-    <div className="glass-card rounded-xl p-3">
-      <div className="flex items-center gap-1.5">
-        <Icon
-          className={`h-3 w-3 ${
-            accent ? "text-success" : warn ? "text-warning" : "text-muted-foreground/55"
-          }`}
-        />
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/55 font-semibold">
-          {label}
-        </p>
-      </div>
-      {loading ? (
-        <div className="h-6 w-10 mt-1.5 bg-muted/40 animate-pulse rounded" />
-      ) : (
-        <p
-          className={`text-[20px] font-bold tracking-tight mt-1 tabular-nums ${
-            accent ? "text-success" : warn ? "text-warning" : "text-foreground"
-          }`}
-        >
-          {value}
-        </p>
-      )}
-    </div>
-  );
-}
+

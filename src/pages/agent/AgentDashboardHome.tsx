@@ -19,6 +19,8 @@ import { AnalyticsRangeFilter } from "@/components/agent/AnalyticsRangeFilter";
 import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentEarningsWallet";
 import { fetchAgentAnalytics, type AgentAnalytics, type AnalyticsRange } from "@/services/agentAnalytics";
 import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
+import { StatCard } from "@/components/shared/StatCard";
+import { DashboardSkeleton } from "@/components/shared/LoadingState";
 
 const fmt = (n: number) => `GH₵${n.toFixed(2)}`;
 
@@ -83,6 +85,11 @@ export default function AgentDashboardHome() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
+  const isInitialLoad = !wallet && !!user;
+  if (isInitialLoad) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="animate-fade-in pb-8 space-y-5">
       <PageHeader
@@ -125,10 +132,21 @@ export default function AgentDashboardHome() {
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <KpiTile icon={ShoppingCart} label="Orders" value={loadingAnalytics ? "—" : String(analytics?.ordersCount ?? 0)} tint="text-primary" />
-        <KpiTile icon={TrendingUp} label="Revenue" value={loadingAnalytics ? "—" : fmt(analytics?.revenue ?? 0)} tint="text-foreground" />
-        <KpiTile icon={DollarSign} label="Profit" value={loadingAnalytics ? "—" : fmt(analytics?.profit ?? 0)} tint="text-success" />
-        <KpiTile icon={Users} label="Customers" value={loadingAnalytics ? "—" : String(analytics?.activeCustomers ?? 0)} tint="text-info" />
+        {loadingAnalytics ? (
+          <>
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+            <div className="h-24 glass-card rounded-2xl animate-pulse" />
+          </>
+        ) : (
+          <>
+            <StatCard icon={ShoppingCart} title="Orders" value={String(analytics?.ordersCount ?? 0)} variant="primary" size="sm" />
+            <StatCard icon={TrendingUp} title="Revenue" value={fmt(analytics?.revenue ?? 0)} size="sm" />
+            <StatCard icon={DollarSign} title="Profit" value={fmt(analytics?.profit ?? 0)} variant="success" size="sm" />
+            <StatCard icon={Users} title="Customers" value={String(analytics?.activeCustomers ?? 0)} variant="primary" size="sm" />
+          </>
+        )}
       </div>
 
       {/* Top bundles */}
@@ -224,19 +242,7 @@ export default function AgentDashboardHome() {
   );
 }
 
-function KpiTile({ icon: Icon, label, value, tint }: { icon: any; label: string; value: string; tint: string }) {
-  return (
-    <Card>
-      <CardContent className="p-3.5">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Icon className={`h-3.5 w-3.5 ${tint}`} />
-          <p className="text-[9.5px] uppercase tracking-wider text-muted-foreground/65 font-semibold">{label}</p>
-        </div>
-        <p className="text-[18px] font-bold tabular-nums tracking-tight">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
+
 
 function QuickAction({ icon: Icon, title, desc, to }: { icon: any; title: string; desc: string; to: string }) {
   return (

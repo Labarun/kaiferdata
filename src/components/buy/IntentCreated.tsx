@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Copy, ArrowRight, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import { AnimatedCheckmark } from "@/components/shared/AnimatedCheckmark";
 
 interface IntentCreatedProps {
   intent: PurchaseIntent;
@@ -25,8 +26,8 @@ export function IntentCreated({ intent, onNewOrder }: IntentCreatedProps) {
   return (
     <div className="space-y-5 animate-fade-in-up">
       <div className="text-center py-6">
-        <div className="h-14 w-14 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 animate-scale-in glow-soft">
-          <CheckCircle2 className="h-7 w-7 text-success" />
+        <div className="h-14 w-14 rounded-2xl glass-premium flex items-center justify-center mx-auto mb-4 glow-soft">
+          <AnimatedCheckmark size={24} className="text-success" />
         </div>
         <h3 className="text-lg font-bold text-foreground">Order Initialized</h3>
         <p className="text-xs text-muted-foreground mt-1">

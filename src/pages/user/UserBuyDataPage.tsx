@@ -8,6 +8,8 @@ import { WalletCard } from "@/components/shared/WalletCard";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   fetchLoggedInPackages,
   getPackageNetworks,
@@ -40,6 +42,7 @@ export default function UserBuyDataPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [packages, setPackages] = useState<DataPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,21 @@ export default function UserBuyDataPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
   const [userTouchedPayment, setUserTouchedPayment] = useState(false);
 
-  const [walletBalance, setWalletBalance] = useState<number>(0);
+  // Fetch wallet balance via React Query
+  const { data: walletData } = useQuery({
+    queryKey: ["user-wallet", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("wallets")
+        .select("current_balance")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+  const walletBalance = Number(walletData?.current_balance || 0);
 
   // Checkout sheet state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -67,19 +84,6 @@ export default function UserBuyDataPage() {
       .catch(() => toast({ title: "Error", description: "Failed to load packages", variant: "destructive" }))
       .finally(() => setLoading(false));
   }, []);
-
-  // Fetch wallet balance
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("wallets")
-      .select("current_balance")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setWalletBalance(Number(data.current_balance));
-      });
-  }, [user]);
 
   // Auto-pick payment method based on wallet sufficiency until the user
   // explicitly chooses one. Wallet is the preferred default when affordable;
@@ -142,10 +146,91 @@ export default function UserBuyDataPage() {
       }
     : null;
 
+  // Optimistic Mutation for Wallet Purchase
+  const purchaseMutation = useMutation({
+    mutationFn: async () => {
+      return purchaseWithWallet({
+        packageId: selectedPkg!.id,
+        network: network!,
+        phoneNumber,
+        customerName: customerName || undefined,
+        customerEmail: customerEmail || undefined,
+      });
+    },
+    onMutate: async () => {
+      // 1. Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["user-orders", user?.id] });
+      await queryClient.cancelQueries({ queryKey: ["user-wallet", user?.id] });
+      await queryClient.cancelQueries({ queryKey: ["user-transactions", user?.id] });
+
+      // 2. Snapshot previous
+      const previousOrders = queryClient.getQueryData(["user-orders", user?.id, ""]);
+      const previousWallet = queryClient.getQueryData(["user-wallet", user?.id]);
+
+      // 3. Optimistically update orders list
+      const optimisticOrder = {
+        id: "opt-" + Date.now(),
+        actor_id: user?.id,
+        network,
+        beneficiary_number: phoneNumber,
+        amount_charged: selectedPkg!.selling_price,
+        status: "processing",
+        bundle_snapshot: { volume: selectedPkg!.package_size_label },
+        created_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData(["user-orders", user?.id, ""], (old: any) => {
+        return [optimisticOrder, ...(old || [])];
+      });
+
+      // 4. Optimistically deduct wallet
+      if (previousWallet) {
+        queryClient.setQueryData(["user-wallet", user?.id], (old: any) => ({
+          ...old,
+          current_balance: Number(old.current_balance) - selectedPkg!.selling_price,
+        }));
+      }
+
+      // 5. Close checkout immediately and navigate
+      setCheckoutOpen(false);
+      navigate("/dashboard/orders");
+      toast({
+        title: "Processing Order",
+        description: `Sending data to ${phoneNumber}...`,
+      });
+
+      return { previousOrders, previousWallet };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on failure
+      if (context?.previousOrders) {
+        queryClient.setQueryData(["user-orders", user?.id, ""], context.previousOrders);
+      }
+      if (context?.previousWallet) {
+        queryClient.setQueryData(["user-wallet", user?.id], context.previousWallet);
+      }
+      toast({
+        title: "Purchase failed",
+        description: err.message || "Could not complete purchase.",
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      // Invalidate to fetch the real data from DB
+      queryClient.invalidateQueries({ queryKey: ["user-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["user-transactions"] });
+      
+      toast({
+        title: "Order Successful",
+        description: "Your data bundle has been delivered.",
+      });
+    }
+  });
+
   const handleConfirm = async () => {
     if (!network || !selectedPkg) return;
 
-    setSubmitting(true);
     setPaymentError(null);
     try {
       if (paymentMethod === "wallet") {
@@ -154,27 +239,12 @@ export default function UserBuyDataPage() {
             `Wallet balance is too low. You need GH₵${selectedPkg.selling_price.toFixed(2)} but have GH₵${walletBalance.toFixed(2)}. Top up first.`,
           );
         }
-        setProcessingLabel("Charging wallet…");
-        const result = await purchaseWithWallet({
-          packageId: selectedPkg.id,
-          network,
-          phoneNumber,
-          customerName: customerName || undefined,
-          customerEmail: customerEmail || undefined,
-        });
-        setProcessingLabel("Sending bundle…");
-        toast({
-          title: "Order placed",
-          description: `GH₵${result.amount_charged.toFixed(2)} debited. New balance GH₵${result.new_balance.toFixed(2)}.`,
-        });
-        // Refresh wallet balance locally
-        setWalletBalance(result.new_balance);
-        setCheckoutOpen(false);
-        // Navigate to order detail so user can watch fulfillment
-        setTimeout(() => navigate(`/dashboard/orders/${result.order_id}`), 200);
+        // Fire mutation (this navigates instantly)
+        purchaseMutation.mutate();
         return;
       }
 
+      setSubmitting(true);
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
         phoneNumber,
@@ -267,7 +337,9 @@ export default function UserBuyDataPage() {
                 const isActive = selectedPkg?.id === pkg.id;
                 const brand = getNetworkBrand(network);
                 return (
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     key={pkg.id}
                     type="button"
                     onClick={() => handlePackageSelect(pkg)}
@@ -372,7 +444,7 @@ export default function UserBuyDataPage() {
                         }}
                       />
                     )}
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
