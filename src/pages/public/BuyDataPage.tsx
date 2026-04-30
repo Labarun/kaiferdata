@@ -201,8 +201,8 @@ export default function BuyDataPage() {
           <div className="container py-3.5">
             <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
-                { icon: Truck, label: "Trusted Delivery", accent: "text-primary/60" },
-                { icon: Shield, label: "Secure Payments", accent: "text-success/60" },
+              { icon: Truck, label: "Trusted Delivery", accent: "text-destructive/60" },
+                { icon: Shield, label: "Secured Payments", accent: "text-success/60" },
                 { icon: Clock, label: "24/7", accent: "text-info/60" },
               ].map((item, i) => (
                 <div key={item.label} className="flex items-center gap-1.5">
