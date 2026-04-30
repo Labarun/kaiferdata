@@ -23,6 +23,7 @@ import {
   initializePayment,
   type DataPlan,
 } from "@/services/purchaseIntent";
+import { supabase } from "@/integrations/supabase/client";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
@@ -67,12 +68,26 @@ export default function BuyDataPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [plansKey, setPlansKey] = useState(0);
+  const [deliverySpeed, setDeliverySpeed] = useState("Fast Delivery");
 
   useEffect(() => {
     fetchPublicPackages()
       .then(setPackages)
       .catch(() => toast({ title: "Error", description: "Failed to load plans", variant: "destructive" }))
       .finally(() => setLoading(false));
+      
+    async function fetchSettings() {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("setting_value")
+        .eq("setting_key", "delivery_speed")
+        .single();
+      
+      if (!error && data?.setting_value) {
+        setDeliverySpeed(data.setting_value);
+      }
+    }
+    fetchSettings();
   }, []);
 
   const networks = useMemo(() => {
@@ -163,7 +178,7 @@ export default function BuyDataPage() {
               <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
               <span className="h-3 w-px bg-border/40 mx-0.5" />
               <Zap className="h-3 w-3 text-warning" />
-              <span className="text-foreground/50 font-medium">Fast Delivery</span>
+              <span className="text-foreground/50 font-medium">{deliverySpeed}</span>
             </div>
 
             {/* Headline */}
