@@ -53,13 +53,13 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">
-            Buy Data Bundles <br />
-            <span className="text-gradient-brand">Fast & Affordable</span>
+          <h1 className="text-5xl md:text-4xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">
+            Buy Cheap Data<br />
+            <span className="text-gradient-brand">Swift & Reliable</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10">
-            Kaifer Data is a trusted platform for MTN, Telecel & AirtelTigo data bundles. Fast delivery. No account required.
+            KaiferData is a platform for Ghanaian data bundles. Trusted by over 20,000 users, Kaifer has grown to become a prominent hub for reloading mobile data to MTN, TELECEL & AT users. No need for registrations.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">

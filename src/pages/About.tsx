@@ -34,11 +34,11 @@ const faqs = [
   },
   {
     question: "What Perks do I enjoy as an Agent?",
-    answer: "As an agent, you will have access to exclusive wholesale prices, the ability to earn commissions on your sales, and dedicated support to help you succeed in your reselling endeavors.You will also have a dashboard to track your sales, commissions, and manage your customers effectively. We also allow agents to literally create a website for their customers to buy from them directly, and we handle the backend and order fulfillment for them. This means you can create your own brand and customer base while we take care of the technical aspects and ensure smooth transactions and every commission is assigned to your agent account balance seamlessly."
+    answer: "As an agent, you will have access to exclusive wholesale prices, the ability to earn commissions on your sales, and dedicated support to help you succeed in your reselling endeavors.You will also have a dashboard to track your sales, commissions, and manage your customers effectively. We also allow agents to literally create a website for their customers to buy from them directly, and we handle the backend and order fulfillment for them. This means you can create your own brand and customer base while we take care of the technical aspects and ensure smooth transactions while every commission is assigned to your agent account balance seamlessly."
   },
   {
     question: "Why do my orders not go through sometimes even after payment?",
-    answer: "Our system is optimized to and extent that once your payment is made your order is created right away: so if you encounter a netwrok issue or delay, please be rest assured that your order is being processed regardless you were assigned an order ID or not. And to prevent you from blindly hoping to receive your order we recommend you create an account. That way there is an order history you can rely on."
+    answer: "Our system is optimized to an extent that once your payment is made your order is created immediately: so if you encounter a netwrok issue or delay, please be rest assured that your order is being processed regardless you were assigned an order ID or not. And to prevent you from blindly hoping to receive your order we recommend you create an account. That way there is an order history you can rely on."
   },
   {
     question: "How long does it take for order to be delivered?",
