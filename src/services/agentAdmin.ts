@@ -11,6 +11,7 @@ import type { AgentApplication, AgentProfile, AgentSubscription } from "@/servic
 export type AgentApplicationWithUser = AgentApplication & {
   profile?: AgentProfile | null;
   latest_subscription?: AgentSubscription | null;
+  wallet?: any | null;
 };
 
 /** List all applications (most recent first) with optional status filter. */
@@ -35,13 +36,14 @@ export async function listApplications(filter?: {
   const userIds = apps.map((a) => a.user_id);
   if (userIds.length === 0) return apps;
 
-  const [{ data: profiles }, { data: subs }] = await Promise.all([
+  const [{ data: profiles }, { data: subs }, { data: wallets }] = await Promise.all([
     supabase.from("agent_profiles").select("*").in("user_id", userIds),
     supabase
       .from("agent_subscriptions")
       .select("*")
       .in("user_id", userIds)
       .order("created_at", { ascending: false }),
+    supabase.from("agent_earnings_wallets").select("*").in("user_id", userIds)
   ]);
 
   const profileByUser = new Map((profiles || []).map((p) => [p.user_id, p]));
@@ -49,11 +51,13 @@ export async function listApplications(filter?: {
   (subs || []).forEach((s) => {
     if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
   });
+  const walletByUser = new Map((wallets || []).map((w) => [w.user_id, w]));
 
   let hydrated = apps.map((a) => ({
     ...a,
     profile: profileByUser.get(a.user_id) || null,
     latest_subscription: subByUser.get(a.user_id) || null,
+    wallet: walletByUser.get(a.user_id) || null,
   }));
 
   if (filter?.search) {

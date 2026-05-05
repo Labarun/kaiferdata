@@ -165,6 +165,11 @@ export default function AdminAgentsPage() {
                             {row.latest_subscription.plan} sub
                           </Badge>
                         )}
+                        {row.latest_subscription?.status === "active" && row.wallet && (
+                          <Badge variant="secondary" className="text-xs font-semibold text-success">
+                            Earned: GH₵{Number(row.wallet.total_earned || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
