@@ -1641,6 +1641,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["account_status"]
       }
+      get_admin_profit_stats: {
+        Args: never
+        Returns: {
+          agent_profit: number
+          direct_profit: number
+          total_commission: number
+          total_profit: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
