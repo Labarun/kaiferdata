@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Search, Loader2, ChevronRight, Filter, X, RefreshCw, ListChecks } from "lucide-react";
 import { triggerStatusSync } from "@/services/supplierAdmin";
@@ -192,7 +193,7 @@ export default function AdminOrdersPage() {
                     onCheckedChange={toggleSelectAll}
                   />
                 </th>
-                {["Order ID", "Network", "Bundle", "Amount", "Phone", "Status", "Supplier", "Created", ""].map((h) => (
+                {["Order ID", "Network", "Bundle", "Amount", "Phone", "Source", "Status", "Supplier", "Created", ""].map((h) => (
                   <th key={h} className="text-left px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                     {h}
                   </th>
@@ -230,6 +231,11 @@ export default function AdminOrdersPage() {
                       <td className="px-3 py-2.5 text-[12px] text-muted-foreground">{snap.volume as string}</td>
                       <td className="px-3 py-2.5 text-[12px] font-medium">GH₵{Number(o.amount_charged).toLocaleString()}</td>
                       <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">{o.beneficiary_number as string}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge variant="outline" className="text-[10px] capitalize">
+                          {(o.source_channel as string)?.replace(/_/g, " ") || "Website"}
+                        </Badge>
+                      </td>
                       <td className="px-3 py-2.5"><OperationsBadge status={o.status as string} /></td>
                       <td className="px-3 py-2.5 text-[11px] text-muted-foreground">
                         {o.supplier_status ? (

@@ -157,6 +157,7 @@ export default function AgentStorefrontPage() {
 
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
+        intentType: "agent_storefront_buy",
         phoneNumber,
         network,
         plan,
