@@ -37,11 +37,10 @@ export async function fetchPublicPackages(): Promise<DataPackage[]> {
     .from("data_packages" as any)
     .select("*")
     .eq("is_active", true)
-    .eq("visible_on_public", true)
-    .order("display_order", { ascending: true });
+    .eq("visible_on_public", true);
 
   if (error) throw error;
-  return (data as any[]) || [];
+  return sortPackagesAutomatically((data as any[]) || []);
 }
 
 /** Fetch packages visible for logged-in users */
@@ -50,23 +49,20 @@ export async function fetchLoggedInPackages(): Promise<DataPackage[]> {
     .from("data_packages" as any)
     .select("*")
     .eq("is_active", true)
-    .eq("visible_for_logged_in", true)
-    .order("display_order", { ascending: true });
+    .eq("visible_for_logged_in", true);
 
   if (error) throw error;
-  return (data as any[]) || [];
+  return sortPackagesAutomatically((data as any[]) || []);
 }
 
 /** Fetch all packages (admin view — includes inactive) */
 export async function fetchAllPackages(): Promise<DataPackage[]> {
   const { data, error } = await supabase
     .from("data_packages" as any)
-    .select("*")
-    .order("network", { ascending: true })
-    .order("display_order", { ascending: true });
+    .select("*");
 
   if (error) throw error;
-  return (data as any[]) || [];
+  return sortPackagesAutomatically((data as any[]) || [], true);
 }
 
 /** Create a new package */
@@ -128,4 +124,46 @@ export function buildPackageSnapshot(pkg: DataPackage) {
     validity_label: pkg.validity_label,
     source_type: pkg.source_type,
   };
+}
+
+/** Delete a package */
+export async function deletePackage(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("data_packages" as any)
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+/** Parse volume label into MB for sorting */
+function parseVolumeToMB(label: string | null): number {
+  if (!label) return 0;
+  const match = label.match(/([\d.]+)\s*(MB|GB|TB|G|M)/i);
+  if (!match) return 0;
+  
+  const value = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+  
+  if (unit === 'MB' || unit === 'M') return value;
+  if (unit === 'GB' || unit === 'G') return value * 1024;
+  if (unit === 'TB') return value * 1024 * 1024;
+  return value;
+}
+
+/** Sort packages by volume (lowest to highest), falling back to price */
+export function sortPackagesAutomatically(packages: DataPackage[], groupByNetwork: boolean = false): DataPackage[] {
+  return [...packages].sort((a, b) => {
+    if (groupByNetwork && a.network !== b.network) {
+      return a.network.localeCompare(b.network);
+    }
+    
+    const volA = parseVolumeToMB(a.package_size_label || a.package_name);
+    const volB = parseVolumeToMB(b.package_size_label || b.package_name);
+    
+    if (volA !== volB) {
+      return volA - volB;
+    }
+    return a.selling_price - b.selling_price;
+  });
 }

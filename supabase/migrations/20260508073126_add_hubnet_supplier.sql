@@ -9,7 +9,6 @@ BEGIN
       is_active,
       priority,
       supports_order_submission,
-      supports_balance_check,
       api_base_url,
       auth_config,
       endpoint_config,
@@ -20,7 +19,6 @@ BEGIN
       true,
       1,
       true,
-      false,
       'https://console.hubnet.app/live',
       '{
         "auth_type": "bearer",

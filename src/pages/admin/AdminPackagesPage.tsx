@@ -21,8 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PackageFormDialog } from "@/components/admin/PackageFormDialog";
-import { fetchAllPackages, calcProfit, calcMargin, type DataPackage } from "@/services/packageCatalog";
-import { triggerProductSync } from "@/services/supplierAdmin";
+import { fetchAllPackages, calcProfit, calcMargin, deletePackage, type DataPackage } from "@/services/packageCatalog";
+import { triggerProductSync, fetchSuppliers, type Supplier } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -34,6 +34,7 @@ import {
   EyeOff,
   Loader2,
   ArrowDownToLine,
+  Trash2,
 } from "lucide-react";
 
 const NETWORKS = ["All", "MTN", "Telecel", "AirtelTigo"];
@@ -43,6 +44,7 @@ const VISIBILITY_FILTERS = ["All", "Public", "Logged-in", "Hidden"];
 export default function AdminPackagesPage() {
   const { toast } = useToast();
   const [packages, setPackages] = useState<DataPackage[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [networkFilter, setNetworkFilter] = useState("All");
@@ -55,8 +57,12 @@ export default function AdminPackagesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await fetchAllPackages();
+      const [data, sups] = await Promise.all([
+        fetchAllPackages(),
+        fetchSuppliers()
+      ]);
       setPackages(data);
+      setSuppliers(sups);
     } catch {
       toast({ title: "Error", description: "Failed to load packages", variant: "destructive" });
     } finally {
@@ -96,6 +102,18 @@ export default function AdminPackagesPage() {
   const handleCreate = () => {
     setEditPkg(null);
     setFormOpen(true);
+  };
+
+  const handleDelete = async (pkg: DataPackage) => {
+    if (confirm(`Are you sure you want to delete ${pkg.package_size_label} ${pkg.package_name}?`)) {
+      try {
+        await deletePackage(pkg.id);
+        toast({ title: "Package deleted" });
+        load();
+      } catch (err: any) {
+        toast({ title: "Delete Failed", description: err.message, variant: "destructive" });
+      }
+    }
   };
 
   return (
@@ -185,6 +203,8 @@ export default function AdminPackagesPage() {
               {filtered.map((pkg) => {
                 const profit = calcProfit(pkg);
                 const margin = calcMargin(pkg);
+                const supplier = pkg.supplier_source_id ? suppliers.find(s => s.id === pkg.supplier_source_id) : null;
+                const sourceDisplay = supplier ? supplier.name : pkg.source_type;
                 return (
                   <TableRow key={pkg.id}>
                     <TableCell>
@@ -230,12 +250,17 @@ export default function AdminPackagesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="text-[10px] font-mono text-muted-foreground">{pkg.source_type}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">{sourceDisplay}</span>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(pkg)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(pkg)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(pkg)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

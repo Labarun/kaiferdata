@@ -211,7 +211,10 @@ Deno.serve(async (req) => {
 
           const supplierPrice = Number(getNestedValue(product, priceField) || 0);
           const packageCode = String(getNestedValue(product, codeField) || supplierId);
-          const packageName = String(getNestedValue(product, nameField) || packageCode);
+          let packageName = String(getNestedValue(product, nameField) || packageCode);
+          if (!packageName.includes(supplier.name)) {
+            packageName = `${packageName} (${supplier.name})`;
+          }
           const volume = String(getNestedValue(product, volumeField) || "");
           const validity = String(getNestedValue(product, validityField) || "");
           const sizeLabel = String(getNestedValue(product, sizeField) || volume || packageName);

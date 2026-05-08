@@ -283,3 +283,12 @@ export async function bulkUpdateOrderStatus(
 
   return { updated, errors };
 }
+
+/** Delete a supplier */
+export async function deleteSupplier(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("suppliers" as any)
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
