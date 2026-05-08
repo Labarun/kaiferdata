@@ -285,10 +285,10 @@ async function submitToSupplierApi(
   clearTimeout(timeout);
 
   let responseData: Record<string, unknown>;
+  const rawText = await apiRes.text();
   try {
-    responseData = await apiRes.json();
+    responseData = JSON.parse(rawText);
   } catch {
-    const rawText = await apiRes.text();
     responseData = { raw: rawText };
   }
 
