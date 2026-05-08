@@ -275,6 +275,7 @@ export default function AdminPackagesPage() {
         onOpenChange={setFormOpen}
         pkg={editPkg}
         onSuccess={load}
+        suppliers={suppliers}
       />
     </div>
   );

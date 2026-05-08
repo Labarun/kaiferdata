@@ -32,6 +32,7 @@ interface PackageFormDialogProps {
   onOpenChange: (v: boolean) => void;
   pkg: DataPackage | null;
   onSuccess: () => void;
+  suppliers?: any[];
 }
 
 const emptyForm = {
@@ -54,9 +55,9 @@ const emptyForm = {
   is_agent_resaleable: true,
 };
 
-export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: PackageFormDialogProps) {
+export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, suppliers }: PackageFormDialogProps) {
   const { toast } = useToast();
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState({ ...emptyForm, supplier_id: "none", supplier_source_id: "" });
   const [saving, setSaving] = useState(false);
   const isEdit = !!pkg;
 
@@ -78,11 +79,23 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
         visible_for_logged_in: pkg.visible_for_logged_in,
         display_order: String(pkg.display_order),
         source_type: pkg.source_type,
+        supplier_id: pkg.source_type === "supplier_api" && pkg.source_metadata?.supplier_id ? String(pkg.source_metadata.supplier_id) : (pkg.source_type === "supplier_api" && suppliers?.find(s => s.id === pkg.supplier_source_id || s.name.toLowerCase() === pkg.source_type)?.id) || "none",
+        supplier_source_id: pkg.supplier_source_id || "",
         agent_base_price: String(pkg.agent_base_price ?? 0),
         is_agent_resaleable: pkg.is_agent_resaleable ?? true,
       });
+      // Try to intelligently match supplier from source_metadata if missing
+      if (pkg.source_type === "supplier_api" && suppliers) {
+        const matchingSupplier = suppliers.find(s => 
+          (pkg.source_metadata && pkg.source_metadata.supplier_id === s.id) || 
+          (pkg.source_metadata && pkg.source_metadata.supplier === s.provider_code)
+        );
+        if (matchingSupplier) {
+          setForm(f => ({ ...f, supplier_id: matchingSupplier.id }));
+        }
+      }
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, supplier_id: "none", supplier_source_id: "" });
     }
   }, [pkg, open]);
 
@@ -120,7 +133,9 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
         visible_on_public: form.visible_on_public,
         visible_for_logged_in: form.visible_for_logged_in,
         display_order: parseInt(form.display_order) || 0,
-        source_type: form.source_type,
+        source_type: form.supplier_id !== "none" ? "supplier_api" : "manual",
+        supplier_source_id: form.supplier_id !== "none" ? form.supplier_source_id.trim() || null : null,
+        source_metadata: form.supplier_id !== "none" ? { supplier_id: form.supplier_id } : null,
         agent_base_price: parseFloat(form.agent_base_price) || 0,
         is_agent_resaleable: form.is_agent_resaleable,
       };
@@ -204,6 +219,35 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess }: Packag
             <div className="space-y-1.5">
               <Label className="text-xs">Display Order</Label>
               <Input type="number" value={form.display_order} onChange={(e) => set("display_order", e.target.value)} />
+            </div>
+          </div>
+
+          {/* ── Supplier Integration ── */}
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <p className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">Supplier Integration</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link to Supplier</Label>
+                <Select value={form.supplier_id} onValueChange={(v) => set("supplier_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Manual (No Supplier)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Manual (No Supplier)</SelectItem>
+                    {suppliers?.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.supplier_id !== "none" && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                  <Label className="text-xs">Supplier Source ID / Plan Key</Label>
+                  <Input 
+                    value={form.supplier_source_id} 
+                    onChange={(e) => set("supplier_source_id", e.target.value)} 
+                    placeholder="e.g. 1 (for Instant Data 1GB)" 
+                  />
+                </div>
+              )}
             </div>
           </div>
 
