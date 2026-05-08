@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   fetchSuppliers, updateSupplier, createSupplier, fetchSyncLogs,
-  triggerProductSync, triggerStatusSync, triggerHealthCheck,
+  triggerProductSync, triggerStatusSync, triggerHealthCheck, deleteSupplier,
   type Supplier, type SupplierSyncLog,
 } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Plus, RefreshCw, Server, Pencil, Clock, CheckCircle2, XCircle,
-  Package, ArrowDownToLine, Zap, Settings2, Activity, Wallet, Link,
+  Package, ArrowDownToLine, Zap, Settings2, Activity, Wallet, Link, Trash2,
 } from "lucide-react";
 
 export default function AdminSupplierPage() {
@@ -68,6 +68,18 @@ export default function AdminSupplierPage() {
 
   const handleEdit = (s: Supplier) => { setEditSupplier(s); setFormOpen(true); };
   const handleCreate = () => { setEditSupplier(null); setFormOpen(true); };
+
+  const handleDelete = async (s: Supplier) => {
+    if (confirm(`Are you sure you want to delete supplier "${s.name}"? This action cannot be undone.`)) {
+      try {
+        await deleteSupplier(s.id);
+        toast({ title: "Supplier deleted" });
+        load();
+      } catch (err: any) {
+        toast({ title: "Delete Failed", description: err.message, variant: "destructive" });
+      }
+    }
+  };
 
   const handleDiagnostics = async (supplierId: string) => {
     setDiagLoading(true);
@@ -161,6 +173,9 @@ export default function AdminSupplierPage() {
                   </Badge>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(s)}>
                     <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(s)}>
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </CardHeader>

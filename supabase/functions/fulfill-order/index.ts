@@ -113,11 +113,11 @@ async function submitToStubSupplier(
   const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
   const ref = `STUB-${Date.now().toString(36).toUpperCase()}`;
   return {
-    outcome: "delivered",
+    outcome: "accepted",
     supplier_reference: ref,
-    delivery_message: `${snapshot.volume || ""} ${order.network || ""} data delivered to ${order.beneficiary_number || "recipient"}.`,
+    delivery_message: `${snapshot.volume || ""} ${order.network || ""} data queued for manual processing.`,
     error_message: null,
-    raw_response: { stub: true, reference: ref, status: "success", timestamp: new Date().toISOString() },
+    raw_response: { stub: true, reference: ref, status: "queued", timestamp: new Date().toISOString() },
   };
 }
 
@@ -521,22 +521,26 @@ Deno.serve(async (req) => {
     await logStatusChange(supabase, order_id, order.status, "processing", "fulfillment_service", "Atomically claimed for supplier submission");
 
     // ═══ 2. SELECT SUPPLIER ═══
-    const { data: suppliers } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("is_active", true)
-      .order("priority", { ascending: true });
-
+    const snapshotForSupplier = (order.bundle_snapshot || {}) as Record<string, unknown>;
     let selectedSupplier = null;
-    if (suppliers && suppliers.length > 0) {
-      for (const s of suppliers) {
-        const networks = (s.supported_networks as string[]) || [];
-        if (networks.length === 0 || networks.includes(order.network)) {
-          selectedSupplier = s;
-          break;
+
+    if (snapshotForSupplier.source_type !== "manual") {
+      const { data: suppliers } = await supabase
+        .from("suppliers")
+        .select("*")
+        .eq("is_active", true)
+        .order("priority", { ascending: true });
+
+      if (suppliers && suppliers.length > 0) {
+        for (const s of suppliers) {
+          const networks = (s.supported_networks as string[]) || [];
+          if (networks.length === 0 || networks.includes(order.network)) {
+            selectedSupplier = s;
+            break;
+          }
         }
+        if (!selectedSupplier) selectedSupplier = suppliers[0];
       }
-      if (!selectedSupplier) selectedSupplier = suppliers[0];
     }
 
     if (!selectedSupplier) {
