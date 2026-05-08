@@ -254,9 +254,22 @@ async function submitToSupplierApi(
   requestBody[referenceField] = order.public_order_id;
 
   const extraFields = (submitEndpoint.extra_fields || {}) as Record<string, unknown>;
-  Object.assign(requestBody, extraFields);
+  const webhookUrl = Deno.env.get("SUPPLIER_WEBHOOK_URL") || "";
 
-  const apiUrl = `${supplier.api_base_url}${submitPath}`;
+  for (const [key, value] of Object.entries(extraFields)) {
+    if (typeof value === "string" && value.includes("{WEBHOOK_URL}")) {
+      requestBody[key] = value.replace("{WEBHOOK_URL}", webhookUrl);
+    } else {
+      requestBody[key] = value;
+    }
+  }
+
+  let finalSubmitPath = submitPath;
+  if (finalSubmitPath.includes("{network}")) {
+    finalSubmitPath = finalSubmitPath.replace("{network}", String(mappedNetwork || ""));
+  }
+
+  const apiUrl = `${supplier.api_base_url}${finalSubmitPath}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), (supplier.request_timeout_ms as number) || 30000);
 
