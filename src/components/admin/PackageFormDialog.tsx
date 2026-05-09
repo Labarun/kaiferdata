@@ -135,7 +135,9 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
         display_order: parseInt(form.display_order) || 0,
         source_type: form.supplier_id !== "none" ? "supplier_api" : "manual",
         supplier_source_id: form.supplier_id !== "none" ? form.supplier_source_id.trim() || null : null,
-        source_metadata: form.supplier_id !== "none" ? { supplier_id: form.supplier_id } : null,
+        source_metadata: form.supplier_id !== "none" 
+          ? (isEdit && pkg?.source_metadata ? { ...(pkg.source_metadata as object), supplier_id: form.supplier_id } : { supplier_id: form.supplier_id }) 
+          : null,
         agent_base_price: parseFloat(form.agent_base_price) || 0,
         is_agent_resaleable: form.is_agent_resaleable,
       };
