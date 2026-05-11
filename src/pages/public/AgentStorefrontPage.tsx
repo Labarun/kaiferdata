@@ -108,7 +108,7 @@ export default function AgentStorefrontPage() {
 
         // Merge: prefer agent-priced for any matching id; fill the rest from public.
         const map = new Map<string, DataPackage & { _agent_base_price?: number }>();
-        publicPkgs.forEach((p) => map.set(p.id, p as any));
+        publicPkgs.filter((p) => p.is_agent_resaleable).forEach((p) => map.set(p.id, p as any));
         agentPriced.forEach((p) => map.set(p.id, p as any));
         setPackages(Array.from(map.values()));
       } catch {
@@ -157,7 +157,7 @@ export default function AgentStorefrontPage() {
 
       setProcessingLabel("Creating order…");
       const result = await createPurchaseIntent({
-        intentType: "agent_storefront_buy",
+        intentType: "guest_buy",
         phoneNumber,
         network,
         plan,
