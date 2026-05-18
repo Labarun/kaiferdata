@@ -28,6 +28,7 @@ export default function AgentDashboardHome() {
   const { user } = useAuth();
   const sub = useSubscriptionSnapshot();
   const [wallet, setWallet] = useState<AgentEarningsWallet | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState(true);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [storeName, setStoreName] = useState("");
   const [storeStatus, setStoreStatus] = useState<string | null>(null);
@@ -40,7 +41,10 @@ export default function AgentDashboardHome() {
 
   // Initial profile + wallet
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setLoadingWallet(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       const [w, p] = await Promise.all([
@@ -52,6 +56,7 @@ export default function AgentDashboardHome() {
       setStoreSlug(p.data?.store_slug ?? null);
       setStoreName(p.data?.store_name ?? "");
       setStoreStatus(p.data?.status ?? null);
+      setLoadingWallet(false);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
@@ -85,7 +90,7 @@ export default function AgentDashboardHome() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
-  const isInitialLoad = !wallet && !!user;
+  const isInitialLoad = loadingWallet && !!user;
   if (isInitialLoad) {
     return <DashboardSkeleton />;
   }
@@ -120,7 +125,7 @@ export default function AgentDashboardHome() {
       )}
 
       {/* Earnings balance hero */}
-      <EarningsBalanceCard wallet={wallet} loading={!wallet && !!user} />
+      <EarningsBalanceCard wallet={wallet} loading={loadingWallet} />
 
       {/* Range filter */}
       <div className="space-y-2">
