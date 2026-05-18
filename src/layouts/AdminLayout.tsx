@@ -21,6 +21,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
+import { AdminGlobalNotifications } from "@/components/admin/AdminGlobalNotifications";
 
 export interface AdminNavItem {
   label: string;
@@ -49,6 +50,7 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
 
   return (
     <div className="h-screen h-[100dvh] flex bg-background overflow-hidden">
+      <AdminGlobalNotifications />
       {/* Sidebar */}
       <aside
         className={`hidden md:flex flex-col shrink-0 border-r bg-sidebar transition-all duration-200 ${
