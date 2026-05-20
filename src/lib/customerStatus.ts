@@ -46,9 +46,9 @@ const LABELS: Record<CustomerStatusKey, string> = {
 
 const HELPERS: Record<CustomerStatusKey, string> = {
   placed: "Your order has been placed and will start processing shortly.",
-  processing: "Your order is being processed. This usually completes in a few moments.",
+  processing: "Your order is being processed. It will be delivered according to the current delivery speed of the provider.",
   delivered: "Your data bundle was delivered successfully.",
-  failed: "We couldn't complete this order. Any charge will be reversed automatically.",
+  failed: "Do not worry, the team has been alerted and your order will be reprocessed shortly.",
   cancelled: "This order was cancelled.",
   refunded: "This order has been refunded.",
 };
@@ -87,6 +87,9 @@ export function sanitizeCustomerMessage(
 
   // Remove "Webhook: ..." / "Supplier status: ..." prefixes entirely.
   text = text.replace(/^\s*(webhook|supplier status|supplier|provider)\s*[:\-—]\s*/i, "");
+
+  // Normalize payment confirmation text from webhook plumbing.
+  text = text.replace(/payment confirmed\s*(via\s*paystack\s*webhook)?/gi, "Payment Confirmed.");
 
   // Remove explicit supplier id / reference fragments like "(supplier ref: XYZ)" or "supplier ref XYZ".
   text = text.replace(/\(?\s*supplier\s*(ref(?:erence)?|id|status)\s*[:\-=]?\s*[a-z0-9_\-]+\s*\)?/gi, "");

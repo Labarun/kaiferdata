@@ -234,12 +234,12 @@ export function PublicLayout() {
           <p className="text-[10px] text-muted-foreground/40 tracking-wide">
             Developed by{" "}
             <a
-              href="https://jjsolutionsdigital.com/"
+              href="https://www.kaifertech.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground/55 hover:text-primary transition-colors duration-200"
             >
-              JJ Solutions
+              Kaifer Tech
             </a>
           </p>
         </div>

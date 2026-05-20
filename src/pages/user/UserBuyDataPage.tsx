@@ -32,6 +32,9 @@ import {
   Wifi,
   Check,
   ChevronRight,
+  Zap,
+  AlertTriangle,
+  SendHorizonal,
 } from "lucide-react";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
@@ -238,7 +241,7 @@ export default function UserBuyDataPage() {
       
       toast({
         title: "Order Successful",
-        description: "Your data bundle has been delivered.",
+        description: "Your order is confirmed and is being processed.",
       });
     }
   });
@@ -310,14 +313,41 @@ export default function UserBuyDataPage() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
           </div>
-          <span className="text-muted-foreground">System Online</span>
+          <span className="text-muted-foreground">Service Online</span>
           <span className="text-border mx-0.5">•</span>
-          <span className="text-primary/80 font-semibold">{deliverySpeed}</span>
+          <SendHorizonal className="h-3 w-3 text-warning" />
+          <span className="text-muted-foreground">Processing Orders</span>
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Buy Data</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
         </div>
+
+        <div className="mt-2 mx-auto max-w-[300px] rounded-3xl border border-border/40 bg-slate-950/10 p-2.5 shadow-sm shadow-slate-950/10 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Zap className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{deliverySpeed}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <p className="text-sm font-semibold">Important notice</p>
+        </div>
+        <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+        <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
+          <li>This service does not work on Turbonet SIM cards.</li>
+            <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
+            <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
+        </ul>
       </div>
 
       <NoticeBanner audience="users" />

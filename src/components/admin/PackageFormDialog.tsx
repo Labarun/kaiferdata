@@ -63,6 +63,16 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
 
   useEffect(() => {
     if (pkg) {
+      const supplierIdFromMetadata = pkg.source_type === "supplier_api" && pkg.source_metadata?.supplier_id
+        ? String(pkg.source_metadata.supplier_id)
+        : null;
+
+      const supplierIdFromSource = pkg.source_type === "supplier_api" && suppliers
+        ? suppliers.find((s) => s.id === pkg.supplier_source_id || (pkg.source_metadata && pkg.source_metadata.supplier === s.provider_code))?.id || null
+        : null;
+
+      const supplierId = supplierIdFromMetadata || supplierIdFromSource || "none";
+
       setForm({
         network: pkg.network,
         package_code: pkg.package_code,
@@ -79,25 +89,15 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
         visible_for_logged_in: pkg.visible_for_logged_in,
         display_order: String(pkg.display_order),
         source_type: pkg.source_type,
-        supplier_id: pkg.source_type === "supplier_api" && pkg.source_metadata?.supplier_id ? String(pkg.source_metadata.supplier_id) : (pkg.source_type === "supplier_api" && suppliers?.find(s => s.id === pkg.supplier_source_id || s.name.toLowerCase() === pkg.source_type)?.id) || "none",
+        supplier_id: supplierId,
         supplier_source_id: pkg.supplier_source_id || "",
         agent_base_price: String(pkg.agent_base_price ?? 0),
         is_agent_resaleable: pkg.is_agent_resaleable ?? true,
       });
-      // Try to intelligently match supplier from source_metadata if missing
-      if (pkg.source_type === "supplier_api" && suppliers) {
-        const matchingSupplier = suppliers.find(s => 
-          (pkg.source_metadata && pkg.source_metadata.supplier_id === s.id) || 
-          (pkg.source_metadata && pkg.source_metadata.supplier === s.provider_code)
-        );
-        if (matchingSupplier) {
-          setForm(f => ({ ...f, supplier_id: matchingSupplier.id }));
-        }
-      }
     } else {
       setForm({ ...emptyForm, supplier_id: "none", supplier_source_id: "" });
     }
-  }, [pkg, open]);
+  }, [pkg, open, suppliers]);
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
