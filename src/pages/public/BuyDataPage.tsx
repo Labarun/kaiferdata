@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone, Truck } from "lucide-react";
+import { AlertTriangle, Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone, Truck, SendHorizonal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
@@ -170,15 +170,15 @@ export default function BuyDataPage() {
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
             {/* Status pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-6 animate-fade-in refraction-rim overflow-hidden">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-5 animate-fade-in refraction-rim overflow-hidden">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
               </span>
               <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
               <span className="h-3 w-px bg-border/40 mx-0.5" />
-              <Zap className="h-3 w-3 text-warning" />
-              <span className="text-foreground/50 font-medium">{deliverySpeed}</span>
+              <SendHorizonal className="h-3 w-3 text-warning" />
+              <span className="text-foreground/50 font-medium">Processing Orders</span>
             </div>
 
             {/* Headline */}
@@ -186,8 +186,19 @@ export default function BuyDataPage() {
               Buy Data{" "}
               <span className="text-gradient-brand">Fast</span>
             </h1>
+
+            <div className="mt-2 mx-auto max-w-[300px] animate-fade-in rounded-3xl border border-border/40 bg-slate-950/10 p-2.5 shadow-sm shadow-slate-950/10 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Zap className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{deliverySpeed}</p>
+                </div>
+              </div>
+            </div>
             <p
-              className="mt-3.5 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[320px] mx-auto animate-fade-in"
+              className="mt-4 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[320px] mx-auto animate-fade-in"
               style={{ animationDelay: "0.08s" }}
             >
               Pick a network, choose your bundle, receive data in minutes.
@@ -216,6 +227,23 @@ export default function BuyDataPage() {
             </div>
           </div>
           <div className="h-px bg-gradient-to-r from-transparent via-border/25 to-transparent" />
+        </div>
+      </section>
+
+      <section className="container px-4 sm:px-0 mt-6">
+        <div className="rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <p className="text-sm font-semibold">Important notice</p>
+          </div>
+          <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+          <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
+            <li>This service does not work on Turbonet SIM cards.</li>
+            <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
+            <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
+          </ul>
         </div>
       </section>
 

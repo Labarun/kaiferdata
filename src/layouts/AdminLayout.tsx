@@ -146,6 +146,10 @@ export function AdminLayout({ navItems, title, audienceFilter }: AdminLayoutProp
                 <div className="mt-1"><RoleBadge role={user?.role || "user"} /></div>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/dashboard")}> 
+                <User className="mr-2 h-4 w-4" />
+                Switch to User Dashboard
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
