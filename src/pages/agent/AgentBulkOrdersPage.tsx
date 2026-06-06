@@ -1,67 +1,384 @@
-/**
- * Agent Bulk Orders — /agent/bulk
- * Premium info page directing agents to use the existing wallet-funded
- * bulk flow on the user dashboard. Strict additive: doesn't replace the
- * single-order pipeline, just surfaces where to find batch tools.
- */
-import { Link } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { NetworkSelector } from "@/components/buy/NetworkSelector";
+import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { getNetworkBrand } from "@/config/networkBrands";
+import { fetchLoggedInPackages, getPackageNetworks, filterPackagesByNetwork, type DataPackage } from "@/services/packageCatalog";
+import { createPurchaseIntent, initializePayment } from "@/services/purchaseIntent";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Layers, ShoppingCart, Wallet, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Users, CreditCard, Wallet, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
 import { SubscriptionGate } from "@/components/agent/SubscriptionGate";
+import { cn } from "@/lib/utils";
+import { formatGHS } from "@/services/paystackFee";
+
+const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
 export default function AgentBulkOrdersPage() {
   return (
     <div className="animate-fade-in pb-8 space-y-4">
-      <PageHeader title="Bulk Orders" description="Buy data for many recipients at once." />
+      <PageHeader title="Bulk Orders" description="Buy data for multiple customers at once." />
       <SubscriptionGate message="Subscribe to unlock bulk ordering.">
-        <BulkInner />
+        <BulkOrderFlow />
       </SubscriptionGate>
     </div>
   );
 }
 
-function BulkInner() {
-  return (
-    <div className="space-y-4">
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-success/5">
-        <CardContent className="p-5 space-y-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Layers className="h-5 w-5 text-primary" />
-          </div>
-          <p className="text-base font-semibold">Bulk delivery, one wallet swipe</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Top up your personal wallet, then place orders one after another for
-            different beneficiaries — each is delivered in seconds. Bulk orders
-            are charged at <strong>your agent pricing</strong> and earn profit
-            into your earnings balance once delivered.
-          </p>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <Button asChild variant="outline" size="sm" className="text-xs">
-              <Link to="/dashboard/wallet"><Wallet className="h-3.5 w-3.5 mr-1.5" /> Top up wallet</Link>
-            </Button>
-            <Button asChild size="sm" className="text-xs">
-              <Link to="/dashboard/buy"><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Place orders</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+function BulkOrderFlow() {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <p className="text-sm font-semibold">How profit works on bulk orders</p>
+  const [packages, setPackages] = useState<DataPackage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [network, setNetwork] = useState<string | null>(null);
+  const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "paystack">("wallet");
+  
+  const [rawNumbers, setRawNumbers] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [successCount, setSuccessCount] = useState<number | null>(null);
+
+  // Parse phone numbers
+  const validNumbers = useMemo(() => {
+    if (!rawNumbers) return [];
+    // Split by comma, newline, space
+    const tokens = rawNumbers.split(/[\n, ]+/);
+    const cleaned = tokens
+      .map(t => t.replace(/[^0-9]/g, ""))
+      .filter(t => t.length >= 10 && t.length <= 11);
+    // Deduplicate
+    return [...new Set(cleaned)];
+  }, [rawNumbers]);
+
+  const { data: walletData } = useQuery({
+    queryKey: ["user-wallet", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("wallets")
+        .select("current_balance")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+  const walletBalance = Number(walletData?.current_balance || 0);
+
+  useEffect(() => {
+    fetchLoggedInPackages()
+      .then(setPackages)
+      .catch(() => toast({ title: "Error", description: "Failed to load packages", variant: "destructive" }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const networks = useMemo(() => {
+    const available = getPackageNetworks(packages);
+    return GHANA_NETWORKS.filter((n) => available.includes(n));
+  }, [packages]);
+
+  useEffect(() => {
+    if (!network && networks.length > 0 && !loading) {
+      setNetwork(networks[0]);
+    }
+  }, [networks, loading]);
+
+  const filteredPackages = useMemo(
+    () => (network ? filterPackagesByNetwork(packages, network) : []),
+    [packages, network]
+  );
+
+  const handleNetworkSelect = useCallback((n: string) => {
+    setNetwork(n);
+    setSelectedPkg(null);
+  }, []);
+
+  const getAgentPrice = (pkg: DataPackage) => Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
+
+  const totalCost = selectedPkg ? getAgentPrice(selectedPkg) * validNumbers.length : 0;
+  const canAffordWallet = walletBalance >= totalCost;
+
+  const handleProcessBulk = async () => {
+    if (!selectedPkg || validNumbers.length === 0 || !network || !user) return;
+    setSubmitting(true);
+
+    try {
+      if (paymentMethod === "wallet") {
+        if (!canAffordWallet) {
+          throw new Error("Insufficient wallet balance for this bulk order.");
+        }
+        
+        // Use atomic RPC
+        const { data, error } = await supabase.rpc("purchase_bulk_with_wallet_atomic", {
+          _user_id: user.id,
+          _package_id: selectedPkg.id,
+          _phone_numbers: validNumbers,
+          _network: network,
+          _source_channel: "agent_bulk_dashboard"
+        });
+
+        if (error) {
+          // Unwrap generic error if possible
+          throw new Error(error.message || "Failed to process wallet bulk order");
+        }
+
+        setSuccessCount(validNumbers.length);
+        toast({ title: "Success!", description: `Successfully placed ${validNumbers.length} orders.` });
+        
+      } else {
+        // Paystack flow
+        const bridgedPlan = {
+          id: selectedPkg.id,
+          plan_code: selectedPkg.package_code,
+          plan_name: selectedPkg.package_name,
+          amount: getAgentPrice(selectedPkg),
+          volume: selectedPkg.package_size_label,
+          network: selectedPkg.network,
+          description: selectedPkg.validity_label,
+          is_active: true,
+          sort_order: 0,
+          metadata: {},
+          created_at: "",
+          updated_at: ""
+        };
+
+        const intent = await createPurchaseIntent({
+          phoneNumber: validNumbers[0], // primary
+          bulkPhoneNumbers: validNumbers,
+          network,
+          plan: bridgedPlan,
+          actorType: "user",
+          actorId: user.id,
+          sourceChannel: "agent_bulk_dashboard",
+          intentType: "agent_bulk_buy"
+        });
+
+        const payment = await initializePayment(intent.id);
+        window.location.href = payment.authorization_url;
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Bulk Order Failed", description: err.message, variant: "destructive" });
+      setSubmitting(false);
+    }
+  };
+
+  if (successCount !== null) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 animate-fade-in">
+        <div className="h-16 w-16 bg-success/10 rounded-full flex items-center justify-center mb-2">
+          <CheckCircle2 className="h-8 w-8 text-success" />
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight">Bulk Order Completed!</h2>
+        <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+          Successfully processed {successCount} orders. Your wallet was charged automatically.
+        </p>
+        <div className="pt-4 flex gap-3">
+          <Button variant="outline" onClick={() => navigate("/agent/orders")}>View Orders</Button>
+          <Button onClick={() => { setSuccessCount(null); setRawNumbers(""); setSelectedPkg(null); }}>Start New Batch</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-12 bg-muted rounded-xl" />
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="h-24 bg-muted rounded-xl" />
+          <div className="h-24 bg-muted rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!network) {
+    return <NoticeBanner type="error" message="No networks available at the moment." />;
+  }
+
+  return (
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* 1. Select Network */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-xs font-bold text-primary">1</span>
           </div>
-          <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-5 leading-relaxed">
-            <li>Personal wallet pays the cost (your agent base price).</li>
-            <li>Customer pays the selling price you set on your storefront.</li>
-            <li>Profit lands in your separate earnings balance once the order is delivered.</li>
-            <li>Withdraw earnings to MoMo from <Link to="/agent/withdraw" className="text-primary underline">/agent/withdraw</Link>.</li>
-          </ul>
-        </CardContent>
-      </Card>
+          <h3 className="font-semibold text-[15px]">Select Network</h3>
+        </div>
+        <NetworkSelector networks={networks} selected={network} onSelect={handleNetworkSelect} />
+      </section>
+
+      {/* 2. Select Package */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-xs font-bold text-primary">2</span>
+          </div>
+          <h3 className="font-semibold text-[15px]">Select Package</h3>
+        </div>
+        
+        {filteredPackages.length === 0 ? (
+          <NoticeBanner type="warning" message={`No active packages for ${network}.`} />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredPackages.map((pkg) => {
+              const isSelected = selectedPkg?.id === pkg.id;
+              const netBrand = getNetworkBrand(pkg.network);
+              return (
+                <button
+                  key={pkg.id}
+                  onClick={() => setSelectedPkg(pkg)}
+                  className={cn(
+                    "relative text-left p-4 rounded-2xl border transition-all duration-200 overflow-hidden group",
+                    isSelected
+                      ? "border-transparent bg-[hsl(var(--card))] shadow-[0_0_0_2px_hsl(var(--primary)),0_8px_20px_-8px_hsl(var(--primary)/0.25)]"
+                      : "border-border/40 bg-card hover:border-primary/30 hover:bg-muted/30"
+                  )}
+                >
+                  {isSelected && (
+                    <div 
+                      className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                      style={{ background: `linear-gradient(45deg, ${netBrand.gradient})` }}
+                    />
+                  )}
+                  <div className="relative flex justify-between items-start mb-2">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground/60">
+                      {pkg.network}
+                    </span>
+                    <span className="font-bold text-[15px] tracking-tight">GH₵{formatGHS(getAgentPrice(pkg))}</span>
+                  </div>
+                  <div className="relative">
+                    <h4 className="text-[17px] font-bold tracking-tight text-foreground/90">{pkg.package_size_label}</h4>
+                    <p className="text-[11px] font-medium text-muted-foreground/60 mt-1">{pkg.validity_label}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* 3. Enter Recipients */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">3</span>
+            </div>
+            <h3 className="font-semibold text-[15px]">Recipients</h3>
+          </div>
+        </div>
+        <Card className="border-border/40 shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <Label className="text-xs text-muted-foreground font-medium flex justify-between">
+              <span>Paste phone numbers (comma or newline separated)</span>
+              {validNumbers.length > 0 && (
+                <span className="text-primary font-bold">{validNumbers.length} Valid</span>
+              )}
+            </Label>
+            <Textarea
+              placeholder="e.g. 024XXXXXXX, 055XXXXXXX&#10;054XXXXXXX"
+              value={rawNumbers}
+              onChange={(e) => setRawNumbers(e.target.value)}
+              className="min-h-[120px] font-mono text-sm resize-y"
+            />
+            <div className="flex justify-end">
+              <Button asChild variant="outline" size="sm" className="text-xs h-8">
+                <Link to="/agent/customers">
+                  <Users className="h-3.5 w-3.5 mr-1.5" /> View CRM Address Book
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* 4. Payment */}
+      {selectedPkg && validNumbers.length > 0 && (
+        <section className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-background border border-primary/10 shadow-sm space-y-5">
+            
+            <div className="flex justify-between items-end pb-4 border-b border-border/50">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Batch Cost</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold tracking-tight">GH₵{formatGHS(totalCost)}</span>
+                  <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {validNumbers.length} × GH₵{formatGHS(getAgentPrice(selectedPkg))}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setPaymentMethod("wallet")}
+                className={cn(
+                  "flex flex-col items-start p-4 rounded-xl border text-left transition-all",
+                  paymentMethod === "wallet" 
+                    ? "border-primary/50 bg-primary/5 shadow-sm" 
+                    : "border-border/50 bg-card hover:bg-accent/50"
+                )}
+              >
+                <div className="flex items-center justify-between w-full mb-3">
+                  <div className={cn("p-2 rounded-lg", paymentMethod === "wallet" ? "bg-primary/20" : "bg-muted")}>
+                    <Wallet className={cn("h-4 w-4", paymentMethod === "wallet" ? "text-primary" : "text-muted-foreground")} />
+                  </div>
+                  {paymentMethod === "wallet" && <div className="h-2 w-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-semibold">Pay with Wallet</span>
+                <span className="text-[11px] text-muted-foreground font-medium mt-0.5">Bal: GH₵{formatGHS(walletBalance)}</span>
+              </button>
+
+              <button
+                onClick={() => setPaymentMethod("paystack")}
+                className={cn(
+                  "flex flex-col items-start p-4 rounded-xl border text-left transition-all",
+                  paymentMethod === "paystack" 
+                    ? "border-[#0BA4DB]/50 bg-[#0BA4DB]/5 shadow-sm" 
+                    : "border-border/50 bg-card hover:bg-accent/50"
+                )}
+              >
+                <div className="flex items-center justify-between w-full mb-3">
+                  <div className={cn("p-2 rounded-lg", paymentMethod === "paystack" ? "bg-[#0BA4DB]/20" : "bg-muted")}>
+                    <CreditCard className={cn("h-4 w-4", paymentMethod === "paystack" ? "text-[#0BA4DB]" : "text-muted-foreground")} />
+                  </div>
+                  {paymentMethod === "paystack" && <div className="h-2 w-2 rounded-full bg-[#0BA4DB]" />}
+                </div>
+                <span className="text-sm font-semibold">Paystack</span>
+                <span className="text-[11px] text-muted-foreground font-medium mt-0.5">Mobile Money / Card</span>
+              </button>
+            </div>
+
+            {paymentMethod === "wallet" && !canAffordWallet && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <p>Insufficient wallet balance. Top up your wallet or use Paystack.</p>
+              </div>
+            )}
+
+            <Button 
+              className="w-full h-14 rounded-xl text-[15px] font-bold shadow-lg"
+              disabled={submitting || (paymentMethod === "wallet" && !canAffordWallet)}
+              onClick={handleProcessBulk}
+            >
+              {submitting ? "Processing Batch..." : "Process Bulk Order"}
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

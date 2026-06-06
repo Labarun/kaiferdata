@@ -269,6 +269,9 @@ Deno.serve(async (req) => {
             resolvedPrice = Number(pkg.selling_price);
             priceSource = "data_packages";
           }
+        } else if (intent.intent_type === "agent_bulk_buy") {
+          resolvedPrice = Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
+          priceSource = "data_packages";
         } else {
           resolvedPrice = Number(pkg.selling_price);
           priceSource = "data_packages";
@@ -310,6 +313,13 @@ Deno.serve(async (req) => {
         });
         return json({ error: "Package not found. Please start a new order." }, 422);
       }
+
+      // Multiply resolved price by quantity for bulk buys
+      const orderCtxForBulk = (intent.order_context || {}) as Record<string, unknown>;
+      const rawBulkNumbers = (orderCtxForBulk.bulk_numbers as string[]) || [];
+      const quantity = intent.intent_type === "agent_bulk_buy" && rawBulkNumbers.length > 0 ? rawBulkNumbers.length : 1;
+      
+      resolvedPrice = resolvedPrice * quantity;
 
       const frontendAmount = Number(intent.amount_expected);
       const priceDelta = Math.abs(frontendAmount - resolvedPrice);
