@@ -114,9 +114,9 @@ export async function fetchCommissionRate(): Promise<number> {
   return v ? Number(v) : 8;
 }
 
-/** Fetch the agent's referred orders (independent of whether commission has posted yet). */
-export async function fetchAgentReferredOrders(agentProfileId: string, limit = 50) {
-  // Filter intents whose order_context.referral.agent_profile_id matches.
+/** Fetch the agent's referred orders (independent of whether commission has posted yet) PLUS bulk orders they placed. */
+export async function fetchAgentReferredOrders(userId: string, agentProfileId: string, limit = 50) {
+  // 1. Filter intents whose order_context.referral.agent_profile_id matches.
   const { data: intents } = await supabase
     .from("purchase_intents")
     .select("id")
@@ -124,14 +124,21 @@ export async function fetchAgentReferredOrders(agentProfileId: string, limit = 5
     .limit(limit);
 
   const intentIds = (intents || []).map((i: any) => i.id);
-  if (intentIds.length === 0) return [];
 
-  const { data: orders } = await supabase
+  // 2. Fetch orders that are EITHER referred by the agent OR bulk orders placed by the agent
+  let query = supabase
     .from("orders")
     .select("*")
-    .in("intent_id", intentIds)
     .order("created_at", { ascending: false })
     .limit(limit);
 
+  if (intentIds.length > 0) {
+    query = query.or(`intent_id.in.(${intentIds.join(',')}),and(actor_id.eq.${userId},origin_type.eq.agent_bulk_buy)`);
+  } else {
+    // If no referred intents, only fetch their bulk orders
+    query = query.eq('actor_id', userId).eq('origin_type', 'agent_bulk_buy');
+  }
+
+  const { data: orders } = await query;
   return orders || [];
 }

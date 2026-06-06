@@ -118,18 +118,20 @@ function BulkOrderFlow() {
           throw new Error("Insufficient wallet balance for this bulk order.");
         }
         
-        // Use atomic RPC
-        const { data, error } = await supabase.rpc("purchase_bulk_with_wallet_atomic", {
-          _user_id: user.id,
-          _package_id: selectedPkg.id,
-          _phone_numbers: validNumbers,
-          _network: network,
-          _source_channel: "agent_bulk_dashboard"
+        // Call the secure edge function which handles the RPC and triggers fulfillment
+        const { data, error } = await supabase.functions.invoke("wallet-bulk-purchase", {
+          body: {
+            package_id: selectedPkg.id,
+            phone_numbers: validNumbers,
+            network: network,
+          },
         });
 
         if (error) {
-          // Unwrap generic error if possible
           throw new Error(error.message || "Failed to process wallet bulk order");
+        }
+        if (data?.error) {
+          throw new Error(data.error);
         }
 
         setSuccessCount(validNumbers.length);
