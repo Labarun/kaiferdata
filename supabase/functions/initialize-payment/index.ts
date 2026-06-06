@@ -115,7 +115,9 @@ Deno.serve(async (req) => {
     // instead of hitting Paystack again. Authorization URLs from Paystack
     // remain valid until the transaction is completed/abandoned, so this is
     // safe and avoids both rate-limit hits and duplicate references.
-    const existingCtx = (intent.order_context || {}) as Record<string, unknown>;
+    // Safely parse order_context to ensure arrays/objects aren't treated as strings.
+    const rawCtx = intent.order_context;
+    const existingCtx = (typeof rawCtx === "string" ? JSON.parse(rawCtx) : (rawCtx || {})) as Record<string, unknown>;
     const existingAccessCode = typeof existingCtx.paystack_access_code === "string"
       ? existingCtx.paystack_access_code
       : null;
@@ -182,7 +184,7 @@ Deno.serve(async (req) => {
           .update({
             status: "failed",
             order_context: {
-              ...((intent.order_context as Record<string, unknown>) || {}),
+              ...existingCtx,
               security_blocked: true,
               reason: "agent_subscription_price_manipulation",
               frontend_amount: frontendAmount,
@@ -220,7 +222,7 @@ Deno.serve(async (req) => {
       // present), the authoritative selling price comes from
       // agent_bundle_prices for that agent+package — NOT from
       // data_packages.selling_price (which is the main public price).
-      const orderCtx = (intent.order_context || {}) as Record<string, unknown>;
+      const orderCtx = existingCtx;
       const referral = (orderCtx.referral || null) as Record<string, unknown> | null;
       const agentProfileIdForPrice =
         referral && typeof referral.agent_profile_id === "string"
@@ -315,7 +317,7 @@ Deno.serve(async (req) => {
       }
 
       // Multiply resolved price by quantity for bulk buys
-      const orderCtxForBulk = (intent.order_context || {}) as Record<string, unknown>;
+      const orderCtxForBulk = existingCtx;
       const rawBulkNumbers = (orderCtxForBulk.bulk_numbers as string[]) || [];
       const quantity = intent.intent_type === "agent_bulk_buy" && rawBulkNumbers.length > 0 ? rawBulkNumbers.length : 1;
       
@@ -357,7 +359,7 @@ Deno.serve(async (req) => {
             .update({
               status: "failed",
               order_context: {
-                ...((intent.order_context as Record<string, unknown>) || {}),
+                ...existingCtx,
                 security_blocked: true,
                 reason: "price_manipulation_detected",
                 frontend_amount: frontendAmount,
@@ -396,7 +398,7 @@ Deno.serve(async (req) => {
       const intentPatch: Record<string, unknown> = {};
       if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
       if (priceSource === "agent_storefront") {
-        const existingCtx2 = (intent.order_context || {}) as Record<string, unknown>;
+        const existingCtx2 = existingCtx;
         const existingReferral = (existingCtx2.referral || {}) as Record<string, unknown>;
         intentPatch.order_context = {
           ...existingCtx2,
@@ -522,7 +524,7 @@ Deno.serve(async (req) => {
         total_amount: breakdown.totalAmount,
         amount_expected: breakdown.totalAmount,
         order_context: {
-          ...(intent.order_context as Record<string, unknown> || {}),
+          ...existingCtx,
           paystack_reference: paystackReference,
           paystack_access_code: paystackData.data.access_code,
           payment_initialized_at: new Date().toISOString(),
