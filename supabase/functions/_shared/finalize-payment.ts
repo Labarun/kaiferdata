@@ -48,6 +48,12 @@ function generateOrderId(prefix: "KD" | "KS" = "KD"): string {
   return `${prefix}-${id}`;
 }
 
+/** Safely parse order_context, ensuring it isn't treated as a string */
+function parseOrderContext(intent: Record<string, unknown>): Record<string, unknown> {
+  const rawCtx = intent.order_context;
+  return (typeof rawCtx === "string" ? JSON.parse(rawCtx) : (rawCtx || {})) as Record<string, unknown>;
+}
+
 /**
  * Main entry point: finalize a Paystack payment by reference.
  *
@@ -289,7 +295,7 @@ export async function finalizePaystackPayment(
       .update({
         status: "failed",
         order_context: {
-          ...((intent.order_context as Record<string, unknown>) || {}),
+          ...parseOrderContext(intent),
           security_blocked: true,
           reason: "amount_mismatch",
           paid_amount: amountPaidGhs,
@@ -332,7 +338,7 @@ export async function finalizePaystackPayment(
   if (!isDeposit && !isAgentSubscription) {
     const snapshot = (intent.plan_snapshot || {}) as Record<string, unknown>;
     const packageId = snapshot.id as string;
-    const orderCtx2 = (intent.order_context || {}) as Record<string, unknown>;
+    const orderCtx2 = parseOrderContext(intent);
     const referral2 = (orderCtx2.referral || null) as Record<string, unknown> | null;
     const agentProfileIdForCheck =
       referral2 && typeof referral2.agent_profile_id === "string"
@@ -554,7 +560,7 @@ async function handleAgentSubscription(
     .update({
       status: "completed",
       order_context: {
-        ...((intent.order_context as Record<string, unknown>) || {}),
+        ...parseOrderContext(intent),
         agent_subscription: {
           plan,
           subscription_id: row?.subscription_id,
@@ -580,7 +586,7 @@ async function handleAgentSubscription(
       plan,
       amount_paid: baseAmount,
       reference,
-        activation_status_before: intentLookup.status,
+        activation_status_before: intent.status,
         activation_status_after: "completed",
         payment_record_id: paymentRecord.id,
         intent_id: intent.id,
@@ -638,7 +644,7 @@ async function handleDeposit(
       .update({
         status: "completed",
         order_context: {
-          ...((intent.order_context as Record<string, unknown>) || {}),
+          ...parseOrderContext(intent),
           wallet_credited: true,
           credited_amount: baseAmount,
           fee_amount: feeAmount,
@@ -697,7 +703,7 @@ async function handleDeposit(
     .update({
       status: "completed",
       order_context: {
-        ...((intent.order_context as Record<string, unknown>) || {}),
+        ...parseOrderContext(intent),
         wallet_credited: true,
         credited_amount: baseAmount,
         fee_amount: feeAmount,
@@ -768,13 +774,16 @@ async function handlePurchase(
   const existingOrder = existingOrders?.[0] || null;
 
   if (existingOrder) {
+    const rawCtx = intent.order_context;
+    const existingCtx = (typeof rawCtx === "string" ? JSON.parse(rawCtx) : (rawCtx || {})) as Record<string, unknown>;
+
     // Make sure intent is completed
     await supabase
       .from("purchase_intents")
       .update({
         status: "completed",
         order_context: {
-          ...((intent.order_context as Record<string, unknown>) || {}),
+          ...existingCtx,
           order_id: existingOrder.id,
           public_order_id: existingOrder.public_order_id,
           completed_at: new Date().toISOString(),
@@ -794,8 +803,11 @@ async function handlePurchase(
   }
 
   const snapshot = (intent.plan_snapshot as Record<string, unknown>) || {};
+  
+  const rawCtx2 = intent.order_context;
+  const intentCtx = (typeof rawCtx2 === "string" ? JSON.parse(rawCtx2) : (rawCtx2 || {})) as Record<string, unknown>;
+  
   // Distinct prefix for agent storefront orders (KS-) vs main platform (KD-)
-  const intentCtx = (intent.order_context as Record<string, unknown>) || {};
   const intentReferral = (intentCtx.referral || null) as Record<string, unknown> | null;
   const isStorefrontOrder = !!(intentReferral && intentReferral.agent_profile_id);
   const isBulk = intent.intent_type === "agent_bulk_buy";
@@ -926,7 +938,7 @@ async function handlePurchase(
     .update({
       status: "completed",
       order_context: {
-        ...((intent.order_context as Record<string, unknown>) || {}),
+        ...parseOrderContext(intent),
         order_id: createdOrders[0].id,
         public_order_id: createdOrders[0].public_order_id,
         order_count: createdOrders.length,
@@ -944,3 +956,5 @@ async function handlePurchase(
     ...(fulfillmentResult ? { fulfillment: fulfillmentResult } as Record<string, unknown> : {}),
   };
 }
+
+
