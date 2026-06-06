@@ -163,6 +163,44 @@ export type Database = {
           },
         ]
       }
+      agent_customers: {
+        Row: {
+          agent_profile_id: string
+          created_at: string
+          id: string
+          name: string | null
+          network: string
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          agent_profile_id: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          network: string
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          agent_profile_id?: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          network?: string
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_customers_agent_profile_id_fkey"
+            columns: ["agent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "agent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_earnings: {
         Row: {
           agent_profile_id: string
