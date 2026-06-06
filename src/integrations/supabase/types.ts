@@ -1729,6 +1729,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_bulk_with_wallet_atomic: {
+        Args: {
+          _network: string
+          _package_id: string
+          _phone_numbers: string[]
+          _source_channel?: string
+          _user_id: string
+        }
+        Returns: {
+          created_count: number
+          new_balance: number
+          txn_id: string
+        }[]
+      }
       purchase_with_wallet_atomic: {
         Args: {
           _customer_email?: string
