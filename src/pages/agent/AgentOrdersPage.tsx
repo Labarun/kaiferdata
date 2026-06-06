@@ -46,7 +46,7 @@ export default function AgentOrdersPage() {
       if (!profile) { setLoading(false); return; }
 
       const [ords, earns] = await Promise.all([
-        fetchAgentReferredOrders(profile.id, 100),
+        fetchAgentReferredOrders(user.id, profile.id, 100),
         supabase.from("agent_earnings" as any).select("order_id, commission_amount").eq("user_id", user.id),
       ]);
 
