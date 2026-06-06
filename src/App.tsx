@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
@@ -94,6 +94,14 @@ const queryClient = new QueryClient({
   },
 });
 
+const DynamicSubscriptionLayout = () => {
+  const { user } = useAuth();
+  if (user?.role === "agent" || user?.role === "admin") {
+    return <AgentLayout />;
+  }
+  return <UserLayout />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -114,7 +122,7 @@ const App = () => (
                 <Route path="/get-app/android" element={<GetAppAndroidPage />} />
                 <Route path="/get-app/ios" element={<GetAppIosPage />} />
                 <Route path="/agent-perks" element={<AgentPerksPage />} />
-                <Route path="/store/:slug" element={<AgentStorefrontPage />} />
+
                 <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                 <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
                 <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
@@ -133,9 +141,11 @@ const App = () => (
                 <Route path="/dashboard/transactions/:transactionId" element={<UserTransactionDetailPage />} />
                 <Route path="/dashboard/profile" element={<UserProfilePage />} />
                 <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
-                {/* Subscription page lives under UserLayout because newly-approved
-                    agents don't have the `agent` role yet — they only get it
-                    after their first successful subscription payment. */}
+              </Route>
+
+              {/* ====== DYNAMIC SUBSCRIPTION LAYOUT ====== */}
+              {/* Agents see the Agent dashboard shell, newly approved users see the User shell */}
+              <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><DynamicSubscriptionLayout /></ProtectedRoute>}>
                 <Route path="/agent/subscription" element={<AgentSubscriptionPage />} />
               </Route>
 
@@ -187,6 +197,9 @@ const App = () => (
                 <Route path="/staff/intents/:intentId" element={<StaffIntentDetailPage />} />
                 <Route path="/staff/issues" element={<StaffIssueQueuePage />} />
               </Route>
+
+              {/* ====== AGENT STOREFRONT (STANDALONE) ====== */}
+              <Route path="/store/:slug" element={<AgentStorefrontPage />} />
 
               {/* ====== CATCH-ALL ====== */}
               <Route path="*" element={<NotFound />} />

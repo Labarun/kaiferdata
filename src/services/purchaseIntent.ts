@@ -59,6 +59,8 @@ export async function createPurchaseIntent(params: {
     store_slug: string;
     store_name: string;
   };
+  /** Optional bulk numbers for bulk purchasing. If provided, intent is treated as a bulk order. */
+  bulkPhoneNumbers?: string[];
 }): Promise<PurchaseIntent> {
   if (params.actorType === "user" && params.actorId) {
     const { data: authData } = await supabase.auth.getUser();
@@ -86,23 +88,28 @@ export async function createPurchaseIntent(params: {
     description: params.plan.description,
   };
 
+  const isBulk = Array.isArray(params.bulkPhoneNumbers) && params.bulkPhoneNumbers.length > 0;
+  const quantity = isBulk ? params.bulkPhoneNumbers!.length : 1;
+  const expectedAmount = Number(params.plan.amount) * quantity;
+  const primaryPhone = isBulk ? "BULK" : params.phoneNumber;
+
   const orderContext = params.referral
-    ? { referral: params.referral }
-    : null;
+    ? { referral: params.referral, ...(isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : {}) }
+    : (isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : null);
 
   const { data, error } = await supabase
     .from("purchase_intents")
     .insert({
       intent_reference: intentRef,
-      intent_type: params.intentType || "guest_buy",
+      intent_type: isBulk ? "agent_bulk_buy" : (params.intentType || "guest_buy"),
       actor_type: params.actorType || "guest",
       actor_id: params.actorId || null,
       source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
-      phone_number: params.phoneNumber,
+      phone_number: primaryPhone,
       network: params.network,
       plan_id: null, // FK removed — we rely on plan_snapshot
       plan_snapshot: planSnapshot,
-      amount_expected: Number(params.plan.amount),
+      amount_expected: expectedAmount,
       customer_email: params.customerEmail || null,
       customer_name: params.customerName || null,
       order_context: orderContext,

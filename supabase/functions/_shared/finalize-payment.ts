@@ -759,11 +759,13 @@ async function handlePurchase(
     .maybeSingle();
 
   // ── DUPLICATE ORDER CHECK (idempotent) ──
-  const { data: existingOrder } = await supabase
+  const { data: existingOrders } = await supabase
     .from("orders")
     .select("*")
     .eq("intent_id", intent.id as string)
-    .maybeSingle();
+    .limit(1);
+    
+  const existingOrder = existingOrders?.[0] || null;
 
   if (existingOrder) {
     // Make sure intent is completed
@@ -796,45 +798,118 @@ async function handlePurchase(
   const intentCtx = (intent.order_context as Record<string, unknown>) || {};
   const intentReferral = (intentCtx.referral || null) as Record<string, unknown> | null;
   const isStorefrontOrder = !!(intentReferral && intentReferral.agent_profile_id);
-  const publicOrderId = generateOrderId(isStorefrontOrder ? "KS" : "KD");
+  const isBulk = intent.intent_type === "agent_bulk_buy";
+  
+  const rawBulkNumbers = (intentCtx.bulk_numbers as string[]) || [];
+  const phoneNumbers = isBulk && rawBulkNumbers.length > 0 ? rawBulkNumbers : [intent.phone_number as string];
+  
+  const quantity = phoneNumbers.length;
+  // Divide baseAmount and feeAmount evenly among orders
+  const unitBaseAmount = Number((baseAmount / quantity).toFixed(2));
+  const unitFeeAmount = Number((feeAmount / quantity).toFixed(2));
 
-  const { data: order, error: orderErr } = await supabase
-    .from("orders")
-    .insert({
-      public_order_id: publicOrderId,
-      actor_type: (intent.actor_type as string) || "guest",
-      actor_id: (intent.actor_id as string) || null,
-      origin_type: (intent.intent_type as string) || "guest_buy",
-      source_channel: (intent.source_channel as string) || "public_guest_checkout",
-      beneficiary_number: intent.phone_number as string,
-      network: intent.network as string,
-      bundle_name: String(snapshot.plan_name || snapshot.package_name || ""),
-      bundle_code: String(snapshot.plan_code || snapshot.package_code || ""),
-      bundle_snapshot: intent.plan_snapshot,
-      amount_charged: baseAmount,
-      currency: "GHS",
-      intent_id: intent.id as string,
-      payment_record_id: paymentRecord.id as string,
-      status: "paid",
+  const createdOrders: any[] = [];
+  let fulfillmentResult: unknown = null;
+
+  for (const phone of phoneNumbers) {
+    const publicOrderId = generateOrderId(isStorefrontOrder || isBulk ? "KS" : "KD");
+
+    const { data: order, error: orderErr } = await supabase
+      .from("orders")
+      .insert({
+        public_order_id: publicOrderId,
+        actor_type: (intent.actor_type as string) || "guest",
+        actor_id: (intent.actor_id as string) || null,
+        origin_type: (intent.intent_type as string) || "guest_buy",
+        source_channel: (intent.source_channel as string) || "public_guest_checkout",
+        beneficiary_number: phone,
+        network: intent.network as string,
+        bundle_name: String(snapshot.plan_name || snapshot.package_name || ""),
+        bundle_code: String(snapshot.plan_code || snapshot.package_code || ""),
+        bundle_snapshot: intent.plan_snapshot,
+        amount_charged: unitBaseAmount,
+        currency: "GHS",
+        intent_id: intent.id as string,
+        payment_record_id: paymentRecord.id as string,
+        status: "paid",
+        metadata: {
+          customer_name: intent.customer_name,
+          customer_email: intent.customer_email,
+          paystack_reference: reference,
+          paystack_fee: unitFeeAmount,
+          total_charged: unitBaseAmount + unitFeeAmount,
+          finalized_via: source,
+          is_bulk: isBulk,
+        },
+      })
+      .select()
+      .single();
+
+    if (orderErr || !order) {
+      console.error(`[finalize:${source}] order creation failed for ${phone}:`, orderErr);
+      continue;
+    }
+
+    createdOrders.push(order);
+
+    await supabase.from("audit_logs").insert({
+      action: isBulk ? "bulk_order_created_from_payment" : "order_created_from_payment",
+      actor_role: "system",
+      target_type: "order",
+      target_id: order.id,
       metadata: {
-        customer_name: intent.customer_name,
-        customer_email: intent.customer_email,
+        source,
+        public_order_id: publicOrderId,
+        intent_reference: intent.intent_reference,
         paystack_reference: reference,
-        paystack_fee: feeAmount,
-        total_charged: baseAmount + feeAmount,
-        finalized_via: source,
+        base_amount: unitBaseAmount,
+        fee_amount: unitFeeAmount,
+        total_charged: unitBaseAmount + unitFeeAmount,
+        network: intent.network,
+        phone: phone,
       },
-    })
-    .select()
-    .single();
+    });
 
-  if (orderErr || !order) {
+    await supabase.from("order_status_history").insert({
+      order_id: order.id,
+      old_status: null,
+      new_status: "paid",
+      source,
+      note: `Order paid via Paystack via ${source} (Base: GHS ${unitBaseAmount.toFixed(2)}, Fee: GHS ${unitFeeAmount.toFixed(2)})`,
+      metadata: { paystack_reference: reference, base_amount: unitBaseAmount, fee_amount: unitFeeAmount, is_bulk: isBulk },
+    });
+
+    // Trigger fulfillment (non-blocking) if enabled
+    if (toggleData?.setting_value !== "false") {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const fulfillRes = fetch(`${supabaseUrl}/functions/v1/fulfill-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ order_id: order.id }),
+        });
+        
+        if (!isBulk) {
+          fulfillmentResult = await (await fulfillRes).json();
+        }
+      } catch (err) {
+        console.error(`[finalize:${source}] fulfillment trigger failed:`, err);
+      }
+    }
+  }
+
+  if (createdOrders.length === 0) {
     // Race: another finalizer beat us — re-check
-    const { data: raceOrder } = await supabase
+    const { data: raceOrders } = await supabase
       .from("orders")
       .select("*")
       .eq("intent_id", intent.id as string)
-      .maybeSingle();
+      .limit(1);
+    const raceOrder = raceOrders?.[0] || null;
     if (raceOrder) {
       return {
         success: true,
@@ -843,8 +918,7 @@ async function handlePurchase(
         order: raceOrder,
       };
     }
-    console.error(`[finalize:${source}] order creation failed:`, orderErr);
-    return { success: false, status: 500, payment_verified: true, error: "Payment verified but order creation failed" };
+    return { success: false, status: 500, payment_verified: true, error: "Payment verified but all order creations failed" };
   }
 
   await supabase
@@ -853,72 +927,20 @@ async function handlePurchase(
       status: "completed",
       order_context: {
         ...((intent.order_context as Record<string, unknown>) || {}),
-        order_id: order.id,
-        public_order_id: publicOrderId,
+        order_id: createdOrders[0].id,
+        public_order_id: createdOrders[0].public_order_id,
+        order_count: createdOrders.length,
         completed_at: new Date().toISOString(),
         finalized_via: source,
       },
     })
     .eq("id", intent.id as string);
 
-  await supabase.from("audit_logs").insert({
-    action: "order_created_from_payment",
-    actor_role: "system",
-    target_type: "order",
-    target_id: order.id,
-    metadata: {
-      source,
-      public_order_id: publicOrderId,
-      intent_reference: intent.intent_reference,
-      paystack_reference: reference,
-      base_amount: baseAmount,
-      fee_amount: feeAmount,
-      total_charged: baseAmount + feeAmount,
-      network: intent.network,
-      phone: intent.phone_number,
-    },
-  });
-
-  await supabase.from("order_status_history").insert({
-    order_id: order.id,
-    old_status: null,
-    new_status: "paid",
-    source,
-    note: `Order created from verified Paystack payment via ${source} (Base: GHS ${baseAmount.toFixed(2)}, Fee: GHS ${feeAmount.toFixed(2)})`,
-    metadata: { paystack_reference: reference, base_amount: baseAmount, fee_amount: feeAmount },
-  });
-
-  // Trigger fulfillment (non-blocking) if enabled
-  let fulfillmentResult: unknown = null;
-  if (toggleData?.setting_value !== "false") {
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const fulfillRes = await fetch(`${supabaseUrl}/functions/v1/fulfill-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ order_id: order.id }),
-      });
-      fulfillmentResult = await fulfillRes.json();
-    } catch (err) {
-      console.error(`[finalize:${source}] fulfillment trigger failed (non-blocking):`, err);
-    }
-  }
-
-  const { data: updatedOrder } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("id", order.id as string)
-    .single();
-
   return {
     success: true,
     intent_type: intent.intent_type as string,
     intent_reference: intent.intent_reference as string,
-    order: updatedOrder || order,
+    order: createdOrders[0],
     ...(fulfillmentResult ? { fulfillment: fulfillmentResult } as Record<string, unknown> : {}),
   };
 }
