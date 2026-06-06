@@ -859,6 +859,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          last_active_at: string | null
           last_login_at: string | null
           phone: string | null
           updated_at: string
@@ -871,6 +872,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          last_active_at?: string | null
           last_login_at?: string | null
           phone?: string | null
           updated_at?: string
@@ -883,6 +885,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          last_active_at?: string | null
           last_login_at?: string | null
           phone?: string | null
           updated_at?: string
@@ -1648,6 +1651,33 @@ export type Database = {
           direct_profit: number
           total_commission: number
           total_profit: number
+        }[]
+      }
+      get_sales_source_breakdown: {
+        Args: { timeframe?: string }
+        Returns: {
+          actor_type: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_sales_trends: {
+        Args: { days_limit?: number }
+        Returns: {
+          sale_date: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_top_agents: {
+        Args: { timeframe?: string }
+        Returns: {
+          agent_id: string
+          store_name: string
+          total_commission: number
+          total_orders: number
+          total_revenue: number
+          user_id: string
         }[]
       }
       get_user_role: {
