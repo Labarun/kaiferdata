@@ -234,7 +234,7 @@ export default function BuyDataPage() {
           </div>
           <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
             <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">{deliverySpeed}</p>
-            <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">All orders are being processed acccording to the current network conditions</p>
+            <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
           </div>
           <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
             <div className="flex items-end gap-0.5 h-3">
@@ -302,8 +302,22 @@ export default function BuyDataPage() {
             </Button>
           </div>
 
-          <div id="notices" className="mt-8 mb-4 scroll-mt-24">
+          <div id="notices" className="mt-8 mb-4">
             <NoticeBanner audience="public" />
+            <div className="mt-4 rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
+                  <AlertTriangle className="h-5 w-5" />
+                </span>
+                <p className="text-sm font-semibold">Important notice</p>
+              </div>
+              <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+              <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
+                <li>This service does not work on Turbonet SIM cards.</li>
+                <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
+                <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
