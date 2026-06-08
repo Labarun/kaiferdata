@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import {
   MoreHorizontal, Store, Settings, CreditCard, UserCircle,
-  LayoutDashboard, LogOut, Tag, Megaphone, Users, ListChecks, Layers,
+  LayoutDashboard, LogOut, Tag, Megaphone, Users, ListChecks, ArrowDownToLine,
 } from "lucide-react";
 import { signOut } from "@/services/auth";
 import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
@@ -34,11 +34,8 @@ export function AgentMoreSheet({ storeSlug }: { storeSlug?: string | null }) {
   };
 
   const items: MoreItem[] = [
-    { label: "Pricing", description: "Set selling prices", icon: Tag, to: "/agent/pricing" },
     { label: "Marketing", description: "QR, share, promote", icon: Megaphone, to: "/agent/marketing" },
-    { label: "Customers", description: "Buyer insights", icon: Users, to: "/agent/customers" },
-    { label: "Transactions", description: "Earnings ledger", icon: ListChecks, to: "/agent/transactions" },
-    { label: "Bulk Orders", description: "Batch buy via wallet", icon: Layers, to: "/agent/bulk" },
+    { label: "Withdraw", description: "Cash out to MoMo", icon: ArrowDownToLine, to: "/agent/withdraw" },
     { label: "Manage Store", description: "Branding & details", icon: Settings, to: "/agent/store" },
     ...(storeSlug
       ? [{ label: "Open Storefront", description: `kaiferdata.com/store/${storeSlug}`, icon: Store, to: `/store/${storeSlug}`, external: true }]
@@ -64,14 +61,12 @@ export function AgentMoreSheet({ storeSlug }: { storeSlug?: string | null }) {
         <SheetHeader className="text-left">
           <SheetTitle>Agent menu</SheetTitle>
         </SheetHeader>
-        <div className="mt-3 grid gap-1.5">
+        <div className="mt-6 grid grid-cols-3 sm:grid-cols-4 gap-y-6 gap-x-2">
           {items.map((it) => (
-            <Button
+            <button
               key={it.label}
-              variant="ghost"
-              className={`h-auto justify-start gap-3 py-3 px-3 rounded-xl ${
-                it.destructive ? "text-destructive hover:text-destructive hover:bg-destructive/5" : ""
-              }`}
+              className={`flex flex-col items-center justify-start gap-2.5 rounded-xl transition-all active:scale-95 ${it.destructive ? "text-destructive hover:opacity-80" : "text-foreground hover:opacity-80"
+                }`}
               onClick={() => {
                 setOpen(false);
                 if (it.onClick) it.onClick();
@@ -81,16 +76,14 @@ export function AgentMoreSheet({ storeSlug }: { storeSlug?: string | null }) {
                 }
               }}
             >
-              <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-                <it.icon className={`h-4 w-4 ${it.destructive ? "text-destructive" : "text-primary"}`} />
+              <div className={`h-14 w-14 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${it.destructive ? 'bg-destructive/5 border-destructive/10' : 'bg-background border-border/40'
+                }`}>
+                <it.icon className={`h-6 w-6 ${it.destructive ? "text-destructive/80" : "text-primary/70"}`} strokeWidth={1.5} />
               </div>
-              <div className="text-left min-w-0">
-                <div className="text-sm font-medium leading-tight">{it.label}</div>
-                {it.description && (
-                  <div className="text-[11px] text-muted-foreground truncate">{it.description}</div>
-                )}
-              </div>
-            </Button>
+              <span className="text-[11px] font-medium text-center leading-tight px-1 max-w-full truncate text-muted-foreground">
+                {it.label}
+              </span>
+            </button>
           ))}
         </div>
       </SheetContent>

@@ -131,6 +131,7 @@ export async function createDepositIntent(params: {
   userId: string;
   userEmail?: string;
   userName?: string;
+  sourceChannel?: "user_dashboard" | "agent_dashboard";
 }): Promise<PurchaseIntent> {
   await ensureUserScaffold({
     userId: params.userId,
@@ -147,7 +148,7 @@ export async function createDepositIntent(params: {
       intent_type: "wallet_deposit",
       actor_type: "user",
       actor_id: params.userId,
-      source_channel: "user_dashboard",
+      source_channel: params.sourceChannel || "user_dashboard",
       phone_number: "0000000000", // not applicable for deposits
       network: "DEPOSIT",
       plan_id: null,

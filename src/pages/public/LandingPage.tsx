@@ -113,7 +113,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              onClick={() => navigate("/buy")}
+              onClick={() => navigate(`/buy?network=${net.name}`)}
               className={`glass-card p-6 rounded-3xl border-border/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer ring-1 ring-inset ${net.ring}`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${net.bg}`}>

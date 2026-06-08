@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { verifyPayment } from "@/services/purchaseIntent";
+import { verifyPayment, lookupIntent } from "@/services/purchaseIntent";
 import { Button } from "@/components/ui/button";
 import {
   Loader2, CheckCircle2, XCircle, Copy, ArrowRight,
@@ -29,6 +29,7 @@ export default function PaymentCallbackPage() {
   const [state, setState] = useState<PageState>("verifying");
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [deposit, setDeposit] = useState<Record<string, unknown> | null>(null);
+  const [intent, setIntent] = useState<Record<string, unknown> | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
   const promiseRef = useRef<Promise<any> | null>(null);
@@ -43,11 +44,15 @@ export default function PaymentCallbackPage() {
     // Caching the promise in a ref prevents double-fetching in React 18 Strict Mode
     // while still allowing the remounted component to successfully attach to the state update
     if (!promiseRef.current) {
-      promiseRef.current = verifyPayment(ref);
+      promiseRef.current = Promise.all([
+        verifyPayment(ref),
+        lookupIntent(ref).catch(() => null)
+      ]);
     }
 
     promiseRef.current
-      .then((result) => {
+      .then(([result, fetchedIntent]) => {
+        setIntent(fetchedIntent);
         if (result.success) {
           if (result.intent_type === "wallet_deposit") {
             setDeposit(result.deposit || null);
@@ -115,6 +120,7 @@ export default function PaymentCallbackPage() {
   if (state === "deposit_success") {
     const depositAmt = deposit?.amount as number | undefined;
     const newBalance = deposit?.new_balance as number | undefined;
+    const isAgent = intent?.source_channel === "agent_dashboard";
 
     return (
       <div className="container py-8 sm:py-12">
@@ -148,14 +154,14 @@ export default function PaymentCallbackPage() {
 
           <div className="flex gap-3">
             <Button variant="outline" asChild className="flex-1 h-12">
-              <Link to="/dashboard/wallet">
+              <Link to={isAgent ? "/agent" : "/dashboard/wallet"}>
                 <Wallet className="mr-1.5 h-3.5 w-3.5" />
-                Back to Wallet
+                {isAgent ? "Agent Dashboard" : "Back to Wallet"}
               </Link>
             </Button>
             <Button asChild className="flex-[2] h-12">
-              <Link to="/dashboard/buy">
-                Buy Data
+              <Link to={isAgent ? "/agent/bulk" : "/dashboard/buy"}>
+                {isAgent ? "Bulk Orders" : "Buy Data"}
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
