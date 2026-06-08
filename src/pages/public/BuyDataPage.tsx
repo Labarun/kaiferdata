@@ -75,14 +75,14 @@ export default function BuyDataPage() {
       .then(setPackages)
       .catch(() => toast({ title: "Error", description: "Failed to load plans", variant: "destructive" }))
       .finally(() => setLoading(false));
-      
+
     async function fetchSettings() {
       const { data, error } = await supabase
         .from("system_settings")
         .select("setting_value")
         .eq("setting_key", "delivery_speed")
         .single();
-      
+
       if (!error && data?.setting_value) {
         setDeliverySpeed(data.setting_value);
       }
@@ -187,16 +187,6 @@ export default function BuyDataPage() {
               <span className="text-gradient-brand">Fast</span>
             </h1>
 
-            <div className="mt-2 mx-auto max-w-[300px] animate-fade-in rounded-3xl border border-border/40 bg-slate-950/10 p-2.5 shadow-sm shadow-slate-950/10 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Zap className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{deliverySpeed}</p>
-                </div>
-              </div>
-            </div>
             <p
               className="mt-4 text-[13.5px] text-muted-foreground/70 leading-[1.65] max-w-[320px] mx-auto animate-fade-in"
               style={{ animationDelay: "0.08s" }}
@@ -212,7 +202,7 @@ export default function BuyDataPage() {
           <div className="container py-3.5">
             <div className="flex items-center justify-center gap-5 sm:gap-8">
               {[
-              { icon: Truck, label: "Trusted Delivery", accent: "text-destructive/60" },
+                { icon: Truck, label: "Trusted Delivery", accent: "text-destructive/60" },
                 { icon: Shield, label: "Secure Payments", accent: "text-success/60" },
                 { icon: Clock, label: "24/7", accent: "text-info/60" },
               ].map((item, i) => (
@@ -230,27 +220,43 @@ export default function BuyDataPage() {
         </div>
       </section>
 
-      <section className="container px-4 sm:px-0 mt-6">
-        <div className="rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
-          <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
-              <AlertTriangle className="h-5 w-5" />
-            </span>
-            <p className="text-sm font-semibold">Important notice</p>
+
+
+      {/* Delivery speed pill */}
+      <div className="container relative z-10 pt-6 mb-8 flex flex-col items-center">
+        <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
+          <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
+          </span>
+          <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
+            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
           </div>
-          <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
-          <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
-            <li>This service does not work on Turbonet SIM cards.</li>
-            <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
-            <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
-          </ul>
+          <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
+            <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">{deliverySpeed}</p>
+            <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
+          </div>
+          <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
+            <div className="flex items-end gap-0.5 h-3">
+              <div className="w-[3px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
+              <div className="w-[3px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
+              <div className="w-[3px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
+            </div>
+          </div>
+          <div className="ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
+            <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
+              <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-success"></span> Live
+            </span>
+          </div>
         </div>
-      </section>
+        <a href="#notices" className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-warning hover:text-warning/80 transition-colors">
+          <AlertTriangle className="h-3 w-3" /> Important Notices
+        </a>
+      </div>
 
       {/* ─── Main buy flow ─── */}
-      <div className="container pt-7 sm:pt-9">
+      <div className="container pt-2 sm:pt-4">
         <div className="max-w-lg mx-auto">
-          <NoticeBanner audience="public" />
 
           <section className="mb-7">
             <div className="flex items-center gap-2 mb-3.5">
@@ -294,6 +300,24 @@ export default function BuyDataPage() {
                 Get the App
               </Link>
             </Button>
+          </div>
+
+          <div id="notices" className="mt-8 mb-4">
+            <NoticeBanner audience="public" />
+            <div className="mt-4 rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
+                  <AlertTriangle className="h-5 w-5" />
+                </span>
+                <p className="text-sm font-semibold">Important notice</p>
+              </div>
+              <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+              <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
+                <li>This service does not work on Turbonet SIM cards.</li>
+                <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
+                <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

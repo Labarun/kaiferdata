@@ -3,11 +3,17 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Wallet, TrendingUp, Lock } from "lucide-react";
+import { Wallet, TrendingUp, Lock, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
-export function WalletCard({ compact }: { compact?: boolean }) {
+interface WalletCardProps {
+  compact?: boolean;
+  onDeposit?: () => void;
+  variant?: "default" | "minimal";
+}
+
+export function WalletCard({ compact, onDeposit, variant = "default" }: WalletCardProps) {
   const { user } = useAuth();
 
   const { data: wallet, isLoading } = useQuery({
@@ -37,6 +43,58 @@ export function WalletCard({ compact }: { compact?: boolean }) {
           <span className="text-sm font-semibold text-foreground">GH₵{balance.toFixed(2)}</span>
         )}
       </div>
+    );
+  }
+
+  if (variant === "minimal") {
+    return (
+      <motion.div 
+        whileHover={{ scale: 1.01 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="glass-wallet-hero rounded-2xl shimmer-edge refraction-rim overflow-hidden p-4 relative"
+      >
+        {/* Ambient glow orbs */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-6 w-24 h-24 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
+
+        <div className="flex items-center justify-between mb-2 relative z-[1]">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet className="h-4 w-4" />
+            <p className="text-xs font-semibold uppercase tracking-wider">Spending Wallet</p>
+          </div>
+          {locked > 0 && (
+            <div className="flex items-center gap-1.5 text-muted-foreground/60">
+              <Lock className="h-3 w-3" />
+              <p className="text-[10px] font-medium">GH₵{locked.toFixed(2)} locked</p>
+            </div>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="h-10 w-32 bg-muted/40 animate-pulse rounded-xl" />
+        ) : (
+          <div className="relative z-[1] flex items-end justify-between mt-1">
+            <motion.p 
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={balance} // Animate on balance change
+              className="text-3xl font-bold text-foreground tracking-tight leading-none"
+            >
+              <span className="text-xl text-muted-foreground/70 mr-0.5">GH₵</span>
+              {balance.toFixed(2)}
+            </motion.p>
+            
+            {onDeposit && (
+              <button
+                onClick={onDeposit}
+                className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-[0_4px_12px_hsl(var(--primary)/0.3)] hover:scale-105 active:scale-95 transition-all shrink-0"
+              >
+                <Plus className="h-5 w-5" strokeWidth={3} />
+              </button>
+            )}
+          </div>
+        )}
+      </motion.div>
     );
   }
 

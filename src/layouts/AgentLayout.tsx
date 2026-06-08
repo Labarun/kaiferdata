@@ -13,8 +13,8 @@ import { AgentMoreSheet } from "@/components/agent/AgentMoreSheet";
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/agent", icon: Home },
   { label: "Orders", path: "/agent/orders", icon: ShoppingCart },
+  { label: "Buy Data", path: "/agent/bulk", icon: Layers },
   { label: "Earnings", path: "/agent/earnings", icon: DollarSign },
-  { label: "Withdraw", path: "/agent/withdraw", icon: ArrowDownToLine },
 ];
 
 const desktopExtra: NavItem[] = [
@@ -22,7 +22,7 @@ const desktopExtra: NavItem[] = [
   { label: "Marketing", path: "/agent/marketing", icon: Megaphone },
   { label: "Customers", path: "/agent/customers", icon: Users },
   { label: "Transactions", path: "/agent/transactions", icon: ListChecks },
-  { label: "Bulk Orders", path: "/agent/bulk", icon: Layers },
+  { label: "Withdraw", path: "/agent/withdraw", icon: ArrowDownToLine },
   { label: "Store", path: "/agent/store", icon: Store },
   { label: "Subscription", path: "/agent/subscription", icon: CreditCard },
 ];

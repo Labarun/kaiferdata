@@ -5,7 +5,7 @@
  * confuse the two.
  */
 import { Link } from "react-router-dom";
-import { Sparkles, ArrowDownToLine } from "lucide-react";
+import { Sparkles, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AgentEarningsWallet } from "@/services/agentEarningsWallet";
 
@@ -47,12 +47,6 @@ export function EarningsBalanceCard({ wallet, loading }: Props) {
           </div>
         </div>
 
-        <Button asChild size="sm" className="mt-4 w-full bg-success hover:bg-success/90 text-success-foreground">
-          <Link to="/agent/withdraw">
-            <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
-            Withdraw to MoMo
-          </Link>
-        </Button>
       </div>
     </div>
   );

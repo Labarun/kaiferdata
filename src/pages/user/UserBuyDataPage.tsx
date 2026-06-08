@@ -95,7 +95,7 @@ export default function UserBuyDataPage() {
         .select("setting_value")
         .eq("setting_key", "delivery_speed")
         .single();
-      
+
       if (!error && data?.setting_value) {
         setDeliverySpeed(data.setting_value);
       }
@@ -149,19 +149,19 @@ export default function UserBuyDataPage() {
   // Bridge DataPackage → DataPlan for CheckoutSheet compatibility
   const planBridge: DataPlan | null = selectedPkg
     ? {
-        id: selectedPkg.id,
-        network: selectedPkg.network,
-        plan_code: selectedPkg.package_code,
-        plan_name: selectedPkg.package_name,
-        volume: selectedPkg.package_size_label,
-        amount: selectedPkg.selling_price,
-        description: selectedPkg.validity_label,
-        is_active: selectedPkg.is_active,
-        sort_order: selectedPkg.display_order,
-        metadata: null,
-        created_at: selectedPkg.created_at,
-        updated_at: selectedPkg.updated_at,
-      }
+      id: selectedPkg.id,
+      network: selectedPkg.network,
+      plan_code: selectedPkg.package_code,
+      plan_name: selectedPkg.package_name,
+      volume: selectedPkg.package_size_label,
+      amount: selectedPkg.selling_price,
+      description: selectedPkg.validity_label,
+      is_active: selectedPkg.is_active,
+      sort_order: selectedPkg.display_order,
+      metadata: null,
+      created_at: selectedPkg.created_at,
+      updated_at: selectedPkg.updated_at,
+    }
     : null;
 
   // Optimistic Mutation for Wallet Purchase
@@ -238,7 +238,7 @@ export default function UserBuyDataPage() {
       queryClient.invalidateQueries({ queryKey: ["user-orders"] });
       queryClient.invalidateQueries({ queryKey: ["user-wallet"] });
       queryClient.invalidateQueries({ queryKey: ["user-transactions"] });
-      
+
       toast({
         title: "Order Successful",
         description: "Your order is confirmed and is being processed.",
@@ -323,34 +323,36 @@ export default function UserBuyDataPage() {
           <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
         </div>
 
-        <div className="mt-2 mx-auto max-w-[300px] rounded-3xl border border-border/40 bg-slate-950/10 p-2.5 shadow-sm shadow-slate-950/10 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Zap className="h-3.5 w-3.5" />
+        <div className="mt-4 flex flex-col items-start w-full">
+          <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
+            <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
+            </span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
+              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{deliverySpeed}</p>
+            <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
+              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">{deliverySpeed}</p>
+              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">All orders are being processed according to the current network conditions.</p>
+            </div>
+            <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
+              <div className="flex items-end gap-0.5 h-3">
+                <div className="w-[3px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
+                <div className="w-[3px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
+                <div className="w-[3px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
+              </div>
+            </div>
+            <div className="ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
+                <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-success"></span> Live
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-border/30 bg-slate-950/5 dark:bg-slate-950/60 p-6 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
-        <div className="flex items-center gap-2 text-foreground/90 dark:text-white">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm shadow-amber-500/10">
-            <AlertTriangle className="h-5 w-5" />
-          </span>
-          <p className="text-sm font-semibold">Important notice</p>
-        </div>
-        <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-border/40 to-transparent" />
-        <ul className="space-y-2 text-[13px] text-foreground/75 dark:text-foreground/70 list-disc list-inside">
-          <li>This service does not work on Turbonet SIM cards.</li>
-            <li>Do not place two orders to the same number. Wait for the first order to be delivered first.</li>
-            <li>Double-check the phone number before placing an order, there will be no refunds for wrong numbers.</li>
-        </ul>
-      </div>
 
-      <NoticeBanner audience="users" />
 
       {/* Wallet hero — payment method picker now lives inside CheckoutSheet */}
       <div className="animate-fade-in animate-stagger-1">
@@ -411,8 +413,8 @@ export default function UserBuyDataPage() {
                       animationDelay: `${i * 50}ms`,
                       ...(isActive
                         ? {
-                            boxShadow: `0 0 20px -4px hsl(${brand.hsl} / 0.2), 0 4px 16px -4px hsl(${brand.hsl} / 0.12)`,
-                          }
+                          boxShadow: `0 0 20px -4px hsl(${brand.hsl} / 0.2), 0 4px 16px -4px hsl(${brand.hsl} / 0.12)`,
+                        }
                         : {}),
                     }}
                   >
@@ -455,9 +457,9 @@ export default function UserBuyDataPage() {
                           style={
                             isActive
                               ? {
-                                  background: `hsl(${brand.hsl})`,
-                                  boxShadow: `0 0 14px -2px hsl(${brand.hsl} / 0.4)`,
-                                }
+                                background: `hsl(${brand.hsl})`,
+                                boxShadow: `0 0 14px -2px hsl(${brand.hsl} / 0.4)`,
+                              }
                               : undefined
                           }
                         >
@@ -507,6 +509,10 @@ export default function UserBuyDataPage() {
           )}
         </section>
       )}
+
+      <div className="mt-8 mb-4">
+        <NoticeBanner audience="users" />
+      </div>
 
       {/* Checkout Sheet */}
       <CheckoutSheet

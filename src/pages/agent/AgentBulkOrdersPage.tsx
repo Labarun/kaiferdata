@@ -324,7 +324,7 @@ function BulkOrderFlow() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={() => setPaymentMethod("wallet")}
                 className={cn(
@@ -343,31 +343,12 @@ function BulkOrderFlow() {
                 <span className="text-sm font-semibold">Pay with Wallet</span>
                 <span className="text-[11px] text-muted-foreground font-medium mt-0.5">Bal: GH₵{formatGHS(walletBalance)}</span>
               </button>
-
-              <button
-                onClick={() => setPaymentMethod("paystack")}
-                className={cn(
-                  "flex flex-col items-start p-4 rounded-xl border text-left transition-all",
-                  paymentMethod === "paystack" 
-                    ? "border-[#0BA4DB]/50 bg-[#0BA4DB]/5 shadow-sm" 
-                    : "border-border/50 bg-card hover:bg-accent/50"
-                )}
-              >
-                <div className="flex items-center justify-between w-full mb-3">
-                  <div className={cn("p-2 rounded-lg", paymentMethod === "paystack" ? "bg-[#0BA4DB]/20" : "bg-muted")}>
-                    <CreditCard className={cn("h-4 w-4", paymentMethod === "paystack" ? "text-[#0BA4DB]" : "text-muted-foreground")} />
-                  </div>
-                  {paymentMethod === "paystack" && <div className="h-2 w-2 rounded-full bg-[#0BA4DB]" />}
-                </div>
-                <span className="text-sm font-semibold">Paystack</span>
-                <span className="text-[11px] text-muted-foreground font-medium mt-0.5">Mobile Money / Card</span>
-              </button>
             </div>
 
             {paymentMethod === "wallet" && !canAffordWallet && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <p>Insufficient wallet balance. Top up your wallet or use Paystack.</p>
+                <p>Insufficient wallet balance. Please top up your wallet to continue.</p>
               </div>
             )}
 
