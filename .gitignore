@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Local env — never commit real secrets. Only public VITE_ values belong here.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

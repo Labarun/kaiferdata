@@ -65,6 +65,7 @@ const StaffIntentsPage = lazy(() => import("@/pages/staff/StaffIntentsPage"));
 const StaffIntentDetailPage = lazy(() => import("@/pages/staff/StaffIntentDetailPage"));
 const StaffIssueQueuePage = lazy(() => import("@/pages/staff/StaffIssueQueuePage"));
 const SystemControlsPage = lazy(() => import("@/pages/admin/SystemControlsPage"));
+const SecurityCenterPage = lazy(() => import("@/pages/admin/SecurityCenterPage"));
 const AdminNoticesPage = lazy(() => import("@/pages/admin/AdminNoticesPage"));
 const AdminOrdersPage = lazy(() => import("@/pages/admin/AdminOrdersPage"));
 const AdminOrderDetailPage = lazy(() => import("@/pages/admin/AdminOrderDetailPage"));
@@ -182,6 +183,7 @@ const App = () => (
                 <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
                 <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                 <Route path="/admin/notices" element={<AdminNoticesPage />} />
+                <Route path="/admin/security" element={<SecurityCenterPage />} />
                 <Route path="/admin/system-controls" element={<SystemControlsPage />} />
                 <Route path="/admin/staff" element={<ScaffoldPage title="Staff" description="Staff management" />} />
               </Route>

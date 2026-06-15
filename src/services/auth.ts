@@ -86,9 +86,9 @@ export async function signIn(identifier: string, password: string) {
   return { data, error };
 }
 
-/** Sign out */
+/** Sign out — global scope revokes the refresh token on the server, not just locally. */
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: "global" });
   return { error };
 }
 

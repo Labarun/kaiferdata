@@ -33,10 +33,15 @@ export async function listUsers(params: {
 
   if (params.status && params.status !== "all") q = q.eq("account_status", params.status);
   if (params.search?.trim()) {
-    const s = params.search.trim();
-    q = q.or(
-      `full_name.ilike.%${s}%,email.ilike.%${s}%,username.ilike.%${s}%,phone.ilike.%${s}%`,
-    );
+    // Strip PostgREST filter metacharacters so the term can't break out of the
+    // .or() expression (filter injection); search is admin-only + RLS-bound, but
+    // this keeps a stray comma/paren from producing a malformed query.
+    const s = params.search.trim().replace(/[,()*\\]/g, " ").trim();
+    if (s) {
+      q = q.or(
+        `full_name.ilike.%${s}%,email.ilike.%${s}%,username.ilike.%${s}%,phone.ilike.%${s}%`,
+      );
+    }
   }
   const { data: profiles, error } = await q;
   if (error || !profiles) return { data: [] as AdminUserRow[], error };

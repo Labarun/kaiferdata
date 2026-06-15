@@ -5,7 +5,7 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   LayoutDashboard, ShoppingCart, ArrowRightLeft, Scale, ArrowDownToLine,
   Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield, FileText, Package, Server,
-  Banknote,
+  Banknote, ShieldAlert,
 } from "lucide-react";
 import type { AdminNavItem } from "@/layouts/AdminLayout";
 
@@ -23,6 +23,7 @@ const navItems: AdminNavItem[] = [
   { label: "Withdrawals", path: "/admin/withdrawals", icon: Banknote },
   { label: "Tickets", path: "/admin/tickets", icon: Ticket },
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
+  { label: "Security", path: "/admin/security", icon: ShieldAlert },
   { label: "Notices", path: "/admin/notices", icon: Bell },
   { label: "System Controls", path: "/admin/system-controls", icon: Settings },
   { label: "Staff", path: "/admin/staff", icon: Shield },
