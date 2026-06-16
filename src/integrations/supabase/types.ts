@@ -1757,6 +1757,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_intent_public: {
+        Args: { _reference: string }
+        Returns: {
+          amount_expected: number
+          base_amount: number
+          created_at: string
+          customer_name: string
+          expires_at: string
+          fee_amount: number
+          id: string
+          intent_reference: string
+          intent_type: string
+          network: string
+          phone_number: string
+          plan_snapshot: Json
+          source_channel: string
+          status: Database["public"]["Enums"]["intent_status"]
+          total_amount: number
+        }[]
+      }
       purchase_bulk_with_wallet_atomic: {
         Args: {
           _network: string
@@ -1846,6 +1866,24 @@ export type Database = {
       resolve_login_identifier: {
         Args: { _identifier: string }
         Returns: string
+      }
+      track_order_public: {
+        Args: { _reference: string }
+        Returns: {
+          amount_charged: number
+          beneficiary_number: string
+          bundle_name: string
+          bundle_snapshot: Json
+          created_at: string
+          currency: string
+          delivery_message: string
+          id: string
+          network: string
+          public_order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          timeline: Json
+          updated_at: string
+        }[]
       }
       upsert_agent_bundle_price: {
         Args: { _package_id: string; _selling_price: number }

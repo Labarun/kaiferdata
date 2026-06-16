@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { lookupOrder, lookupIntent } from "@/services/purchaseIntent";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -69,16 +69,8 @@ export default function TrackOrderPage() {
     try {
       const result = await lookupOrder(searchRef);
       setOrder(result);
-
-      // Fetch status timeline if order found
-      if (result?.id) {
-        const { data: history } = await supabase
-          .from("order_status_history")
-          .select("*")
-          .eq("order_id", result.id as string)
-          .order("changed_at", { ascending: true });
-        setTimeline(history || []);
-      }
+      const tl = (result?.timeline as Record<string, unknown>[] | null) || [];
+      setTimeline(tl);
     } catch {
       setOrder(null);
     }
@@ -86,25 +78,25 @@ export default function TrackOrderPage() {
     setLoading(false);
   }
 
-  // Auto-refresh: subscribe to realtime order updates
+  // Auto-refresh: poll for updates while order is not in a terminal state.
+  // (Anon visitors can no longer subscribe to postgres_changes after the
+  // RLS lockdown, so we fall back to lightweight polling via the public RPC.)
   useEffect(() => {
     if (!order?.id) return;
-    const orderId = order.id as string;
-    const channel = supabase
-      .channel(`track-order-${orderId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, (payload) => {
-        setOrder((prev) => prev ? { ...prev, ...payload.new } : prev);
-        // Re-fetch timeline on status change
-        supabase
-          .from("order_status_history")
-          .select("*")
-          .eq("order_id", orderId)
-          .order("changed_at", { ascending: true })
-          .then(({ data }) => { if (data) setTimeline(data); });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [order?.id]);
+    const status = String(order.status || "");
+    if (["delivered", "failed", "cancelled", "refunded"].includes(status)) return;
+    const ref = (order.public_order_id as string) || reference;
+    if (!ref) return;
+    const interval = setInterval(async () => {
+      const fresh = await lookupOrder(ref);
+      if (fresh) {
+        setOrder(fresh);
+        setTimeline((fresh.timeline as Record<string, unknown>[] | null) || []);
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [order?.id, order?.status, order?.public_order_id, reference]);
+
 
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
   const rawStatus = String(order?.status || "");

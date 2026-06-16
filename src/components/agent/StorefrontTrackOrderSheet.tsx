@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { lookupOrder } from "@/services/purchaseIntent";
-import { supabase } from "@/integrations/supabase/client";
+
 import {
   Search,
   Loader2,
@@ -81,42 +81,31 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
     try {
       const result = await lookupOrder(searchRef);
       setOrder(result);
-      if (result?.id) {
-        const { data: history } = await supabase
-          .from("order_status_history")
-          .select("*")
-          .eq("order_id", result.id as string)
-          .order("changed_at", { ascending: true });
-        setTimeline(history || []);
-      }
+      setTimeline(((result?.timeline as Record<string, unknown>[] | null) || []));
     } catch {
       setOrder(null);
     }
     setLoading(false);
   }
 
-  // Realtime updates while open
+  // Poll for updates while open and order is non-terminal.
+  // (Anon visitors can no longer subscribe to postgres_changes after RLS lockdown.)
   useEffect(() => {
     if (!order?.id || !open) return;
-    const orderId = order.id as string;
-    const channel = supabase
-      .channel(`storefront-track-${orderId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
-        (payload) => {
-          setOrder((prev) => (prev ? { ...prev, ...payload.new } : prev));
-          supabase
-            .from("order_status_history")
-            .select("*")
-            .eq("order_id", orderId)
-            .order("changed_at", { ascending: true })
-            .then(({ data }) => { if (data) setTimeline(data); });
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [order?.id, open]);
+    const status = String(order.status || "");
+    if (["delivered", "failed", "cancelled", "refunded"].includes(status)) return;
+    const ref = (order.public_order_id as string) || reference;
+    if (!ref) return;
+    const interval = setInterval(async () => {
+      const fresh = await lookupOrder(ref);
+      if (fresh) {
+        setOrder(fresh);
+        setTimeline(((fresh.timeline as Record<string, unknown>[] | null) || []));
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [order?.id, order?.status, order?.public_order_id, open, reference]);
+
 
   const snapshot = (order?.bundle_snapshot || {}) as Record<string, unknown>;
   const rawStatus = String(order?.status || "");

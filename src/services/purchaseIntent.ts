@@ -97,24 +97,40 @@ export async function createPurchaseIntent(params: {
     ? { referral: params.referral, ...(isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : {}) }
     : (isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : null);
 
+  const isGuest = !params.actorId;
+  const insertPayload = {
+    intent_reference: intentRef,
+    intent_type: isBulk ? "agent_bulk_buy" : (params.intentType || "guest_buy"),
+    actor_type: params.actorType || "guest",
+    actor_id: params.actorId || null,
+    source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
+    phone_number: primaryPhone,
+    network: params.network,
+    plan_id: null as string | null,
+    plan_snapshot: planSnapshot,
+    amount_expected: expectedAmount,
+    customer_email: params.customerEmail || null,
+    customer_name: params.customerName || null,
+    order_context: orderContext,
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  };
+
+  if (isGuest) {
+    // Guests can no longer read purchase_intents directly (RLS lockdown).
+    // Insert without .select(), then read back through a SECURITY DEFINER RPC.
+    const { error: insertErr } = await supabase.from("purchase_intents").insert(insertPayload);
+    if (insertErr) {
+      console.error("createPurchaseIntent (guest) insert error:", insertErr);
+      throw new Error("Failed to create order. Please try again.");
+    }
+    const intent = await lookupIntent(intentRef);
+    if (!intent) throw new Error("Failed to create order. Please try again.");
+    return intent as PurchaseIntent;
+  }
+
   const { data, error } = await supabase
     .from("purchase_intents")
-    .insert({
-      intent_reference: intentRef,
-      intent_type: isBulk ? "agent_bulk_buy" : (params.intentType || "guest_buy"),
-      actor_type: params.actorType || "guest",
-      actor_id: params.actorId || null,
-      source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
-      phone_number: primaryPhone,
-      network: params.network,
-      plan_id: null, // FK removed — we rely on plan_snapshot
-      plan_snapshot: planSnapshot,
-      amount_expected: expectedAmount,
-      customer_email: params.customerEmail || null,
-      customer_name: params.customerName || null,
-      order_context: orderContext,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
@@ -238,40 +254,24 @@ export async function verifyPayment(reference: string): Promise<{
   return data;
 }
 
-/** Lookup a purchase intent by reference (for tracking) */
+/** Lookup a purchase intent by reference (safe RPC; works for guests). */
 export async function lookupIntent(reference: string): Promise<PurchaseIntent | null> {
-  const { data, error } = await supabase
-    .from("purchase_intents")
-    .select("*")
-    .eq("intent_reference", reference.trim().toUpperCase())
-    .single();
-
+  const { data, error } = await supabase.rpc("lookup_intent_public", {
+    _reference: reference.trim().toUpperCase(),
+  });
   if (error) return null;
-  return data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as unknown as PurchaseIntent) || null;
 }
 
-/** Lookup an order by public order ID or intent reference */
+/** Public order tracking — uses SECURITY DEFINER RPC.
+ *  Returns customer-safe fields only (status, network, bundle, masked recipient,
+ *  amount, currency, delivery_message, created/updated, sanitized timeline). */
 export async function lookupOrder(ref: string): Promise<Record<string, unknown> | null> {
-  const trimmed = ref.trim().toUpperCase();
-
-  const { data: byOrderId } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("public_order_id", trimmed)
-    .maybeSingle();
-
-  if (byOrderId) return byOrderId;
-
-  const intent = await lookupIntent(trimmed);
-  if (intent) {
-    const { data: byIntent } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("intent_id", intent.id)
-      .maybeSingle();
-
-    if (byIntent) return byIntent;
-  }
-
-  return null;
+  const { data, error } = await supabase.rpc("track_order_public", {
+    _reference: ref.trim().toUpperCase(),
+  });
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as Record<string, unknown>) || null;
 }
