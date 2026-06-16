@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PackageFormDialog } from "@/components/admin/PackageFormDialog";
+import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { fetchAllPackages, calcProfit, calcMargin, deletePackage, type DataPackage } from "@/services/packageCatalog";
 import { triggerProductSync, fetchSuppliers, type Supplier } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
@@ -176,99 +177,36 @@ export default function AdminPackagesPage() {
         </Select>
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-sm text-muted-foreground">No packages found.</div>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Network</TableHead>
-                <TableHead>Package</TableHead>
-                <TableHead className="text-right">Supplier</TableHead>
-                <TableHead className="text-right">Selling</TableHead>
-                <TableHead className="text-right">Profit</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Visibility</TableHead>
-                <TableHead className="text-center">Source</TableHead>
-                <TableHead className="w-[60px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((pkg) => {
-                const profit = calcProfit(pkg);
-                const margin = calcMargin(pkg);
-                const supplier = pkg.supplier_source_id ? suppliers.find(s => s.id === pkg.supplier_source_id) : null;
-                const sourceDisplay = supplier ? supplier.name : pkg.source_type;
-                return (
-                  <TableRow key={pkg.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-medium">{pkg.network}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium">{pkg.package_size_label}</p>
-                        <p className="text-xs text-muted-foreground">{pkg.package_name}</p>
-                        {pkg.validity_label && (
-                          <p className="text-[10px] text-muted-foreground/60">{pkg.validity_label}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs">
-                      GH₵{Number(pkg.supplier_price).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs font-semibold">
-                      GH₵{Number(pkg.selling_price).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`font-mono text-xs font-semibold ${profit >= 0 ? "text-success" : "text-destructive"}`}>
-                        GH₵{profit.toFixed(2)}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground ml-1">({margin.toFixed(0)}%)</span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={pkg.is_active ? "default" : "secondary"} className="text-[10px]">
-                        {pkg.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {pkg.visible_on_public && (
-                          <span title="Public" className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Pub</span>
-                        )}
-                        {pkg.visible_for_logged_in && (
-                          <span title="Logged-in" className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">Log</span>
-                        )}
-                        {!pkg.visible_on_public && !pkg.visible_for_logged_in && (
-                          <EyeOff className="h-3.5 w-3.5 text-muted-foreground/40" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-[10px] font-mono text-muted-foreground">{sourceDisplay}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 justify-end">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(pkg)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(pkg)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      {/* Table (responsive: cards on mobile) */}
+      <ResponsiveTable
+        rows={filtered}
+        keyFn={(p) => p.id}
+        loading={loading}
+        emptyText="No packages found."
+        columns={[
+          { key: "package", header: "Package", mobile: "title", cell: (p) => <span className="font-medium">{p.package_size_label}</span> },
+          { key: "name", header: "Name", mobile: "subtitle", cell: (p) => <span className="text-muted-foreground">{p.package_name}{p.validity_label ? ` · ${p.validity_label}` : ""}</span> },
+          { key: "selling", header: "Selling", align: "right", mobile: "trailing", cell: (p) => <span className="font-mono text-xs font-semibold">GH₵{Number(p.selling_price).toFixed(2)}</span> },
+          { key: "network", header: "Network", mobile: "row", cell: (p) => <Badge variant="outline" className="text-xs">{p.network}</Badge> },
+          { key: "supplier", header: "Supplier", align: "right", mobile: "row", cell: (p) => <span className="font-mono text-xs">GH₵{Number(p.supplier_price).toFixed(2)}</span> },
+          { key: "profit", header: "Profit", align: "right", mobile: "row", cell: (p) => { const pr = calcProfit(p); return <span className={`font-mono text-xs font-semibold ${pr >= 0 ? "text-success" : "text-destructive"}`}>GH₵{pr.toFixed(2)} <span className="text-[10px] text-muted-foreground">({calcMargin(p).toFixed(0)}%)</span></span>; } },
+          { key: "status", header: "Status", align: "center", mobile: "row", cell: (p) => <Badge variant={p.is_active ? "default" : "secondary"} className="text-[10px]">{p.is_active ? "Active" : "Inactive"}</Badge> },
+          { key: "visibility", header: "Visibility", align: "center", mobile: "row", cell: (p) => (
+            <div className="flex items-center gap-1">
+              {p.visible_on_public && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Pub</span>}
+              {p.visible_for_logged_in && <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">Log</span>}
+              {!p.visible_on_public && !p.visible_for_logged_in && <EyeOff className="h-3.5 w-3.5 text-muted-foreground/40" />}
+            </div>
+          ) },
+          { key: "source", header: "Source", align: "center", mobile: "row", cell: (p) => <span className="text-[10px] font-mono text-muted-foreground">{p.supplier_source_id ? (suppliers.find((s) => s.id === p.supplier_source_id)?.name ?? p.source_type) : p.source_type}</span> },
+        ]}
+        actions={(p) => (
+          <div className="flex items-center gap-1 justify-end">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
+          </div>
+        )}
+      />
 
       <PackageFormDialog
         open={formOpen}
