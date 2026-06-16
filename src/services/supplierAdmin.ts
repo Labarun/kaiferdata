@@ -209,14 +209,12 @@ export async function updateOrderStatus(
   } as any);
 
   // Audit log
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "order_status_manual_update",
-    actor_id: user?.id,
-    actor_role: "admin",
-    target_type: "order",
-    target_id: orderId,
+    targetType: "order",
+    targetId: orderId,
     metadata: { old_status: oldStatus, new_status: newStatus, note },
-  } as any);
+  });
 }
 
 /** Admin bulk status update for multiple orders */
