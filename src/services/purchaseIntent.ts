@@ -97,24 +97,40 @@ export async function createPurchaseIntent(params: {
     ? { referral: params.referral, ...(isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : {}) }
     : (isBulk ? { bulk_numbers: params.bulkPhoneNumbers } : null);
 
+  const isGuest = !params.actorId;
+  const insertPayload = {
+    intent_reference: intentRef,
+    intent_type: isBulk ? "agent_bulk_buy" : (params.intentType || "guest_buy"),
+    actor_type: params.actorType || "guest",
+    actor_id: params.actorId || null,
+    source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
+    phone_number: primaryPhone,
+    network: params.network,
+    plan_id: null as string | null,
+    plan_snapshot: planSnapshot,
+    amount_expected: expectedAmount,
+    customer_email: params.customerEmail || null,
+    customer_name: params.customerName || null,
+    order_context: orderContext,
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  };
+
+  if (isGuest) {
+    // Guests can no longer read purchase_intents directly (RLS lockdown).
+    // Insert without .select(), then read back through a SECURITY DEFINER RPC.
+    const { error: insertErr } = await supabase.from("purchase_intents").insert(insertPayload);
+    if (insertErr) {
+      console.error("createPurchaseIntent (guest) insert error:", insertErr);
+      throw new Error("Failed to create order. Please try again.");
+    }
+    const intent = await lookupIntent(intentRef);
+    if (!intent) throw new Error("Failed to create order. Please try again.");
+    return intent as PurchaseIntent;
+  }
+
   const { data, error } = await supabase
     .from("purchase_intents")
-    .insert({
-      intent_reference: intentRef,
-      intent_type: isBulk ? "agent_bulk_buy" : (params.intentType || "guest_buy"),
-      actor_type: params.actorType || "guest",
-      actor_id: params.actorId || null,
-      source_channel: params.sourceChannel || (params.referral ? "agent_storefront" : "public_guest_checkout"),
-      phone_number: primaryPhone,
-      network: params.network,
-      plan_id: null, // FK removed — we rely on plan_snapshot
-      plan_snapshot: planSnapshot,
-      amount_expected: expectedAmount,
-      customer_email: params.customerEmail || null,
-      customer_name: params.customerName || null,
-      order_context: orderContext,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    })
+    .insert(insertPayload)
     .select()
     .single();
 
