@@ -206,7 +206,11 @@ function BulkOrderFlow() {
   }
 
   if (!network) {
-    return <NoticeBanner type="error" message="No networks available at the moment." />;
+    return (
+      <div className="px-4 py-3 rounded-xl glass-subtle border border-destructive/20 text-destructive text-[13px]">
+        No networks available at the moment.
+      </div>
+    );
   }
 
   return (
@@ -232,7 +236,9 @@ function BulkOrderFlow() {
         </div>
         
         {filteredPackages.length === 0 ? (
-          <NoticeBanner type="warning" message={`No active packages for ${network}.`} />
+          <div className="px-4 py-3 rounded-xl glass-subtle border border-warning/20 text-warning text-[13px]">
+            {`No active packages for ${network}.`}
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {filteredPackages.map((pkg) => {
@@ -252,7 +258,7 @@ function BulkOrderFlow() {
                   {isSelected && (
                     <div 
                       className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                      style={{ background: `linear-gradient(45deg, ${netBrand.gradient})` }}
+                      style={{ background: `linear-gradient(45deg, hsl(${netBrand.hsl}), transparent)` }}
                     />
                   )}
                   <div className="relative flex justify-between items-start mb-2">
