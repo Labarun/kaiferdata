@@ -254,40 +254,24 @@ export async function verifyPayment(reference: string): Promise<{
   return data;
 }
 
-/** Lookup a purchase intent by reference (for tracking) */
+/** Lookup a purchase intent by reference (safe RPC; works for guests). */
 export async function lookupIntent(reference: string): Promise<PurchaseIntent | null> {
-  const { data, error } = await supabase
-    .from("purchase_intents")
-    .select("*")
-    .eq("intent_reference", reference.trim().toUpperCase())
-    .single();
-
+  const { data, error } = await supabase.rpc("lookup_intent_public", {
+    _reference: reference.trim().toUpperCase(),
+  });
   if (error) return null;
-  return data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as unknown as PurchaseIntent) || null;
 }
 
-/** Lookup an order by public order ID or intent reference */
+/** Public order tracking — uses SECURITY DEFINER RPC.
+ *  Returns customer-safe fields only (status, network, bundle, masked recipient,
+ *  amount, currency, delivery_message, created/updated, sanitized timeline). */
 export async function lookupOrder(ref: string): Promise<Record<string, unknown> | null> {
-  const trimmed = ref.trim().toUpperCase();
-
-  const { data: byOrderId } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("public_order_id", trimmed)
-    .maybeSingle();
-
-  if (byOrderId) return byOrderId;
-
-  const intent = await lookupIntent(trimmed);
-  if (intent) {
-    const { data: byIntent } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("intent_id", intent.id)
-      .maybeSingle();
-
-    if (byIntent) return byIntent;
-  }
-
-  return null;
+  const { data, error } = await supabase.rpc("track_order_public", {
+    _reference: ref.trim().toUpperCase(),
+  });
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as Record<string, unknown>) || null;
 }
