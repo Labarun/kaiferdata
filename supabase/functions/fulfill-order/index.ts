@@ -388,21 +388,25 @@ Deno.serve(async (req) => {
     if (token === supabaseService) {
       authorized = true;
     } else {
-      const userClient = createClient(supabaseUrl, supabaseAnon, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: claimsRes } = await userClient.auth.getClaims(token);
-      const uid = claimsRes?.claims?.sub as string | undefined;
-      if (uid) {
-        const svc = createClient(supabaseUrl, supabaseService);
-        const { data: roles } = await svc
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", uid);
-        const roleList = (roles || []).map((r: { role: string }) => r.role);
-        if (roleList.includes("admin") || roleList.includes("staff")) {
-          authorized = true;
+      try {
+        const userClient = createClient(supabaseUrl, supabaseAnon, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: claimsRes } = await userClient.auth.getClaims(token);
+        const uid = claimsRes?.claims?.sub as string | undefined;
+        if (uid) {
+          const svc = createClient(supabaseUrl, supabaseService);
+          const { data: roles } = await svc
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", uid);
+          const roleList = (roles || []).map((r: { role: string }) => r.role);
+          if (roleList.includes("admin") || roleList.includes("staff")) {
+            authorized = true;
+          }
         }
+      } catch (_e) {
+        // anon / invalid / expired tokens fall through to 403
       }
     }
 
