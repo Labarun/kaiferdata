@@ -179,6 +179,8 @@ Deno.serve(async (req) => {
       txn_id: row.txn_id,
       orders: createdOrders || [],
       fulfillments,
+      accepted_recipients: phoneNumbers.length,
+      skipped_invalid: invalid,
     });
   } catch (err) {
     console.error("[wallet-bulk-purchase] unexpected:", err);
