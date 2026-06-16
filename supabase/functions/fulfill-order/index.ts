@@ -369,10 +369,52 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseService = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ═══ AUTH GATE ═══
+    // Only allow:
+    //   (a) internal calls bearing the service-role key, OR
+    //   (b) admin/staff users (e.g. RetryFulfillmentButton).
+    // Blocks arbitrary anon/user callers from triggering fulfillment.
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Authentication required" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length).trim();
+
+    let authorized = false;
+    if (token === supabaseService) {
+      authorized = true;
+    } else {
+      try {
+        const userClient = createClient(supabaseUrl, supabaseAnon, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: claimsRes } = await userClient.auth.getClaims(token);
+        const uid = claimsRes?.claims?.sub as string | undefined;
+        if (uid) {
+          const svc = createClient(supabaseUrl, supabaseService);
+          const { data: roles } = await svc
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", uid);
+          const roleList = (roles || []).map((r: { role: string }) => r.role);
+          if (roleList.includes("admin") || roleList.includes("staff")) {
+            authorized = true;
+          }
+        }
+      } catch (_e) {
+        // anon / invalid / expired tokens fall through to 403
+      }
+    }
+
+    if (!authorized) {
+      return json({ error: "Forbidden" }, 403);
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseService);
 
     const body = await req.json();
     const { order_id } = body;
