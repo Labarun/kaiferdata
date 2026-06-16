@@ -157,7 +157,12 @@ export function getDashboardPath(role: AppRole): string {
   }
 }
 
-/** Write an audit log entry */
+/**
+ * Write an audit log entry.
+ * Routed through the SECURITY DEFINER RPC `write_audit_log` so that
+ * direct INSERT on audit_logs stays locked down (tamper-proof feed).
+ * The RPC derives actor_id and actor_role from auth.uid() server-side.
+ */
 export async function writeAuditLog(params: {
   action: string;
   targetType?: string;
@@ -167,19 +172,10 @@ export async function writeAuditLog(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { data: roleData } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  await supabase.from("audit_logs").insert({
-    actor_id: user.id,
-    actor_role: roleData?.role || "user",
-    action: params.action,
-    target_type: params.targetType,
-    target_id: params.targetId,
-    metadata: params.metadata as Database["public"]["Tables"]["audit_logs"]["Insert"]["metadata"],
+  await supabase.rpc("write_audit_log", {
+    _action: params.action,
+    _target_type: params.targetType ?? undefined,
+    _target_id: params.targetId ?? undefined,
+    _metadata: (params.metadata ?? null) as never,
   });
 }
