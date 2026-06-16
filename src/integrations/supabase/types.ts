@@ -161,13 +161,6 @@ export type Database = {
             referencedRelation: "data_packages"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "agent_bundle_prices_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "public_packages"
-            referencedColumns: ["id"]
-          },
         ]
       }
       agent_customers: {
@@ -1434,60 +1427,7 @@ export type Database = {
       }
     }
     Views: {
-      public_packages: {
-        Row: {
-          currency: string | null
-          display_order: number | null
-          id: string | null
-          is_active: boolean | null
-          is_agent_resaleable: boolean | null
-          network: string | null
-          package_code: string | null
-          package_name: string | null
-          package_size_label: string | null
-          package_type: string | null
-          package_volume_value: string | null
-          selling_price: number | null
-          validity_label: string | null
-          visible_for_logged_in: boolean | null
-          visible_on_public: boolean | null
-        }
-        Insert: {
-          currency?: string | null
-          display_order?: number | null
-          id?: string | null
-          is_active?: boolean | null
-          is_agent_resaleable?: boolean | null
-          network?: string | null
-          package_code?: string | null
-          package_name?: string | null
-          package_size_label?: string | null
-          package_type?: string | null
-          package_volume_value?: string | null
-          selling_price?: number | null
-          validity_label?: string | null
-          visible_for_logged_in?: boolean | null
-          visible_on_public?: boolean | null
-        }
-        Update: {
-          currency?: string | null
-          display_order?: number | null
-          id?: string | null
-          is_active?: boolean | null
-          is_agent_resaleable?: boolean | null
-          network?: string | null
-          package_code?: string | null
-          package_name?: string | null
-          package_size_label?: string | null
-          package_type?: string | null
-          package_volume_value?: string | null
-          selling_price?: number | null
-          validity_label?: string | null
-          visible_for_logged_in?: boolean | null
-          visible_on_public?: boolean | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       activate_agent_subscription_atomic: {
@@ -1816,6 +1756,26 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_public_packages: {
+        Args: { _logged_in?: boolean }
+        Returns: {
+          currency: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_agent_resaleable: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type: string
+          package_volume_value: string
+          selling_price: number
+          validity_label: string
+          visible_for_logged_in: boolean
+          visible_on_public: boolean
+        }[]
       }
       lookup_intent_public: {
         Args: { _reference: string }
