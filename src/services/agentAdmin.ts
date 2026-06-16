@@ -164,12 +164,10 @@ export async function approveApplication(opts: {
   if (updErr) throw new Error(updErr.message);
 
   // Audit log
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "agent_application_approved",
-    actor_id: opts.adminId,
-    actor_role: "admin",
-    target_type: "agent_application",
-    target_id: opts.applicationId,
+    targetType: "agent_application",
+    targetId: opts.applicationId,
     metadata: { user_id: app.user_id, store_slug: app.store_slug },
   });
 }
