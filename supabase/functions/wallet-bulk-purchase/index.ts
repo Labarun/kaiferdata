@@ -66,16 +66,50 @@ Deno.serve(async (req) => {
     // ── 2. Validate body ──
     const body = await req.json().catch(() => ({}));
     const packageId = String(body?.package_id || "");
-    const phoneNumbers = Array.isArray(body?.phone_numbers) ? body.phone_numbers : [];
-    const network = String(body?.network || "");
+    const rawNumbers = Array.isArray(body?.phone_numbers) ? body.phone_numbers : [];
+    const network = String(body?.network || "").toUpperCase().trim();
 
-    if (!packageId) return json({ error: "Missing package_id" }, 400);
-    if (phoneNumbers.length === 0) {
+    // package_id must be a UUID
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(packageId)) {
+      return json({ error: "Invalid package_id" }, 400);
+    }
+    // Network whitelist (Ghana)
+    if (!["MTN", "TELECEL", "AIRTELTIGO"].includes(network)) {
+      return json({ error: "Network must be MTN, Telecel, or AirtelTigo" }, 400);
+    }
+    // Cap recipient count
+    if (rawNumbers.length === 0) {
       return json({ error: "At least one valid phone number is required" }, 400);
     }
-    if (!network) return json({ error: "Network is required" }, 400);
+    if (rawNumbers.length > 200) {
+      return json({ error: "A maximum of 200 recipients is allowed per bulk order" }, 400);
+    }
 
-    // ── 3. Atomic bulk purchase ──
+    // Normalize + validate + dedupe each phone number
+    // Accept: 0XXXXXXXXX (10 digits), 233XXXXXXXXX (12 digits with country code),
+    //         +233XXXXXXXXX. Output the 10-digit local form (0XXXXXXXXX).
+    const seen = new Set<string>();
+    const phoneNumbers: string[] = [];
+    const invalid: string[] = [];
+    for (const raw of rawNumbers) {
+      let digits = String(raw ?? "").replace(/\D/g, "");
+      if (digits.startsWith("233") && digits.length === 12) digits = "0" + digits.slice(3);
+      if (digits.length === 9 && !digits.startsWith("0")) digits = "0" + digits;
+      if (digits.length !== 10 || !digits.startsWith("0")) {
+        invalid.push(String(raw));
+        continue;
+      }
+      if (!seen.has(digits)) {
+        seen.add(digits);
+        phoneNumbers.push(digits);
+      }
+    }
+
+    if (phoneNumbers.length === 0) {
+      return json({ error: "No valid Ghana phone numbers found", invalid }, 400);
+    }
+
+    // ── 3. Atomic bulk purchase (only valid, normalized, deduped recipients) ──
     const supabase = createClient(supabaseUrl, supabaseService);
     const { data: result, error: rpcErr } = await supabase.rpc("purchase_bulk_with_wallet_atomic", {
       _user_id: userId,
