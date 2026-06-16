@@ -189,12 +189,10 @@ export async function requestChanges(opts: {
     .eq("id", opts.applicationId);
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "agent_application_changes_requested",
-    actor_id: opts.adminId,
-    actor_role: "admin",
-    target_type: "agent_application",
-    target_id: opts.applicationId,
+    targetType: "agent_application",
+    targetId: opts.applicationId,
     metadata: { note: opts.adminNote },
   });
 }
@@ -216,12 +214,10 @@ export async function declineApplication(opts: {
     .eq("id", opts.applicationId);
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "agent_application_declined",
-    actor_id: opts.adminId,
-    actor_role: "admin",
-    target_type: "agent_application",
-    target_id: opts.applicationId,
+    targetType: "agent_application",
+    targetId: opts.applicationId,
     metadata: { note: opts.adminNote },
   });
 }
@@ -242,12 +238,10 @@ export async function suspendAgent(opts: {
     .eq("id", opts.profileId);
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "agent_profile_suspended",
-    actor_id: opts.adminId,
-    actor_role: "admin",
-    target_type: "agent_profile",
-    target_id: opts.profileId,
+    targetType: "agent_profile",
+    targetId: opts.profileId,
     metadata: { reason: opts.reason },
   });
 }
@@ -264,12 +258,10 @@ export async function reactivateAgent(opts: { profileId: string; adminId: string
     .eq("id", opts.profileId);
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "agent_profile_reactivated",
-    actor_id: opts.adminId,
-    actor_role: "admin",
-    target_type: "agent_profile",
-    target_id: opts.profileId,
+    targetType: "agent_profile",
+    targetId: opts.profileId,
   });
 }
 
