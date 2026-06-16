@@ -1010,6 +1010,178 @@ export type Database = {
         }
         Relationships: []
       }
+      special_bundle_orders: {
+        Row: {
+          admin_note: string | null
+          amount_charged: number
+          buyer_role: string
+          created_at: string
+          currency: string
+          delivered_at: string | null
+          id: string
+          network: string
+          package_id: string | null
+          package_snapshot: Json
+          price_tier: string
+          public_order_id: string
+          recipient_number: string
+          refund_request_reason: string | null
+          refund_requested: boolean
+          refund_requested_at: string | null
+          status: string
+          supplier_reference: string | null
+          updated_at: string
+          user_id: string
+          wallet_debit_txn_id: string | null
+          wallet_refund_txn_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_charged: number
+          buyer_role?: string
+          created_at?: string
+          currency?: string
+          delivered_at?: string | null
+          id?: string
+          network?: string
+          package_id?: string | null
+          package_snapshot?: Json
+          price_tier: string
+          public_order_id: string
+          recipient_number: string
+          refund_request_reason?: string | null
+          refund_requested?: boolean
+          refund_requested_at?: string | null
+          status?: string
+          supplier_reference?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_debit_txn_id?: string | null
+          wallet_refund_txn_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount_charged?: number
+          buyer_role?: string
+          created_at?: string
+          currency?: string
+          delivered_at?: string | null
+          id?: string
+          network?: string
+          package_id?: string | null
+          package_snapshot?: Json
+          price_tier?: string
+          public_order_id?: string
+          recipient_number?: string
+          refund_request_reason?: string | null
+          refund_requested?: boolean
+          refund_requested_at?: string | null
+          status?: string
+          supplier_reference?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_debit_txn_id?: string | null
+          wallet_refund_txn_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_bundle_orders_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "special_bundle_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_bundle_packages: {
+        Row: {
+          agent_price: number
+          bundle_type: string
+          created_at: string
+          currency: string
+          delivery_note: string | null
+          id: string
+          is_active: boolean
+          name: string
+          network: string
+          size_label: string
+          sort_order: number
+          supplier_price: number
+          updated_at: string
+          user_price: number
+        }
+        Insert: {
+          agent_price?: number
+          bundle_type?: string
+          created_at?: string
+          currency?: string
+          delivery_note?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          network?: string
+          size_label: string
+          sort_order?: number
+          supplier_price?: number
+          updated_at?: string
+          user_price?: number
+        }
+        Update: {
+          agent_price?: number
+          bundle_type?: string
+          created_at?: string
+          currency?: string
+          delivery_note?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          network?: string
+          size_label?: string
+          sort_order?: number
+          supplier_price?: number
+          updated_at?: string
+          user_price?: number
+        }
+        Relationships: []
+      }
+      special_bundle_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_status: string
+          note: string | null
+          old_status: string | null
+          order_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+          order_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_bundle_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "special_bundle_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_request_logs: {
         Row: {
           created_at: string
@@ -1460,6 +1632,10 @@ export type Database = {
           subscription_id: string
         }[]
       }
+      admin_cancel_refund_special_bundle: {
+        Args: { _order_id: string; _reason: string }
+        Returns: undefined
+      }
       admin_credit_user_wallet: {
         Args: {
           _admin_id: string
@@ -1491,6 +1667,14 @@ export type Database = {
           _status: Database["public"]["Enums"]["account_status"]
           _target_user_id: string
         }
+        Returns: undefined
+      }
+      admin_set_special_bundle_setting: {
+        Args: { _key: string; _value: string }
+        Returns: undefined
+      }
+      admin_set_special_bundle_status: {
+        Args: { _new_status: string; _note: string; _order_id: string }
         Returns: undefined
       }
       admin_set_user_role: {
@@ -1735,6 +1919,13 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_special_bundle_settings: {
+        Args: never
+        Returns: {
+          delivery_eta: string
+          offer_enabled: boolean
+        }[]
+      }
       get_top_agents: {
         Args: { timeframe?: string }
         Returns: {
@@ -1811,6 +2002,15 @@ export type Database = {
           txn_id: string
         }[]
       }
+      purchase_special_bundle_atomic: {
+        Args: { _package_id: string; _recipient_number: string }
+        Returns: {
+          amount_charged: number
+          new_balance: number
+          order_id: string
+          public_order_id: string
+        }[]
+      }
       purchase_with_wallet_atomic: {
         Args: {
           _customer_email?: string
@@ -1882,6 +2082,10 @@ export type Database = {
           request_id: string
           txn_id: string
         }[]
+      }
+      request_special_bundle_refund: {
+        Args: { _order_id: string; _reason: string }
+        Returns: undefined
       }
       resolve_login_identifier: {
         Args: { _identifier: string }
