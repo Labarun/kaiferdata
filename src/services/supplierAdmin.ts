@@ -271,14 +271,12 @@ export async function bulkUpdateOrderStatus(
   }
 
   // Audit log for bulk operation
-  await supabase.from("audit_logs").insert({
+  await writeAuditLog({
     action: "order_bulk_status_update",
-    actor_id: user?.id,
-    actor_role: "admin",
-    target_type: "order",
-    target_id: orderIds[0],
+    targetType: "order",
+    targetId: orderIds[0],
     metadata: { order_count: orderIds.length, new_status: newStatus, updated, errors_count: errors.length, note },
-  } as any);
+  });
 
   return { updated, errors };
 }
