@@ -128,7 +128,7 @@ export default function AdminSpecialPackagesPage() {
       </div>
 
       {/* Settings: ETA + kill switch */}
-      <Card>
+      <Card className="glass-card rounded-2xl border-border/40">
         <CardContent className="p-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-1.5">
@@ -179,7 +179,7 @@ export default function AdminSpecialPackagesPage() {
           No special packages yet. Add the first one with the supplier &amp; selling prices.
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden overflow-x-auto">
+        <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -261,7 +261,7 @@ export default function AdminSpecialPackagesPage() {
 
 function StatMini({ label, value, icon: Icon }: { label: string; value: number | string; icon: typeof Package }) {
   return (
-    <div className="border rounded-lg p-3 bg-card">
+    <div className="glass-card rounded-2xl p-3">
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{label}</span>

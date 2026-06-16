@@ -153,7 +153,7 @@ export default function AdminSpecialOrderDetailPage() {
       )}
 
       {/* Info */}
-      <div className="border rounded-xl overflow-hidden bg-card">
+      <div className="glass-card rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between">
           <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
             <Package className="h-3.5 w-3.5" /> Order info
@@ -179,7 +179,7 @@ export default function AdminSpecialOrderDetailPage() {
       </div>
 
       {/* Actions */}
-      <div className="border rounded-xl bg-card p-4 space-y-2.5">
+      <div className="glass-card rounded-2xl p-4 space-y-2.5">
         <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Actions</h3>
         {isPending && (
           <p className="text-[12px] text-muted-foreground">
@@ -216,7 +216,7 @@ export default function AdminSpecialOrderDetailPage() {
 
       {/* Timeline */}
       {history.length > 0 && (
-        <div className="border rounded-xl bg-card overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border/40">
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
               <Clock className="h-3.5 w-3.5" /> Status history

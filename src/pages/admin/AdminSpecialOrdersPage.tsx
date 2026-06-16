@@ -174,7 +174,7 @@ export default function AdminSpecialOrdersPage() {
       </div>
 
       {showFilters && (
-        <Card>
+        <Card className="glass-card rounded-2xl border-border/40">
           <CardContent className="p-3 flex flex-wrap gap-3">
             <div className="space-y-1">
               <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Status</p>
@@ -208,7 +208,7 @@ export default function AdminSpecialOrdersPage() {
       )}
 
       {/* Table */}
-      <Card>
+      <Card className="glass-card rounded-2xl border-border/40">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
