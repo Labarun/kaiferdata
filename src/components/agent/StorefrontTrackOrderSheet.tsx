@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { lookupOrder } from "@/services/purchaseIntent";
-import { supabase } from "@/integrations/supabase/client";
+
 import {
   Search,
   Loader2,
