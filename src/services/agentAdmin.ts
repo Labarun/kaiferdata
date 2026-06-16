@@ -6,6 +6,7 @@
  * - All RLS-restricted; only admins can mutate, staff can read.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { writeAuditLog } from "@/services/auth";
 import type { AgentApplication, AgentProfile, AgentSubscription } from "@/services/agent";
 
 export type AgentApplicationWithUser = AgentApplication & {
