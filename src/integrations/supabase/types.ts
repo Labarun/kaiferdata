@@ -1704,6 +1704,21 @@ export type Database = {
           store_tagline: string
         }[]
       }
+      get_public_storefront: {
+        Args: { _slug: string }
+        Returns: {
+          business_name: string
+          city: string
+          contact_phone: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["agent_profile_status"]
+          store_logo_url: string
+          store_name: string
+          store_slug: string
+          store_tagline: string
+        }[]
+      }
       get_sales_source_breakdown: {
         Args: { timeframe?: string }
         Returns: {
