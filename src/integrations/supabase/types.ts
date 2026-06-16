@@ -1691,6 +1691,19 @@ export type Database = {
           total_profit: number
         }[]
       }
+      get_public_agent_store: {
+        Args: { _slug: string }
+        Returns: {
+          city: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["agent_profile_status"]
+          store_logo_url: string
+          store_name: string
+          store_slug: string
+          store_tagline: string
+        }[]
+      }
       get_sales_source_breakdown: {
         Args: { timeframe?: string }
         Returns: {
