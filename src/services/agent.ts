@@ -245,13 +245,17 @@ export async function uploadStoreLogo(userId: string, file: File): Promise<strin
 
 /* ── Public store lookup (for /store/:slug) ─────────────── */
 export async function getStoreBySlug(slug: string): Promise<AgentProfile | null> {
-  const { data } = await supabase
-    .from("agent_profiles")
-    .select("*")
-    .eq("store_slug", slug.toLowerCase())
-    .eq("status", "active")
-    .maybeSingle();
-  return data;
+  // Anon-safe: agent_profiles is locked down by RLS, so we go through a
+  // SECURITY DEFINER RPC that returns ONLY storefront-public columns.
+  const { data, error } = await supabase.rpc("get_public_storefront", {
+    _slug: slug.toLowerCase(),
+  });
+  if (error) {
+    console.error("[agent] get_public_storefront failed:", error);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as unknown as AgentProfile) ?? null;
 }
 
 /* ── Subscription intents (Phase 2) ─────────────────────── */
