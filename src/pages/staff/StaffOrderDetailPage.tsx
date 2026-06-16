@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { writeAuditLog } from "@/services/auth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,18 +59,16 @@ export default function StaffOrderDetailPage() {
   const escalateToAdmin = async () => {
     if (!order || !user) return;
     setEscalating(true);
-    await supabase.from("audit_logs").insert([{
+    await writeAuditLog({
       action: "staff_escalation",
-      actor_id: user.id,
-      actor_role: "staff",
-      target_id: orderId,
-      target_type: "order",
+      targetId: orderId,
+      targetType: "order",
       metadata: {
         public_order_id: order.public_order_id as string,
         order_status: order.status as string,
         reason: "Staff flagged for admin review",
       },
-    }]);
+    });
     toast.success("Escalated to admin for review");
     setEscalating(false);
   };

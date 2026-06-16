@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { writeAuditLog } from "@/services/auth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,18 +70,16 @@ export default function StaffIssueQueuePage() {
 
   const escalateItem = async (item: Record<string, unknown>, type: string) => {
     if (!user) return;
-    await supabase.from("audit_logs").insert([{
+    await writeAuditLog({
       action: "staff_escalation",
-      actor_id: user.id,
-      actor_role: "staff",
-      target_id: item.id as string,
-      target_type: type,
+      targetId: item.id as string,
+      targetType: type,
       metadata: {
         label: (type === "order" ? item.public_order_id : type === "payment" ? item.internal_reference : item.intent_reference) as string,
         status: item.status as string,
         reason: "Staff escalated from issue queue",
       },
-    }]);
+    });
     toast.success("Escalated to admin");
   };
 

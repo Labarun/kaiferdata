@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { writeAuditLog } from "@/services/auth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,19 +40,17 @@ export default function StaffTransactionDetailPage() {
   const escalate = async () => {
     if (!record || !user) return;
     setEscalating(true);
-    await supabase.from("audit_logs").insert([{
+    await writeAuditLog({
       action: "staff_escalation",
-      actor_id: user.id,
-      actor_role: "staff",
-      target_id: transactionId,
-      target_type: "payment_record",
+      targetId: transactionId,
+      targetType: "payment_record",
       metadata: {
         internal_reference: record.internal_reference as string,
         payment_status: record.status as string,
         has_order: !!order,
         reason: "Staff flagged for admin review — possible missing order",
       },
-    }]);
+    });
     toast.success("Escalated to admin for review");
     setEscalating(false);
   };
