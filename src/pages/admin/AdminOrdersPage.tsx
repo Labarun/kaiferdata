@@ -1,272 +1,228 @@
 /**
- * Admin Orders Page — Searchable, filterable orders table with bulk status update
+ * Admin Orders — paginated (30/page), filterable, mobile-first, with per-row +
+ * bulk moderation actions.
  */
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { BulkStatusDialog } from "@/components/admin/BulkStatusDialog";
-import { Input } from "@/components/ui/input";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
+import { ResponsiveTable, type ResponsiveColumn } from "@/components/admin/ResponsiveTable";
+import { DataPagination } from "@/components/admin/DataPagination";
+import { useAdminPagination } from "@/hooks/useAdminPagination";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { Search, Loader2, ChevronRight, Filter, X, RefreshCw, ListChecks } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  RefreshCw, ListChecks, MoreVertical, Eye, Edit3, Copy, RotateCcw, ShoppingCart, CheckCircle2, Clock, XCircle,
+} from "lucide-react";
 import { triggerStatusSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 
-const STATUS_OPTIONS = ["all", "paid", "queued", "processing", "delivered", "failed", "cancelled"];
-const NETWORK_OPTIONS = ["all", "MTN", "Telecel", "AirtelTigo"];
+const STATUSES = ["all", "paid", "queued", "processing", "delivered", "failed", "cancelled", "refunded"];
+const NETWORKS = ["all", "MTN", "Telecel", "AirtelTigo"];
+
+type Order = Record<string, any>;
 
 export default function AdminOrdersPage() {
   const { toast } = useToast();
-  const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
+  const pg = useAdminPagination(30);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [networkFilter, setNetworkFilter] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [status, setStatus] = useState("all");
+  const [network, setNetwork] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [bulkIds, setBulkIds] = useState<string[]>([]);
+  const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, failed: 0 });
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
-    if (networkFilter !== "all") query = query.eq("network", networkFilter);
-    if (search.trim()) {
-      query = query.or(
-        `public_order_id.ilike.%${search.trim()}%,beneficiary_number.ilike.%${search.trim()}%`
-      );
-    }
-
-    const { data } = await query;
-    setOrders(data || []);
-    setSelected(new Set());
-    setLoading(false);
-  }, [search, statusFilter, networkFilter]);
-
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
-
-  // Realtime subscription for live updates
+  // global stat strip (once)
   useEffect(() => {
-    const channel = supabase
-      .channel("admin-orders-realtime")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new } : o))
-        );
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+    (async () => {
+      const C = { count: "exact" as const, head: true };
+      const [t, d, p, f] = await Promise.all([
+        supabase.from("orders").select("id", C),
+        supabase.from("orders").select("id", C).eq("status", "delivered"),
+        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing"]),
+        supabase.from("orders").select("id", C).eq("status", "failed"),
+      ]);
+      setStats({ total: t.count || 0, delivered: d.count || 0, pending: p.count || 0, failed: f.count || 0 });
+    })();
+  }, [reloadKey]);
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  // paginated list
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      let q = supabase
+        .from("orders")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(pg.from, pg.to);
+      if (status !== "all") q = q.eq("status", status as any);
+      if (network !== "all") q = q.eq("network", network);
+      const term = search.trim().replace(/[%,]/g, "");
+      if (term) q = q.or(`public_order_id.ilike.%${term}%,beneficiary_number.ilike.%${term}%`);
+      if (dateFrom) q = q.gte("created_at", dateFrom);
+      if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59`);
+      if (amountMin) q = q.gte("amount_charged", Number(amountMin));
+      if (amountMax) q = q.lte("amount_charged", Number(amountMax));
+
+      const { data, count } = await q;
+      if (cancelled) return;
+      setOrders(data || []);
+      pg.setTotal(count || 0);
+      setSelected(new Set());
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pg.page, pg.pageSize, reloadKey]);
+
+  const applyFilters = useCallback(() => { pg.setPage(0); setReloadKey((k) => k + 1); }, [pg]);
+  const refresh = () => setReloadKey((k) => k + 1);
+
+  const setStatusChip = (v: string) => { setStatus(v); pg.setPage(0); setReloadKey((k) => k + 1); };
+  const setNetworkChip = (v: string) => { setNetwork(v); pg.setPage(0); setReloadKey((k) => k + 1); };
+
+  const toggle = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected((p) => (p.size === orders.length ? new Set() : new Set(orders.map((o) => o.id))));
+
+  const openBulk = (ids: string[]) => { setBulkIds(ids); setBulkOpen(true); };
+  const copy = (text: string) => { navigator.clipboard.writeText(text); toast({ title: "Copied", description: text }); };
+
+  const syncOne = async (id: string) => {
+    try { await triggerStatusSync(id); toast({ title: "Sync triggered" }); refresh(); }
+    catch (e) { toast({ title: "Sync failed", description: (e as Error).message, variant: "destructive" }); }
   };
 
-  const toggleSelectAll = () => {
-    if (selected.size === orders.length) setSelected(new Set());
-    else setSelected(new Set(orders.map((o) => o.id as string)));
-  };
-
-  const handleStatusSync = async () => {
-    setSyncing(true);
+  const retry = async (id: string) => {
     try {
-      const result = await triggerStatusSync();
-      toast({ title: "Status Sync", description: `${(result as any).orders_updated || 0} orders updated` });
-      fetchOrders();
-    } catch (err: any) {
-      toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setSyncing(false);
-    }
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/fulfill-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ order_id: id }),
+      });
+      const d = await res.json();
+      if (d.success) { toast({ title: "Fulfilment triggered", description: `Status: ${d.status}` }); refresh(); }
+      else toast({ title: "Fulfilment failed", description: d.error || "Unknown error", variant: "destructive" });
+    } catch { toast({ title: "Network error", variant: "destructive" }); }
   };
+
+  const statStrip: AdminStat[] = [
+    { label: "Total", value: stats.total.toLocaleString(), icon: ShoppingCart, tone: "primary" },
+    { label: "Delivered", value: stats.delivered.toLocaleString(), icon: CheckCircle2, tone: "success" },
+    { label: "In Progress", value: stats.pending.toLocaleString(), icon: Clock, tone: stats.pending > 0 ? "warning" : "default" },
+    { label: "Failed", value: stats.failed.toLocaleString(), icon: XCircle, tone: stats.failed > 0 ? "destructive" : "default" },
+  ];
+
+  const columns: ResponsiveColumn<Order>[] = [
+    {
+      key: "id", header: "Order ID", mobile: "title",
+      cell: (o) => <Link to={`/admin/orders/${o.id}`} className="font-mono text-[12px] font-medium text-primary hover:underline">{o.public_order_id}</Link>,
+    },
+    {
+      key: "bundle", header: "Bundle", mobile: "subtitle",
+      cell: (o) => <span className="text-muted-foreground">{o.network} · {(o.bundle_snapshot as any)?.volume || o.bundle_name || "—"}</span>,
+    },
+    { key: "amount", header: "Amount", align: "right", mobile: "trailing", cell: (o) => <span className="font-semibold">GH₵{Number(o.amount_charged).toLocaleString()}</span> },
+    { key: "recipient", header: "Recipient", mobile: "row", cell: (o) => <span className="font-mono text-[12px] text-muted-foreground">{o.beneficiary_number}</span> },
+    { key: "status", header: "Status", mobile: "row", cell: (o) => <OperationsBadge status={o.status} /> },
+    { key: "source", header: "Source", mobile: "row", cell: (o) => <span className="text-[11px] capitalize text-muted-foreground">{String(o.source_channel || "").replace(/_/g, " ") || "—"}</span> },
+    { key: "supplier", header: "Supplier", mobile: "row", cell: (o) => <span className="text-[11px] font-mono text-muted-foreground">{o.supplier_status || "—"}</span> },
+    { key: "created", header: "Created", mobile: "row", cell: (o) => <span className="text-[11px] text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleString()}</span> },
+  ];
+
+  const rowActions = (o: Order) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild><Link to={`/admin/orders/${o.id}`}><Eye className="h-4 w-4 mr-2" /> View details</Link></DropdownMenuItem>
+        <DropdownMenuItem onClick={() => openBulk([o.id])}><Edit3 className="h-4 w-4 mr-2" /> Change status</DropdownMenuItem>
+        {["paid", "queued", "failed"].includes(o.status) && (
+          <DropdownMenuItem onClick={() => retry(o.id)}><RotateCcw className="h-4 w-4 mr-2" /> Retry fulfilment</DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => syncOne(o.id)}><RefreshCw className="h-4 w-4 mr-2" /> Sync status</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => copy(o.public_order_id)}><Copy className="h-4 w-4 mr-2" /> Copy ID</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="animate-fade-in space-y-4">
-      <div className="flex items-center justify-between">
-        <PageHeader title="Orders" description="Manage and inspect all orders" />
-        <div className="flex items-center gap-2">
-          {selected.size > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} className="gap-1.5">
-              <ListChecks className="h-3.5 w-3.5" />
-              Bulk Update ({selected.size})
-            </Button>
-          )}
-          <Button size="sm" variant="outline" onClick={handleStatusSync} disabled={syncing} className="gap-1.5">
-            {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Sync Statuses
+      <PageHeader title="Orders" description="Review, moderate and fulfil orders" actions={
+        <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+      } />
+
+      <AdminStatStrip stats={statStrip} />
+
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+          <span className="text-[12px] font-medium px-1">{selected.size} selected</span>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openBulk(Array.from(selected))}>
+            <ListChecks className="h-3.5 w-3.5" /> Bulk status
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copy(orders.filter((o) => selected.has(o.id)).map((o) => o.public_order_id).join("\n"))}>
+            <Copy className="h-3.5 w-3.5" /> Copy IDs
           </Button>
         </div>
-      </div>
-
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-          <Input
-            placeholder="Search by Order ID or phone…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-10 text-sm"
-            onKeyDown={(e) => e.key === "Enter" && fetchOrders()}
-          />
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="h-10 gap-1.5">
-          <Filter className="h-3.5 w-3.5" /> Filters
-          {(statusFilter !== "all" || networkFilter !== "all") && (
-            <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
-              {(statusFilter !== "all" ? 1 : 0) + (networkFilter !== "all" ? 1 : 0)}
-            </span>
-          )}
-        </Button>
-      </div>
-
-      {showFilters && (
-        <Card>
-          <CardContent className="p-3 flex flex-wrap gap-2">
-            <div className="space-y-1">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Status</p>
-              <div className="flex flex-wrap gap-1">
-                {STATUS_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setStatusFilter(s)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors capitalize ${
-                      statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Network</p>
-              <div className="flex flex-wrap gap-1">
-                {NETWORK_OPTIONS.map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setNetworkFilter(n)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors ${
-                      networkFilter === n ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {(statusFilter !== "all" || networkFilter !== "all") && (
-              <button
-                onClick={() => { setStatusFilter("all"); setNetworkFilter("all"); }}
-                className="flex items-center gap-1 text-[11px] text-destructive hover:underline ml-auto self-end"
-              >
-                <X className="h-3 w-3" /> Clear
-              </button>
-            )}
-          </CardContent>
-        </Card>
       )}
 
-      {/* Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/50">
-                <th className="px-3 py-2.5 w-[40px]">
-                  <Checkbox
-                    checked={orders.length > 0 && selected.size === orders.length}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </th>
-                {["Order ID", "Network", "Bundle", "Amount", "Phone", "Source", "Status", "Supplier", "Created", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="text-center py-8">
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                  </td>
-                </tr>
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="text-center py-8 text-xs text-muted-foreground">No orders found.</td>
-                </tr>
-              ) : (
-                orders.map((o) => {
-                  const snap = (o.bundle_snapshot || {}) as Record<string, unknown>;
-                  return (
-                    <tr key={o.id as string} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                      <td className="px-3 py-2.5">
-                        <Checkbox
-                          checked={selected.has(o.id as string)}
-                          onCheckedChange={() => toggleSelect(o.id as string)}
-                        />
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Link to={`/admin/orders/${o.id}`} className="font-mono text-[12px] font-medium text-primary hover:underline">
-                          {o.public_order_id as string}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2.5 text-[12px]">{o.network as string}</td>
-                      <td className="px-3 py-2.5 text-[12px] text-muted-foreground">{snap.volume as string}</td>
-                      <td className="px-3 py-2.5 text-[12px] font-medium">GH₵{Number(o.amount_charged).toLocaleString()}</td>
-                      <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">{o.beneficiary_number as string}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge variant="outline" className="text-[10px] capitalize">
-                          {(o.source_channel as string)?.replace(/_/g, " ") || "Website"}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2.5"><OperationsBadge status={o.status as string} /></td>
-                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground">
-                        {o.supplier_status ? (
-                          <span className="font-mono text-[10px]">{o.supplier_status as string}</span>
-                        ) : (
-                          <span className="text-muted-foreground/40">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
-                        {new Date(o.created_at as string).toLocaleDateString()}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Link to={`/admin/orders/${o.id}`}>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      <BulkStatusDialog
-        open={bulkOpen}
-        onOpenChange={setBulkOpen}
-        orderIds={Array.from(selected)}
-        onSuccess={fetchOrders}
+      <AdminFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        onSubmit={applyFilters}
+        placeholder="Search Order ID or phone… (Enter)"
+        chips={[
+          { label: "Status", value: status, options: STATUSES.map((s) => ({ label: s, value: s })), onChange: setStatusChip },
+          { label: "Network", value: network, options: NETWORKS.map((n) => ({ label: n, value: n })), onChange: setNetworkChip },
+        ]}
+        advanced={
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="space-y-1"><Label className="text-[11px]">From date</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" /></div>
+            <div className="space-y-1"><Label className="text-[11px]">To date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" /></div>
+            <div className="space-y-1"><Label className="text-[11px]">Min ₵</Label><Input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="h-9" /></div>
+            <div className="space-y-1"><Label className="text-[11px]">Max ₵</Label><Input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="h-9" /></div>
+            <div className="col-span-2 sm:col-span-4"><Button size="sm" onClick={applyFilters} className="w-full sm:w-auto">Apply filters</Button></div>
+          </div>
+        }
       />
+
+      <ResponsiveTable
+        rows={orders}
+        columns={columns}
+        keyFn={(o) => o.id}
+        loading={loading}
+        emptyText="No orders match these filters."
+        selectedIds={selected}
+        onToggle={toggle}
+        onToggleAll={toggleAll}
+        actions={rowActions}
+      />
+
+      <DataPagination pagination={pg} rowsOnPage={orders.length} />
+
+      <BulkStatusDialog open={bulkOpen} onOpenChange={setBulkOpen} orderIds={bulkIds} onSuccess={refresh} />
     </div>
   );
 }
