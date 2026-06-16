@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { writeAuditLog } from "@/services/auth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
