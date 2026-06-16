@@ -6,16 +6,28 @@ import {
   LayoutDashboard, ShoppingCart, CreditCard, FileText,
   AlertTriangle,
 } from "lucide-react";
-import type { AdminNavItem } from "@/layouts/AdminLayout";
+import type { AdminNavGroup, AdminNavItem } from "@/layouts/AdminLayout";
 
-const navItems: AdminNavItem[] = [
-  { label: "Dashboard", path: "/staff", icon: LayoutDashboard },
+const navGroups: AdminNavGroup[] = [
+  {
+    label: "Support",
+    items: [
+      { label: "Dashboard", path: "/staff", icon: LayoutDashboard },
+      { label: "Orders", path: "/staff/orders", icon: ShoppingCart },
+      { label: "Transactions", path: "/staff/transactions", icon: CreditCard },
+      { label: "Intents", path: "/staff/intents", icon: FileText },
+      { label: "Issue Queue", path: "/staff/issues", icon: AlertTriangle },
+    ],
+  },
+];
+
+const quickDock: AdminNavItem[] = [
+  { label: "Home", path: "/staff", icon: LayoutDashboard },
   { label: "Orders", path: "/staff/orders", icon: ShoppingCart },
-  { label: "Transactions", path: "/staff/transactions", icon: CreditCard },
-  { label: "Intents", path: "/staff/intents", icon: FileText },
-  { label: "Issue Queue", path: "/staff/issues", icon: AlertTriangle },
+  { label: "Txns", path: "/staff/transactions", icon: CreditCard },
+  { label: "Issues", path: "/staff/issues", icon: AlertTriangle },
 ];
 
 export function StaffLayout() {
-  return <AdminLayout navItems={navItems} title="Staff Panel" audienceFilter="staff" />;
+  return <AdminLayout navGroups={navGroups} quickDock={quickDock} title="Staff Panel" audienceFilter="staff" />;
 }

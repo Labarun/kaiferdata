@@ -1,36 +1,71 @@
 /**
- * FullAdminLayout - Admin panel wrapper with full navigation
+ * FullAdminLayout - Admin panel wrapper with grouped, mobile-first navigation
  */
 import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   LayoutDashboard, ShoppingCart, ArrowRightLeft, Scale, ArrowDownToLine,
-  Users, UserCheck, Ticket, BarChart3, Bell, Settings, Shield, FileText, Package, Server,
+  Users, UserCheck, BarChart3, Bell, Settings, Shield, FileText, Package, Server,
   Banknote, ShieldAlert, Sparkles,
 } from "lucide-react";
-import type { AdminNavItem } from "@/layouts/AdminLayout";
+import type { AdminNavGroup, AdminNavItem } from "@/layouts/AdminLayout";
 
-const navItems: AdminNavItem[] = [
-  { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
-  { label: "Supplier", path: "/admin/supplier", icon: Server },
-  { label: "Packages", path: "/admin/packages", icon: Package },
-  { label: "Special Orders", path: "/admin/special-orders", icon: Sparkles },
-  { label: "Special Packages", path: "/admin/special-packages", icon: Sparkles },
+const navGroups: AdminNavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+      { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
+      { label: "Transactions", path: "/admin/transactions", icon: ArrowRightLeft },
+      { label: "Payment Intents", path: "/admin/intents", icon: FileText },
+      { label: "Reconciliation", path: "/admin/reconciliation", icon: Scale },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { label: "Packages", path: "/admin/packages", icon: Package },
+      { label: "Suppliers", path: "/admin/supplier", icon: Server },
+    ],
+  },
+  {
+    label: "Special Bundles",
+    items: [
+      { label: "Special Orders", path: "/admin/special-orders", icon: Sparkles },
+      { label: "Special Packages", path: "/admin/special-packages", icon: Sparkles },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { label: "Users", path: "/admin/users", icon: Users },
+      { label: "Agents", path: "/admin/agents", icon: UserCheck },
+      { label: "Withdrawals", path: "/admin/withdrawals", icon: Banknote },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { label: "Security", path: "/admin/security", icon: ShieldAlert },
+      { label: "System Controls", path: "/admin/system-controls", icon: Settings },
+      { label: "Notices", path: "/admin/notices", icon: Bell },
+    ],
+  },
+];
+
+// Most-used destinations for the mobile bottom dock ("More" is appended automatically).
+const quickDock: AdminNavItem[] = [
+  { label: "Home", path: "/admin", icon: LayoutDashboard },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
-  { label: "Transactions", path: "/admin/transactions", icon: ArrowRightLeft },
-  { label: "Reconciliation", path: "/admin/reconciliation", icon: Scale },
-  { label: "Intents", path: "/admin/intents", icon: FileText },
-  { label: "Deposits", path: "/admin/deposits", icon: ArrowDownToLine },
-  { label: "Users", path: "/admin/users", icon: Users },
-  { label: "Agents", path: "/admin/agents", icon: UserCheck },
-  { label: "Withdrawals", path: "/admin/withdrawals", icon: Banknote },
-  { label: "Tickets", path: "/admin/tickets", icon: Ticket },
-  { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
-  { label: "Security", path: "/admin/security", icon: ShieldAlert },
-  { label: "Notices", path: "/admin/notices", icon: Bell },
-  { label: "System Controls", path: "/admin/system-controls", icon: Settings },
-  { label: "Staff", path: "/admin/staff", icon: Shield },
+  { label: "Payouts", path: "/admin/withdrawals", icon: Banknote },
+  { label: "Special", path: "/admin/special-orders", icon: Sparkles },
 ];
 
 export function FullAdminLayout() {
-  return <AdminLayout navItems={navItems} title="Admin Panel" audienceFilter="admins" />;
+  return <AdminLayout navGroups={navGroups} quickDock={quickDock} title="Admin Panel" audienceFilter="admins" />;
 }
