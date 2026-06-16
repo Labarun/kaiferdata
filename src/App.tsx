@@ -80,6 +80,16 @@ const AdminAgentsPage = lazy(() => import("@/pages/admin/AdminAgentsPage"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminWithdrawalsPage = lazy(() => import("@/pages/admin/AdminWithdrawalsPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
+const AdminSpecialOrdersPage = lazy(() => import("@/pages/admin/AdminSpecialOrdersPage"));
+const AdminSpecialOrderDetailPage = lazy(() => import("@/pages/admin/AdminSpecialOrderDetailPage"));
+const AdminSpecialPackagesPage = lazy(() => import("@/pages/admin/AdminSpecialPackagesPage"));
+// Special bundle offer — shared pages mounted under both user (/dashboard/special)
+// and agent (/agent/special) panels.
+const SpecialOfferPage = lazy(() => import("@/pages/special/SpecialOfferPage"));
+const SpecialOfferOrderPage = lazy(() => import("@/pages/special/SpecialOfferOrderPage"));
+const SpecialOfferSuccessPage = lazy(() => import("@/pages/special/SpecialOfferSuccessPage"));
+const SpecialOfferOrdersPage = lazy(() => import("@/pages/special/SpecialOfferOrdersPage"));
+const SpecialOfferOrderDetailPage = lazy(() => import("@/pages/special/SpecialOfferOrderDetailPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Tuned defaults: cut needless refetches on tab focus, keep cached data warm
@@ -142,6 +152,12 @@ const App = () => (
                 <Route path="/dashboard/transactions/:transactionId" element={<UserTransactionDetailPage />} />
                 <Route path="/dashboard/profile" element={<UserProfilePage />} />
                 <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
+                {/* Special bundle offer (user panel) */}
+                <Route path="/dashboard/special" element={<SpecialOfferPage />} />
+                <Route path="/dashboard/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
+                <Route path="/dashboard/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
+                <Route path="/dashboard/special/orders" element={<SpecialOfferOrdersPage />} />
+                <Route path="/dashboard/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
               </Route>
 
               {/* ====== DYNAMIC SUBSCRIPTION LAYOUT ====== */}
@@ -162,6 +178,12 @@ const App = () => (
                 <Route path="/agent/customers" element={<AgentCustomersPage />} />
                 <Route path="/agent/transactions" element={<AgentTransactionsPage />} />
                 <Route path="/agent/bulk" element={<AgentBulkOrdersPage />} />
+                {/* Special bundle offer (agent panel — not on storefronts) */}
+                <Route path="/agent/special" element={<SpecialOfferPage />} />
+                <Route path="/agent/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
+                <Route path="/agent/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
+                <Route path="/agent/special/orders" element={<SpecialOfferOrdersPage />} />
+                <Route path="/agent/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
               </Route>
 
               {/* ====== ADMIN PANEL ====== */}
@@ -182,6 +204,9 @@ const App = () => (
                 <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
                 <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
                 <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="/admin/special-orders" element={<AdminSpecialOrdersPage />} />
+                <Route path="/admin/special-orders/:orderId" element={<AdminSpecialOrderDetailPage />} />
+                <Route path="/admin/special-packages" element={<AdminSpecialPackagesPage />} />
                 <Route path="/admin/notices" element={<AdminNoticesPage />} />
                 <Route path="/admin/security" element={<SecurityCenterPage />} />
                 <Route path="/admin/system-controls" element={<SystemControlsPage />} />

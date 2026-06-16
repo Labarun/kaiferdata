@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Loader2, AlertTriangle, CreditCard, Package, FileText,
-  ChevronRight, CheckCircle2, XCircle, ShieldAlert, RefreshCcw, PlayCircle, Clock,
+  ChevronRight, CheckCircle2, XCircle, ShieldAlert, RefreshCcw, PlayCircle, Clock, Sparkles,
 } from "lucide-react";
 
 interface ReconciliationCategory {
@@ -56,7 +56,7 @@ export default function AdminReconciliationPage() {
     const cutoff2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-    const [stuckIntents, failedOrders, stuckOrders, stuckPayments] = await Promise.all([
+    const [stuckIntents, failedOrders, stuckOrders, stuckPayments, specialPending] = await Promise.all([
       supabase.from("purchase_intents").select("*").eq("status", "payment_confirmed").order("created_at", { ascending: false }).limit(50),
       supabase.from("orders").select("*").eq("status", "failed").order("created_at", { ascending: false }).limit(50),
       supabase.from("orders").select("*").in("status", ["paid", "queued", "processing"]).order("created_at", { ascending: true }).limit(50),
@@ -64,6 +64,11 @@ export default function AdminReconciliationPage() {
         .in("status", ["created", "pending_payment", "payment_processing"])
         .lte("created_at", cutoff2min)
         .gte("created_at", cutoff48h)
+        .order("created_at", { ascending: true })
+        .limit(50),
+      // Special bundle orders awaiting manual handling (refund-requested first)
+      supabase.from("special_bundle_orders" as any).select("*").eq("status", "pending")
+        .order("refund_requested", { ascending: false })
         .order("created_at", { ascending: true })
         .limit(50),
     ]);
@@ -88,6 +93,17 @@ export default function AdminReconciliationPage() {
     }
 
     const cats: ReconciliationCategory[] = [];
+
+    if (((specialPending as { data?: unknown[] }).data || []).length > 0) {
+      cats.push({
+        title: "Special Bundle Orders (Pending)",
+        description: "MTN special bundle orders awaiting manual processing or refund review. Refund requests are listed first.",
+        icon: Sparkles,
+        color: "text-primary",
+        items: ((specialPending as { data?: Record<string, unknown>[] }).data || []),
+        type: "special",
+      });
+    }
 
     if (orphanPayments.length > 0) {
       cats.push({
@@ -255,6 +271,7 @@ function ReconciliationRow({
     if (type === "order") return `/admin/orders/${item.id}`;
     if (type === "payment") return `/admin/transactions/${item.id}`;
     if (type === "intent") return `/admin/intents/${item.id}`;
+    if (type === "special") return `/admin/special-orders/${item.id}`;
     return "#";
   };
 
@@ -262,6 +279,7 @@ function ReconciliationRow({
     if (type === "order") return item.public_order_id as string;
     if (type === "payment") return item.internal_reference as string;
     if (type === "intent") return item.intent_reference as string;
+    if (type === "special") return item.public_order_id as string;
     return item.id as string;
   };
 
@@ -275,6 +293,7 @@ function ReconciliationRow({
           {type === "order" && `${item.network || ""} · GH₵${Number(item.amount_charged || 0).toLocaleString()}`}
           {type === "payment" && `GH₵${Number(item.amount || 0).toLocaleString()} · ${item.provider || ""}`}
           {type === "intent" && `${item.network || ""} · GH₵${Number(item.amount_expected || 0).toLocaleString()}`}
+          {type === "special" && `${item.recipient_number || ""} · GH₵${Number(item.amount_charged || 0).toLocaleString()}${item.refund_requested ? " · refund requested" : ""}`}
           {" · "}{new Date(item.created_at as string).toLocaleDateString()}
         </p>
       </Link>

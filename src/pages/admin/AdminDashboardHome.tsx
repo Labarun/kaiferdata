@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart, CreditCard, AlertTriangle, CheckCircle2, Clock, XCircle,
-  Users, Activity, ArrowRight, Package,
+  Users, Activity, ArrowRight, Package, Sparkles,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/shared/LoadingState";
 
@@ -25,13 +25,14 @@ interface DashStats {
   totalUsers: number;
   recentOrders: Record<string, unknown>[];
   attentionItems: number;
+  pendingSpecial: number;
 }
 
 export default function AdminDashboardHome() {
   const [stats, setStats] = useState<DashStats>({
     totalOrders: 0, deliveredOrders: 0, failedOrders: 0, pendingOrders: 0,
     totalPayments: 0, verifiedPayments: 0, failedPayments: 0,
-    totalUsers: 0, recentOrders: [], attentionItems: 0,
+    totalUsers: 0, recentOrders: [], attentionItems: 0, pendingSpecial: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +41,7 @@ export default function AdminDashboardHome() {
       const [
         ordersTotal, ordersDelivered, ordersFailed, ordersPending,
         paymentsTotal, paymentsVerified, paymentsFailed,
-        usersTotal, recentOrders, stuckIntents,
+        usersTotal, recentOrders, stuckIntents, specialPending,
       ] = await Promise.all([
         supabase.from("orders").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "delivered"),
@@ -52,6 +53,7 @@ export default function AdminDashboardHome() {
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(5),
         supabase.from("purchase_intents").select("id", { count: "exact", head: true }).eq("status", "payment_confirmed"),
+        supabase.from("special_bundle_orders" as any).select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       setStats({
@@ -64,7 +66,8 @@ export default function AdminDashboardHome() {
         failedPayments: paymentsFailed.count || 0,
         totalUsers: usersTotal.count || 0,
         recentOrders: recentOrders.data || [],
-        attentionItems: (stuckIntents.count || 0) + (ordersFailed.count || 0),
+        attentionItems: (stuckIntents.count || 0) + (ordersFailed.count || 0) + ((specialPending as { count?: number }).count || 0),
+        pendingSpecial: (specialPending as { count?: number }).count || 0,
       });
       setLoading(false);
     }
@@ -144,6 +147,7 @@ export default function AdminDashboardHome() {
               { label: "Orders", path: "/admin/orders", icon: ShoppingCart, desc: `${stats.totalOrders} total` },
               { label: "Transactions", path: "/admin/transactions", icon: CreditCard, desc: `${stats.totalPayments} records` },
               { label: "Reconciliation", path: "/admin/reconciliation", icon: AlertTriangle, desc: `${stats.attentionItems} items` },
+              { label: "Special Orders", path: "/admin/special-orders", icon: Sparkles, desc: `${stats.pendingSpecial} pending` },
               { label: "Users", path: "/admin/users", icon: Users, desc: `${stats.totalUsers} registered` },
             ].map((item) => (
               <Link

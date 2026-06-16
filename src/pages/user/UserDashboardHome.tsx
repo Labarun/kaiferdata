@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { ListSkeleton, DashboardSkeleton } from "@/components/shared/LoadingState";
 import { StatCard } from "@/components/shared/StatCard";
+import { SpecialOfferPromo } from "@/components/special/SpecialOfferPromo";
 
 type OrderRow = Record<string, unknown>;
 type TxnRow = Record<string, unknown>;
@@ -178,6 +179,9 @@ export default function UserDashboardHome() {
           </div>
         </Link>
       </div>
+
+      {/* Special offer promo */}
+      <SpecialOfferPromo to="/dashboard/special" />
 
       {/* Recent Orders */}
       <div className="animate-fade-in animate-stagger-3">

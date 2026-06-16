@@ -24,6 +24,7 @@ import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
 import { StatCard } from "@/components/shared/StatCard";
 import { DashboardSkeleton } from "@/components/shared/LoadingState";
 import { WalletCard } from "@/components/shared/WalletCard";
+import { SpecialOfferPromo } from "@/components/special/SpecialOfferPromo";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { createDepositIntent, initializePayment } from "@/services/purchaseIntent";
@@ -181,6 +182,9 @@ export default function AgentDashboardHome() {
           </CardContent>
         </Card>
       )}
+
+      {/* Special offer promo (agent panel — near Buy Data, not on storefront) */}
+      <SpecialOfferPromo to="/agent/special" />
 
       <Tabs defaultValue="overview" className="space-y-5">
         <TabsList className="w-full grid grid-cols-3 bg-muted/50 p-1 rounded-xl h-11">

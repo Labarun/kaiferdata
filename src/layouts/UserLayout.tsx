@@ -8,12 +8,13 @@
  * ProtectedRoute) or to /dashboard/become-agent for normal users.
  */
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Wifi, Wallet, ShoppingCart, Store, UserCircle, ArrowRightLeft } from "lucide-react";
+import { Home, Wifi, Wallet, ShoppingCart, Store, UserCircle, ArrowRightLeft, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { NavItem } from "@/layouts/DashboardLayout";
 
 /** Extra nav items shown in desktop sidebar only (don't fit on mobile dock) */
 const desktopExtra: NavItem[] = [
+  { label: "Special Offer", path: "/dashboard/special", icon: Sparkles },
   { label: "Transactions", path: "/dashboard/transactions", icon: ArrowRightLeft },
   { label: "Profile", path: "/dashboard/profile", icon: UserCircle },
 ];
