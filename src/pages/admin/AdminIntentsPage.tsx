@@ -1,95 +1,122 @@
 /**
- * Admin Purchase Intents Page
+ * Admin Purchase Intents — paginated + filterable + mobile-first.
+ * Retry/finalize moderation lives on the detail page & reconciliation.
  */
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
+import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
+import { ResponsiveTable, type ResponsiveColumn } from "@/components/admin/ResponsiveTable";
+import { DataPagination } from "@/components/admin/DataPagination";
+import { useAdminPagination } from "@/hooks/useAdminPagination";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Search, Loader2, ChevronRight } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { RefreshCw, FileText, AlertTriangle, Clock } from "lucide-react";
+
+const STATUSES = ["all", "created", "pending_payment", "payment_processing", "payment_confirmed", "completed", "cancelled", "expired"];
+type Intent = Record<string, any>;
 
 export default function AdminIntentsPage() {
-  const [intents, setIntents] = useState<Record<string, unknown>[]>([]);
+  const navigate = useNavigate();
+  const pg = useAdminPagination(30);
+  const [intents, setIntents] = useState<Intent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [stats, setStats] = useState({ total: 0, confirmed: 0, inflight: 0 });
 
-  const fetchIntents = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from("purchase_intents")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+  useEffect(() => {
+    (async () => {
+      const C = { count: "exact" as const, head: true };
+      const [t, c, i] = await Promise.all([
+        supabase.from("purchase_intents").select("id", C),
+        supabase.from("purchase_intents").select("id", C).eq("status", "payment_confirmed"),
+        supabase.from("purchase_intents").select("id", C).in("status", ["created", "pending_payment", "payment_processing"]),
+      ]);
+      setStats({ total: t.count || 0, confirmed: c.count || 0, inflight: i.count || 0 });
+    })();
+  }, [reloadKey]);
 
-    if (search.trim()) {
-      query = query.or(
-        `intent_reference.ilike.%${search.trim()}%,phone_number.ilike.%${search.trim()}%`
-      );
-    }
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      let q = supabase.from("purchase_intents").select("*", { count: "exact" })
+        .order("created_at", { ascending: false }).range(pg.from, pg.to);
+      if (status !== "all") q = q.eq("status", status as any);
+      const term = search.trim().replace(/[%,]/g, "");
+      if (term) q = q.or(`intent_reference.ilike.%${term}%,phone_number.ilike.%${term}%`);
+      if (dateFrom) q = q.gte("created_at", dateFrom);
+      if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59`);
+      const { data, count } = await q;
+      if (cancelled) return;
+      setIntents(data || []);
+      pg.setTotal(count || 0);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pg.page, pg.pageSize, reloadKey]);
 
-    const { data } = await query;
-    setIntents(data || []);
-    setLoading(false);
-  }, [search]);
+  const refresh = () => setReloadKey((k) => k + 1);
+  const applyFilters = useCallback(() => { pg.setPage(0); setReloadKey((k) => k + 1); }, [pg]);
+  const setStatusChip = (v: string) => { setStatus(v); pg.setPage(0); setReloadKey((k) => k + 1); };
 
-  useEffect(() => { fetchIntents(); }, [fetchIntents]);
+  const statStrip: AdminStat[] = [
+    { label: "Total Intents", value: stats.total.toLocaleString(), icon: FileText, tone: "primary" },
+    { label: "Confirmed (stuck)", value: stats.confirmed.toLocaleString(), icon: AlertTriangle, tone: stats.confirmed > 0 ? "warning" : "default" },
+    { label: "In Flight", value: stats.inflight.toLocaleString(), icon: Clock },
+  ];
+
+  const columns: ResponsiveColumn<Intent>[] = [
+    { key: "ref", header: "Reference", mobile: "title", cell: (i) => <span className="font-mono text-[12px] font-medium text-primary">{i.intent_reference}</span> },
+    { key: "meta", header: "Network", mobile: "subtitle", cell: (i) => <span className="text-muted-foreground">{i.network} · {i.intent_type}</span> },
+    { key: "amount", header: "Amount", align: "right", mobile: "trailing", cell: (i) => <span className="font-semibold">GH₵{Number(i.amount_expected).toLocaleString()}</span> },
+    { key: "phone", header: "Phone", mobile: "row", cell: (i) => <span className="font-mono text-[12px] text-muted-foreground">{i.phone_number || "—"}</span> },
+    { key: "status", header: "Status", mobile: "row", cell: (i) => <OperationsBadge status={i.status} /> },
+    { key: "created", header: "Created", mobile: "row", cell: (i) => <span className="text-[11px] text-muted-foreground whitespace-nowrap">{new Date(i.created_at).toLocaleString()}</span> },
+  ];
 
   return (
     <div className="animate-fade-in space-y-4">
-      <PageHeader title="Purchase Intents" description="All checkout intents and their lifecycle" />
+      <PageHeader title="Purchase Intents" description="All checkout intents and their lifecycle" actions={
+        <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+      } />
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-        <Input
-          placeholder="Search by reference or phone…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 h-10 text-sm"
-          onKeyDown={(e) => e.key === "Enter" && fetchIntents()}
-        />
-      </div>
+      <AdminStatStrip stats={statStrip} cols={3} />
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/50">
-                {["Reference", "Network", "Amount", "Phone", "Status", "Type", "Created", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></td></tr>
-              ) : intents.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-8 text-xs text-muted-foreground">No intents found.</td></tr>
-              ) : (
-                intents.map((i) => (
-                  <tr key={i.id as string} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                    <td className="px-3 py-2.5">
-                      <Link to={`/admin/intents/${i.id}`} className="font-mono text-[12px] font-medium text-primary hover:underline">
-                        {i.intent_reference as string}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2.5 text-[12px]">{i.network as string}</td>
-                    <td className="px-3 py-2.5 text-[12px] font-medium">GH₵{Number(i.amount_expected).toLocaleString()}</td>
-                    <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">{i.phone_number as string}</td>
-                    <td className="px-3 py-2.5"><OperationsBadge status={i.status as string} /></td>
-                    <td className="px-3 py-2.5 text-[11px] text-muted-foreground">{i.intent_type as string}</td>
-                    <td className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">{new Date(i.created_at as string).toLocaleDateString()}</td>
-                    <td className="px-3 py-2.5">
-                      <Link to={`/admin/intents/${i.id}`}><ChevronRight className="h-4 w-4 text-muted-foreground/40" /></Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <AdminFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        onSubmit={applyFilters}
+        placeholder="Search reference or phone… (Enter)"
+        chips={[{ label: "Status", value: status, options: STATUSES.map((s) => ({ label: s.replace(/_/g, " "), value: s })), onChange: setStatusChip }]}
+        advanced={
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1"><Label className="text-[11px]">From date</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" /></div>
+            <div className="space-y-1"><Label className="text-[11px]">To date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" /></div>
+            <div className="col-span-2"><Button size="sm" onClick={applyFilters}>Apply</Button></div>
+          </div>
+        }
+      />
+
+      <ResponsiveTable
+        rows={intents}
+        columns={columns}
+        keyFn={(i) => i.id}
+        loading={loading}
+        emptyText="No intents match these filters."
+        onRowClick={(i) => navigate(`/admin/intents/${i.id}`)}
+      />
+
+      <DataPagination pagination={pg} rowsOnPage={intents.length} />
     </div>
   );
 }
