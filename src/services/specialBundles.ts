@@ -220,18 +220,19 @@ export function normalizeMtnNumber(input: string): string | null {
 const db = supabase as any;
 
 export async function fetchSpecialSettings(): Promise<SpecialSettings> {
-  const { data } = await db
-    .from("system_settings")
-    .select("setting_key, setting_value")
-    .in("setting_key", [SPECIAL_SETTING_KEYS.enabled, SPECIAL_SETTING_KEYS.eta]);
-
-  const rows: Array<{ setting_key: string; setting_value: string }> = data || [];
-  const map = new Map(rows.map((r) => [r.setting_key, r.setting_value]));
-  const etaRaw = map.get(SPECIAL_SETTING_KEYS.eta) as SpecialDeliveryEta | undefined;
-  return {
-    offerEnabled: (map.get(SPECIAL_SETTING_KEYS.enabled) ?? "true") !== "false",
-    eta: etaRaw && DELIVERY_ETA_OPTIONS[etaRaw] ? etaRaw : "few_minutes",
-  };
+  // Read via a SECURITY DEFINER RPC so it keeps working for normal users even
+  // after `system_settings` is locked to admin-only reads by the security pass.
+  const { data, error } = await (supabase.rpc as any)("get_special_bundle_settings");
+  if (!error && data) {
+    const row = Array.isArray(data) ? data[0] : data;
+    const etaRaw = row?.delivery_eta as SpecialDeliveryEta | undefined;
+    return {
+      offerEnabled: row?.offer_enabled !== false,
+      eta: etaRaw && DELIVERY_ETA_OPTIONS[etaRaw] ? etaRaw : "few_minutes",
+    };
+  }
+  // Safe default while the backend RPC isn't deployed yet.
+  return { offerEnabled: true, eta: "few_minutes" };
 }
 
 export async function fetchActiveSpecialPackages(): Promise<SpecialBundlePackage[]> {

@@ -188,30 +188,22 @@ export async function deleteSpecialPackage(id: string): Promise<void> {
 /* Settings (delivery ETA + kill switch)                               */
 /* ------------------------------------------------------------------ */
 
-async function upsertSetting(key: string, value: string): Promise<void> {
-  // Update first; if the row doesn't exist yet, insert it (self-heals an
-  // unseeded key). Mirrors the lockdown upsert pattern used elsewhere.
-  const { data: existing } = await db
-    .from("system_settings")
-    .select("id")
-    .eq("setting_key", key)
-    .maybeSingle();
-
-  if (existing) {
-    const { error } = await db.from("system_settings").update({ setting_value: value }).eq("setting_key", key);
-    if (error) throw error;
-  } else {
-    const { error } = await db
-      .from("system_settings")
-      .insert({ setting_key: key, setting_value: value, setting_group: "special_bundle" });
-    if (error) throw error;
-  }
+/**
+ * Writes go through an admin-guarded SECURITY DEFINER RPC that whitelists the
+ * two special-bundle setting keys — so it's independent of system_settings RLS.
+ */
+async function setSpecialSetting(key: string, value: string): Promise<void> {
+  const { error } = await (supabase.rpc as any)("admin_set_special_bundle_setting", {
+    _key: key,
+    _value: value,
+  });
+  if (error) throw new Error(error.message || "Could not update setting.");
 }
 
 export async function setSpecialEta(eta: SpecialDeliveryEta): Promise<void> {
-  await upsertSetting(SPECIAL_SETTING_KEYS.eta, eta);
+  await setSpecialSetting(SPECIAL_SETTING_KEYS.eta, eta);
 }
 
 export async function setSpecialOfferEnabled(enabled: boolean): Promise<void> {
-  await upsertSetting(SPECIAL_SETTING_KEYS.enabled, enabled ? "true" : "false");
+  await setSpecialSetting(SPECIAL_SETTING_KEYS.enabled, enabled ? "true" : "false");
 }
