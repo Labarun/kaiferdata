@@ -18,36 +18,49 @@ export interface AdminUserRow {
   wallet_balance: number;
 }
 
-/** List users with search + filters. RLS already restricts this to admins. */
+/** List users with search + filters, paginated server-side. RLS restricts to admins. */
 export async function listUsers(params: {
   search?: string;
   role?: AppRole | "all";
   status?: AccountStatus | "all";
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 }) {
+  const pageSize = params.pageSize ?? 30;
+  const page = params.page ?? 0;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  // When a specific role is selected, pre-resolve matching user_ids so we can
+  // paginate + count server-side (role is stored in user_roles, not profiles).
+  let roleIds: string[] | null = null;
+  if (params.role && params.role !== "all") {
+    const { data: rr } = await supabase.from("user_roles").select("user_id").eq("role", params.role);
+    roleIds = (rr ?? []).map((r) => r.user_id);
+    if (roleIds.length === 0) return { data: [] as AdminUserRow[], count: 0, error: null };
+  }
+
   let q = supabase
     .from("profiles")
-    .select("user_id, full_name, email, username, phone, account_status, created_at, last_login_at")
+    .select("user_id, full_name, email, username, phone, account_status, created_at, last_login_at", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(params.limit ?? 100);
+    .range(from, to);
 
   if (params.status && params.status !== "all") q = q.eq("account_status", params.status);
+  if (roleIds) q = q.in("user_id", roleIds);
   if (params.search?.trim()) {
-    // Strip PostgREST filter metacharacters so the term can't break out of the
-    // .or() expression (filter injection); search is admin-only + RLS-bound, but
-    // this keeps a stray comma/paren from producing a malformed query.
+    // Strip PostgREST filter metacharacters so a stray comma/paren can't break
+    // out of the .or() expression (filter injection); admin-only + RLS-bound.
     const s = params.search.trim().replace(/[,()*\\]/g, " ").trim();
     if (s) {
-      q = q.or(
-        `full_name.ilike.%${s}%,email.ilike.%${s}%,username.ilike.%${s}%,phone.ilike.%${s}%`,
-      );
+      q = q.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,username.ilike.%${s}%,phone.ilike.%${s}%`);
     }
   }
-  const { data: profiles, error } = await q;
-  if (error || !profiles) return { data: [] as AdminUserRow[], error };
+  const { data: profiles, count, error } = await q;
+  if (error || !profiles) return { data: [] as AdminUserRow[], count: 0, error };
 
   const ids = profiles.map((p) => p.user_id);
-  if (ids.length === 0) return { data: [] as AdminUserRow[], error: null };
+  if (ids.length === 0) return { data: [] as AdminUserRow[], count: count ?? 0, error: null };
 
   const [{ data: roles }, { data: wallets }] = await Promise.all([
     supabase.from("user_roles").select("user_id, role").in("user_id", ids),
@@ -55,7 +68,6 @@ export async function listUsers(params: {
   ]);
 
   const roleByUser = new Map<string, AppRole>();
-  // pick highest role per user
   const rank: Record<AppRole, number> = { admin: 1, staff: 2, agent: 3, user: 4 };
   for (const r of roles ?? []) {
     const cur = roleByUser.get(r.user_id);
@@ -64,16 +76,13 @@ export async function listUsers(params: {
   const balByUser = new Map<string, number>();
   for (const w of wallets ?? []) balByUser.set(w.user_id, Number(w.current_balance ?? 0));
 
-  let rows: AdminUserRow[] = profiles.map((p) => ({
+  const rows: AdminUserRow[] = profiles.map((p) => ({
     ...p,
     role: roleByUser.get(p.user_id) ?? "user",
     wallet_balance: balByUser.get(p.user_id) ?? 0,
   }));
 
-  if (params.role && params.role !== "all") {
-    rows = rows.filter((r) => r.role === params.role);
-  }
-  return { data: rows, error: null };
+  return { data: rows, count: count ?? 0, error: null };
 }
 
 export async function getUserRoles(userId: string) {

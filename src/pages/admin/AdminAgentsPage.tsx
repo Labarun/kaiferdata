@@ -18,8 +18,10 @@ import {
   listApplications,
   type AgentApplicationWithUser,
 } from "@/services/agentAdmin";
-import { Search, Store, User, Mail, Phone, MapPin } from "lucide-react";
+import { Search, Store, User, Mail, Phone, MapPin, UserCheck, Clock, Ban } from "lucide-react";
 import { AdminAgentDetailDialog } from "@/components/admin/AdminAgentDetailDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
 
 type TabKey = "pending" | "active" | "suspended" | "declined" | "all";
 
@@ -47,6 +49,20 @@ export default function AdminAgentsPage() {
   const [rows, setRows] = useState<AgentApplicationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [counts, setCounts] = useState({ pending: 0, active: 0, suspended: 0, total: 0 });
+
+  useEffect(() => {
+    (async () => {
+      const C = { count: "exact" as const, head: true };
+      const [pend, act, susp, tot] = await Promise.all([
+        supabase.from("agent_applications").select("id", C).in("status", ["submitted", "under_review", "needs_changes"]),
+        supabase.from("agent_profiles").select("id", C).eq("status", "active"),
+        supabase.from("agent_profiles").select("id", C).eq("status", "suspended"),
+        supabase.from("agent_profiles").select("id", C),
+      ]);
+      setCounts({ pending: pend.count || 0, active: act.count || 0, suspended: susp.count || 0, total: tot.count || 0 });
+    })();
+  }, []);
 
   const refresh = async () => {
     setLoading(true);
@@ -84,6 +100,15 @@ export default function AdminAgentsPage() {
       <PageHeader
         title="Agents"
         description="Review applications, approve agents, manage subscriptions."
+      />
+
+      <AdminStatStrip
+        stats={[
+          { label: "Pending Review", value: counts.pending, icon: Clock, tone: counts.pending > 0 ? "warning" : "default" },
+          { label: "Active", value: counts.active, icon: UserCheck, tone: "success" },
+          { label: "Suspended", value: counts.suspended, icon: Ban, tone: counts.suspended > 0 ? "destructive" : "default" },
+          { label: "Total Agents", value: counts.total, icon: Store, tone: "primary" },
+        ] as AdminStat[]}
       />
 
       {/* Tabs + search */}

@@ -2,8 +2,9 @@
  * Admin User Management — search, role mgmt, wallet adjust, status, notes.
  * All mutations go through SECURITY DEFINER RPCs that write audit logs.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Shield } from "lucide-react";
+import { Loader2, Search, Shield, Users as UsersIcon, UserCheck, Headset } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoleBadge } from "@/components/shared/RoleBadge";
+import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
+import { DataPagination } from "@/components/admin/DataPagination";
+import { useAdminPagination } from "@/hooks/useAdminPagination";
 import {
   listUsers, getUserRoles, setUserRole,
   adminCreditWallet, adminDebitWallet, adminSetAccountStatus,
@@ -34,49 +38,81 @@ const ALL_STATUSES: AccountStatus[] = ["active", "suspended", "pending", "disabl
 
 export default function AdminUsersPage() {
   const { user: admin } = useAuth();
-  const { toast } = useToast();
+  const pg = useAdminPagination(30);
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [statusFilter, setStatusFilter] = useState<AccountStatus | "all">("all");
   const [selected, setSelected] = useState<AdminUserRow | null>(null);
+  const [counts, setCounts] = useState({ total: 0, agents: 0, staff: 0, admins: 0 });
 
-  const refresh = async () => {
-    setLoading(true);
-    const { data } = await listUsers({ search, role: roleFilter, status: statusFilter });
-    setRows(data);
-    setLoading(false);
-  };
+  useEffect(() => {
+    (async () => {
+      const C = { count: "exact" as const, head: true };
+      const [t, a, s, ad] = await Promise.all([
+        supabase.from("profiles").select("id", C),
+        supabase.from("user_roles").select("user_id", C).eq("role", "agent"),
+        supabase.from("user_roles").select("user_id", C).eq("role", "staff"),
+        supabase.from("user_roles").select("user_id", C).eq("role", "admin"),
+      ]);
+      setCounts({ total: t.count || 0, agents: a.count || 0, staff: s.count || 0, admins: ad.count || 0 });
+    })();
+  }, [reloadKey]);
 
-  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [roleFilter, statusFilter]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data, count } = await listUsers({ search, role: roleFilter, status: statusFilter, page: pg.page, pageSize: pg.pageSize });
+      if (cancelled) return;
+      setRows(data);
+      pg.setTotal(count || 0);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pg.page, pg.pageSize, reloadKey]);
+
+  const refresh = () => setReloadKey((k) => k + 1);
+  const applyFilters = () => { pg.setPage(0); setReloadKey((k) => k + 1); };
+
+  const statStrip: AdminStat[] = [
+    { label: "Total Users", value: counts.total.toLocaleString(), icon: UsersIcon, tone: "primary" },
+    { label: "Agents", value: counts.agents.toLocaleString(), icon: UserCheck, tone: "success" },
+    { label: "Staff", value: counts.staff.toLocaleString(), icon: Headset },
+    { label: "Admins", value: counts.admins.toLocaleString(), icon: Shield, tone: "warning" },
+  ];
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-4">
       <PageHeader title="Users" description="Manage accounts, roles, wallets & notes" />
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+      <AdminStatStrip stats={statStrip} />
+
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && refresh()}
+            onKeyDown={(e) => e.key === "Enter" && applyFilters()}
             placeholder="Name, email, username, phone…" className="pl-9" />
         </div>
-        <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | "all")}>
+        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as AppRole | "all"); applyFilters(); }}>
           <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All roles</SelectItem>
             {ALL_ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AccountStatus | "all")}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as AccountStatus | "all"); applyFilters(); }}>
           <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             {ALL_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={refresh} variant="secondary">Search</Button>
+        <Button onClick={applyFilters} variant="secondary">Search</Button>
       </div>
 
       {loading ? (
@@ -105,6 +141,8 @@ export default function AdminUsersPage() {
           ))}
         </div>
       )}
+
+      <DataPagination pagination={pg} rowsOnPage={rows.length} />
 
       {selected && admin && (
         <UserDetailDialog
