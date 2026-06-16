@@ -31,26 +31,16 @@ export interface DataPackage {
 
 export type DataPackageInsert = Omit<DataPackage, "id" | "created_at" | "updated_at">;
 
-/** Fetch packages visible on the public buy page */
+/** Fetch packages visible on the public buy page (anon-safe RPC — no cost columns) */
 export async function fetchPublicPackages(): Promise<DataPackage[]> {
-  const { data, error } = await supabase
-    .from("data_packages" as any)
-    .select("*")
-    .eq("is_active", true)
-    .eq("visible_on_public", true);
-
+  const { data, error } = await (supabase as any).rpc("list_public_packages", { _logged_in: false });
   if (error) throw error;
   return sortPackagesAutomatically((data as any[]) || []);
 }
 
-/** Fetch packages visible for logged-in users */
+/** Fetch packages visible for logged-in users (safe RPC — no cost columns) */
 export async function fetchLoggedInPackages(): Promise<DataPackage[]> {
-  const { data, error } = await supabase
-    .from("data_packages" as any)
-    .select("*")
-    .eq("is_active", true)
-    .eq("visible_for_logged_in", true);
-
+  const { data, error } = await (supabase as any).rpc("list_public_packages", { _logged_in: true });
   if (error) throw error;
   return sortPackagesAutomatically((data as any[]) || []);
 }

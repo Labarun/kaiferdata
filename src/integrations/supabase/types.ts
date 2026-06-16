@@ -1757,6 +1757,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_public_packages: {
+        Args: { _logged_in?: boolean }
+        Returns: {
+          currency: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_agent_resaleable: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type: string
+          package_volume_value: string
+          selling_price: number
+          validity_label: string
+          visible_for_logged_in: boolean
+          visible_on_public: boolean
+        }[]
+      }
       lookup_intent_public: {
         Args: { _reference: string }
         Returns: {
