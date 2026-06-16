@@ -1894,6 +1894,15 @@ export type Database = {
           selling_price: number
         }[]
       }
+      write_audit_log: {
+        Args: {
+          _action: string
+          _metadata?: Json
+          _target_id?: string
+          _target_type?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_status: "active" | "suspended" | "pending" | "disabled"
