@@ -214,7 +214,7 @@ export default function SpecialOfferOrderPage() {
         </Button>
         {!ackAll && (
           <p className="text-[11px] text-center text-muted-foreground">
-            Tick all the boxes above to enable ordering.
+            Tick the confirmation box above to enable ordering.
           </p>
         )}
       </div>
