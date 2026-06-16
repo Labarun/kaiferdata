@@ -12,11 +12,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   SPECIAL_SETTING_KEYS,
-  bundleTypeLabel,
-  formatGhs,
   type SpecialBundleOrder,
   type SpecialBundlePackage,
-  type SpecialBundleType,
   type SpecialDeliveryEta,
   type SpecialOrderStatus,
 } from "@/services/specialBundles";
@@ -104,33 +101,22 @@ export async function cancelAndRefundSpecialOrder(orderId: string, reason: strin
 /* Supplier copy helpers                                               */
 /* ------------------------------------------------------------------ */
 
-/** Build a clean, paste-ready block to forward a single order to the supplier. */
-export function formatOrderForSupplier(order: SpecialBundleOrder): string {
-  const snap = (order.package_snapshot || {}) as Record<string, unknown>;
-  const offer =
-    (snap.name as string) ||
-    [snap.size_label, snap.bundle_type ? bundleTypeLabel(snap.bundle_type as SpecialBundleType) : null]
-      .filter(Boolean)
-      .join(" ") ||
-    "Special bundle";
-  const size = (snap.size_label as string) || "";
-  const type = snap.bundle_type ? bundleTypeLabel(snap.bundle_type as SpecialBundleType) : "";
-  return [
-    `Order: ${order.public_order_id}`,
-    `Network: ${order.network}`,
-    `Number: ${order.recipient_number}`,
-    `Offer: ${offer}`,
-    size || type ? `Bundle: ${[size, type].filter(Boolean).join(" · ")}` : null,
-    `Qty: 1`,
-    `Amount: ${formatGhs(order.amount_charged)}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+/** Just the data size from a package label, e.g. "2.6GB + 1,077 mins" → "2.6GB". */
+function dataSize(snap: Record<string, unknown>): string {
+  const label = (snap.size_label as string) || "";
+  const match = label.match(/[\d.]+\s*(?:GB|MB|TB)/i);
+  return (match ? match[0] : label.split("+")[0] || label).replace(/\s+/g, "").trim();
 }
 
-/** Build a paste-ready block for many orders at once. */
+/** Simple supplier line for one order, e.g. "024XXXXXXX 1.7GB". */
+export function formatOrderForSupplier(order: SpecialBundleOrder): string {
+  const snap = (order.package_snapshot || {}) as Record<string, unknown>;
+  return `${order.recipient_number} ${dataSize(snap)}`.trim();
+}
+
+/** One simple line per order, ready to paste to the supplier. */
 export function formatOrdersForSupplierBulk(orders: SpecialBundleOrder[]): string {
-  return orders.map((o) => formatOrderForSupplier(o)).join("\n\n———\n\n");
+  return orders.map((o) => formatOrderForSupplier(o)).join("\n");
 }
 
 /* ------------------------------------------------------------------ */
