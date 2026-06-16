@@ -138,9 +138,9 @@ export default function AdminDashboardHome() {
             <Link
               key={sec.path}
               to={sec.path}
-              className="border rounded-xl bg-card p-3.5 flex items-center gap-3 hover:bg-muted/40 hover:-translate-y-0.5 transition-all group"
+              className="glass-card rounded-2xl p-3.5 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 group"
             >
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 ring-1 ring-inset ring-primary/15 flex items-center justify-center shrink-0">
                 <sec.icon className="h-[18px] w-[18px] text-primary" />
               </div>
               <div className="min-w-0 flex-1">
@@ -154,7 +154,7 @@ export default function AdminDashboardHome() {
       </div>
 
       {/* Recent orders */}
-      <Card>
+      <Card className="glass-card rounded-2xl border-border/40">
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Package className="h-4 w-4 text-primary" /> Recent Orders

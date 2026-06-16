@@ -6,6 +6,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "@/services/auth";
+import kaiferLogo from "@/assets/kaiferdata-logo.png";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { RoleBadge } from "@/components/shared/RoleBadge";
 import { Button } from "@/components/ui/button";
@@ -71,15 +72,16 @@ export function AdminLayout({ navGroups, quickDock = [], title, audienceFilter }
           collapsed ? "w-16" : "w-60"
         }`}
       >
-        <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
+        <div className="flex h-14 items-center justify-between px-3 border-b border-sidebar-border/70 shrink-0">
           {!collapsed && (
-            <Link to="/" className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">
-              Kaiferdata
+            <Link to="/" className="flex items-center gap-2 group pl-1">
+              <img src={kaiferLogo} alt="" className="h-7 w-7 object-contain shrink-0" />
+              <span className="text-sm font-bold tracking-tight text-sidebar-primary-foreground">Kaiferdata</span>
             </Link>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+            className="p-1.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary-foreground transition-colors"
             aria-label="Toggle sidebar"
           >
             {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -101,13 +103,13 @@ export function AdminLayout({ navGroups, quickDock = [], title, audienceFilter }
                   key={item.path}
                   to={item.path}
                   title={item.label}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
                     isActive(item.path)
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "bg-gradient-to-r from-primary/90 to-primary/70 text-primary-foreground font-semibold shadow-[0_4px_14px_-4px_hsl(213_73%_40%/0.55)]"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-primary-foreground"
                   } ${collapsed ? "justify-center px-2" : ""}`}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.path) ? "scale-110" : ""} transition-transform`} />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               ))}
@@ -132,7 +134,7 @@ export function AdminLayout({ navGroups, quickDock = [], title, audienceFilter }
 
       {/* ── Main area ── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-card/80 backdrop-blur-sm px-4">
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-3 glass-topbar px-4">
           <button
             className="md:hidden p-1.5 -ml-1"
             onClick={() => setMenuOpen(true)}
@@ -186,28 +188,31 @@ export function AdminLayout({ navGroups, quickDock = [], title, audienceFilter }
         </main>
       </div>
 
-      {/* ── Mobile bottom quick-dock ── */}
+      {/* ── Mobile floating glass dock ── */}
       {quickDock.length > 0 && (
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t border-border"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          className="md:hidden fixed left-3 right-3 z-40 glass-dock rounded-2xl"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
         >
-          <div className="flex items-stretch justify-around">
-            {quickDock.slice(0, 4).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-medium transition-colors ${
-                  isActive(item.path) ? "text-primary" : "text-muted-foreground active:scale-95"
-                }`}
-              >
-                <item.icon className={`h-5 w-5 ${isActive(item.path) ? "scale-110" : ""} transition-transform`} />
-                <span className="truncate max-w-[64px]">{item.label}</span>
-              </Link>
-            ))}
+          <div className="flex items-stretch justify-around px-1 py-1.5">
+            {quickDock.slice(0, 4).map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl text-[10px] font-medium transition-all duration-200 ${
+                    active ? "glass-nav-active text-primary" : "text-muted-foreground active:scale-95"
+                  }`}
+                >
+                  <item.icon className={`h-5 w-5 ${active ? "scale-110" : ""} transition-transform`} />
+                  <span className="truncate max-w-[60px]">{item.label}</span>
+                </Link>
+              );
+            })}
             <button
               onClick={() => setMenuOpen(true)}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-medium text-muted-foreground active:scale-95"
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl text-[10px] font-medium text-muted-foreground active:scale-95"
             >
               <MoreHorizontal className="h-5 w-5" />
               <span>More</span>
@@ -250,9 +255,12 @@ function MobileMenu({
         className={`fixed inset-y-0 left-0 z-[9999] w-[86%] max-w-[320px] bg-sidebar border-r border-sidebar-border md:hidden
           flex flex-col transition-transform duration-300 ease-out ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
-          <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">{title}</span>
-          <button onClick={onClose} className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-accent" aria-label="Close menu">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border/70 shrink-0">
+          <span className="flex items-center gap-2">
+            <img src={kaiferLogo} alt="" className="h-6 w-6 object-contain" />
+            <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight">{title}</span>
+          </span>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary-foreground transition-colors" aria-label="Close menu">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -268,10 +276,10 @@ function MobileMenu({
                   key={item.path}
                   to={item.path}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors active:opacity-70 ${
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all active:opacity-70 ${
                     isActive(item.path)
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                      ? "bg-gradient-to-r from-primary/90 to-primary/70 text-primary-foreground font-semibold shadow-[0_4px_14px_-4px_hsl(213_73%_40%/0.55)]"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-primary-foreground"
                   }`}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />

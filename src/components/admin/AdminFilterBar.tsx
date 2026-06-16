@@ -69,10 +69,10 @@ export function AdminFilterBar({
                   key={opt.value}
                   onClick={() => group.onChange(opt.value)}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors capitalize whitespace-nowrap shrink-0",
+                    "px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all capitalize whitespace-nowrap shrink-0",
                     group.value === opt.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-muted/50",
+                      ? "bg-gradient-to-br from-primary to-primary/85 text-primary-foreground border-primary shadow-[0_2px_8px_-2px_hsl(213_73%_40%/0.4)]"
+                      : "bg-card/60 border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                   )}
                 >
                   {opt.label}
@@ -84,7 +84,7 @@ export function AdminFilterBar({
       )}
 
       {advanced && showAdvanced && (
-        <div className="rounded-lg border bg-muted/20 p-3">{advanced}</div>
+        <div className="rounded-xl glass-subtle p-3 animate-fade-in">{advanced}</div>
       )}
     </div>
   );

@@ -54,14 +54,14 @@ export function ResponsiveTable<T>({
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12 border rounded-lg bg-card">
+      <div className="flex justify-center py-14 glass-card rounded-2xl">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
   if (rows.length === 0) {
     return (
-      <div className="text-center py-12 text-sm text-muted-foreground border rounded-lg bg-card">{emptyText}</div>
+      <div className="text-center py-14 text-sm text-muted-foreground glass-card rounded-2xl">{emptyText}</div>
     );
   }
 
@@ -73,11 +73,11 @@ export function ResponsiveTable<T>({
   return (
     <>
       {/* ── Desktop table ── */}
-      <div className="hidden md:block border rounded-lg overflow-hidden bg-card">
+      <div className="hidden md:block glass-card rounded-2xl overflow-hidden animate-fade-in">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border/60 bg-muted/30">
+              <tr className="border-b border-border/40 bg-background/40">
                 {selectable && (
                   <th className="px-3 py-2.5 w-[40px]">
                     <Checkbox
@@ -109,8 +109,8 @@ export function ResponsiveTable<T>({
                   <tr
                     key={id}
                     className={cn(
-                      "border-b border-border/30 transition-colors",
-                      onRowClick ? "hover:bg-muted/30 cursor-pointer" : "hover:bg-muted/20",
+                      "border-b border-border/20 last:border-0 transition-colors",
+                      onRowClick ? "hover:bg-primary/[0.04] cursor-pointer" : "hover:bg-primary/[0.02]",
                       selectedIds?.has(id) && "bg-primary/5",
                     )}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
@@ -146,7 +146,8 @@ export function ResponsiveTable<T>({
             <div
               key={id}
               className={cn(
-                "border rounded-xl bg-card p-3.5",
+                "glass-card rounded-2xl p-3.5 transition-all duration-200 active:scale-[0.99]",
+                onRowClick && "cursor-pointer",
                 selectedIds?.has(id) && "ring-1 ring-primary/40 bg-primary/5",
               )}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
