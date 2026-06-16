@@ -3,6 +3,7 @@
  * Admin-side operations for supplier config, product sync, status sync, and bulk operations.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { writeAuditLog } from "@/services/auth";
 
 export interface Supplier {
   id: string;
