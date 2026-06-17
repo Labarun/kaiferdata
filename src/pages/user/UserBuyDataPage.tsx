@@ -333,8 +333,8 @@ export default function UserBuyDataPage() {
               <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
             </div>
             <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
-              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">{deliverySpeed}</p>
-              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">All orders are being processed according to the current network conditions.</p>
+              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">Delivery Status: {deliverySpeed}</p>
+              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
             </div>
             <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
               <div className="flex items-end gap-0.5 h-3">

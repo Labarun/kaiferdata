@@ -262,7 +262,7 @@ export default function AgentStorefrontPage() {
           <div className="max-w-md mx-auto text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-premium text-[9.5px] mb-6 refraction-rim overflow-hidden">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="font-semibold text-foreground/65 tracking-[0.12em] uppercase">Verified Store · <span className="text-foreground">{deliverySpeed}</span></span>
+              <span className="font-semibold text-foreground/65 tracking-[0.12em] uppercase">Verified Store · <span className="text-foreground">Delivery Status: {deliverySpeed}</span></span>
             </div>
 
             <div className="mx-auto mb-5 h-24 w-24 rounded-3xl glass-elevated flex items-center justify-center overflow-hidden ring-1 ring-primary/10 shadow-[0_18px_40px_-18px_hsl(213_55%_50%/0.35)]">
