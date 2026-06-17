@@ -49,7 +49,7 @@ export default function LandingPage() {
           <div className="glass-elevated px-4 py-1.5 rounded-full flex items-center gap-2 mb-8 border border-primary/20 bg-background/40 backdrop-blur-md">
             <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
             <span className="text-[10px] sm:text-[11px] whitespace-nowrap uppercase tracking-wider font-semibold text-muted-foreground">
-              System Online · <span className="text-foreground">{deliverySpeed}</span>
+              System Online · <span className="text-foreground">Delivery Status: {deliverySpeed}</span>
             </span>
           </div>
 
