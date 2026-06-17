@@ -1984,6 +1984,7 @@ export type Database = {
       list_public_packages: {
         Args: { _logged_in?: boolean }
         Returns: {
+          agent_base_price: number
           currency: string
           display_order: number
           id: string
