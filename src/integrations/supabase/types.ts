@@ -2031,8 +2031,8 @@ export type Database = {
           _user_id: string
         }
         Returns: {
-          created_count: number
           new_balance: number
+          orders_created: number
           txn_id: string
         }[]
       }
