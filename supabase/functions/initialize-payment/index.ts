@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
             resolvedPrice = Number(pkg.selling_price);
             priceSource = "data_packages";
           }
-        } else if (intent.intent_type === "agent_bulk_buy") {
+        } else if (intent.intent_type === "agent_bulk_buy" || intent.actor_type === "agent") {
           resolvedPrice = Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
           priceSource = "data_packages";
         } else {
@@ -397,20 +397,18 @@ Deno.serve(async (req) => {
       // finalization, commission calc) see the same number.
       const intentPatch: Record<string, unknown> = {};
       if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
-      if (priceSource === "agent_storefront") {
-        const existingCtx2 = existingCtx;
-        const existingReferral = (existingCtx2.referral || {}) as Record<string, unknown>;
-        intentPatch.order_context = {
-          ...existingCtx2,
-          referral: {
-            ...existingReferral,
-            agent_selling_price: resolvedPrice,
-            agent_base_price: pkg
-              ? Number(pkg.agent_base_price ?? existingReferral.agent_base_price ?? 0)
-              : Number(existingReferral.agent_base_price ?? 0),
-          },
-          server_resolved_price_source: priceSource,
+      if (agentProfileIdForPrice) {
+        const existingReferral = (existingCtx.referral || {}) as Record<string, unknown>;
+        const basePrice = pkg ? Number(pkg.agent_base_price ?? 0) : 0;
+        
+        existingCtx.referral = {
+          ...existingReferral,
+          agent_selling_price: resolvedPrice,
+          agent_base_price: basePrice * quantity,
         };
+        existingCtx.server_resolved_price_source = priceSource;
+        
+        intentPatch.order_context = existingCtx;
       }
       if (Object.keys(intentPatch).length > 0) {
         await supabase
