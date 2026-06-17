@@ -126,21 +126,21 @@ export async function fetchAgentReferredOrders(userId: string, agentProfileId: s
     console.error("fetchAgentReferredOrders RPC error:", referredError);
   }
 
-  // 2. Fetch bulk orders placed by the agent directly
-  const { data: bulkOrders, error: bulkError } = await supabase
+  // 2. Fetch direct orders placed by the agent directly (both bulk and single buys)
+  const { data: directOrders, error: directError } = await supabase
     .from("orders")
     .select("*")
     .eq("actor_id", userId)
-    .eq("origin_type", "agent_bulk_buy")
+    .or("actor_type.eq.agent,origin_type.eq.agent_bulk_buy")
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (bulkError) {
-    console.error("fetchAgentReferredOrders bulk query error:", bulkError);
+  if (directError) {
+    console.error("fetchAgentReferredOrders direct query error:", directError);
   }
 
   // Combine and sort them
-  const allOrders = [...(referredOrders || []), ...(bulkOrders || [])];
+  const allOrders = [...(referredOrders || []), ...(directOrders || [])];
   
   // Sort by created_at descending and deduplicate by id
   const uniqueOrdersMap = new Map();

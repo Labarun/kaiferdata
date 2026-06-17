@@ -58,7 +58,16 @@ export interface AgentAnalytics {
 
 /** Fetch analytics for a given agent_profile_id within a range. */
 export async function fetchAgentAnalytics(agentProfileId: string, range: AnalyticsRange): Promise<AgentAnalytics> {
-  // 1. Find intent IDs referenced by this agent
+  // 1. Fetch agent user_id from profile
+  const { data: profile } = await supabase
+    .from("agent_profiles")
+    .select("user_id")
+    .eq("id", agentProfileId)
+    .single();
+
+  const agentUserId = profile?.user_id;
+
+  // 2. Find intent IDs referenced by this agent (storefront sales)
   const { data: intents } = await supabase
     .from("purchase_intents")
     .select("id")
@@ -66,16 +75,27 @@ export async function fetchAgentAnalytics(agentProfileId: string, range: Analyti
     .limit(5000);
 
   const intentIds = (intents ?? []).map((i: any) => i.id);
-  if (intentIds.length === 0) {
+
+  // 3. Construct OR filter
+  let orFilter = "";
+  if (intentIds.length > 0) {
+    orFilter += `intent_id.in.(${intentIds.join(",")})`;
+  }
+  if (agentUserId) {
+    if (orFilter) orFilter += ",";
+    orFilter += `and(actor_id.eq.${agentUserId},or(actor_type.eq.agent,origin_type.eq.agent_bulk_buy))`;
+  }
+
+  if (!orFilter) {
     return { ordersCount: 0, revenue: 0, profit: 0, activeCustomers: 0, topBundles: [], recentOrders: [], recentEarnings: [] };
   }
 
-  // 2. Orders with date filter
+  // 4. Orders with date filter
   const { from, to } = rangeToBounds(range);
   let oq = supabase
     .from("orders")
-    .select("id, created_at, amount_charged, beneficiary_number, bundle_name, network, status, public_order_id")
-    .in("intent_id", intentIds)
+    .select("id, created_at, amount_charged, beneficiary_number, bundle_name, network, status, public_order_id, origin_type")
+    .or(orFilter)
     .order("created_at", { ascending: false });
   if (from) oq = oq.gte("created_at", from.toISOString());
   if (to) oq = oq.lt("created_at", to.toISOString());
