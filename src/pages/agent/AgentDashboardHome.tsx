@@ -405,34 +405,43 @@ export default function AgentDashboardHome() {
             <Card className="glass-card overflow-hidden">
               <CardContent className="p-0">
                 <ul className="divide-y divide-border/40">
-                  {analytics.recentOrders.map((o: any) => (
-                    <li key={o.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/10 transition-colors">
-                      <div className="min-w-0 flex-1 pr-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-[13px] font-semibold text-foreground truncate">
-                            {o.network} · {o.bundle_name}
+                  {analytics.recentOrders.map((o: any) => {
+                    const matchingEarning = analytics.recentEarnings?.find((e: any) => e.order_id === o.id);
+                    return (
+                      <li key={o.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/10 transition-colors">
+                        <div className="min-w-0 flex-1 pr-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-[13px] font-semibold text-foreground truncate">
+                              {o.network} · {o.bundle_name}
+                            </p>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 capitalize">
+                              {o.status}
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground/70 truncate font-medium">
+                            {o.beneficiary_number} <span className="mx-0.5">•</span> {o.public_order_id}
                           </p>
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 capitalize">
-                            {o.status}
-                          </Badge>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/70 truncate font-medium">
-                          {o.beneficiary_number} <span className="mx-0.5">•</span> {o.public_order_id}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[13px] font-bold text-foreground tabular-nums">
-                          {fmt(Number(o.amount_charged))}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">
-                          {o.origin_type === 'agent_bulk_buy' ? 'wholesale' : (o.status === "delivered" ? "—" : "pending")}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground/40 mt-1">
-                          {new Date(o.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
+                        <div className="text-right shrink-0">
+                          <p className="text-[13px] font-bold text-foreground tabular-nums">
+                            {fmt(Number(o.amount_charged))}
+                          </p>
+                          {matchingEarning ? (
+                            <p className="text-[10px] text-success font-semibold tabular-nums mt-0.5">
+                              +{fmt(Number(matchingEarning.commission_amount))}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                              {o.origin_type === 'agent_bulk_buy' ? 'wholesale' : "—"}
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground/40 mt-1">
+                            {new Date(o.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </CardContent>
             </Card>
