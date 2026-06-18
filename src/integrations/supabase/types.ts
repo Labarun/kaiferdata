@@ -1934,6 +1934,7 @@ export type Database = {
           store_name: string
           store_slug: string
           store_tagline: string
+          user_id: string
         }[]
       }
       get_sales_source_breakdown: {
