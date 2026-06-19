@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   Wallet,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import {
   setSpecialOrderStatus,
   cancelAndRefundSpecialOrder,
@@ -50,6 +52,7 @@ export default function AdminSpecialOrderDetailPage() {
   const [copied, setCopied] = useState(false);
   const [working, setWorking] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
+  const [revertOpen, setRevertOpen] = useState(false);
   const [reason, setReason] = useState("");
 
   const { data, isLoading, refetch } = useQuery({
@@ -85,11 +88,11 @@ export default function AdminSpecialOrderDetailPage() {
     toast({ title: "Copied", description: label });
   };
 
-  const changeStatus = async (next: "processing" | "delivered") => {
+  const changeStatus = async (next: "processing" | "delivered" | "pending", note?: string) => {
     setWorking(true);
     try {
-      await setSpecialOrderStatus(order.id, next);
-      toast({ title: `Marked as ${next}` });
+      await setSpecialOrderStatus(order.id, next, note);
+      toast({ title: next === "pending" ? "Moved back to Pending" : `Marked as ${next}` });
       refetch();
     } catch (e) {
       toast({ title: "Couldn't update", description: (e as Error).message, variant: "destructive" });
@@ -186,6 +189,11 @@ export default function AdminSpecialOrderDetailPage() {
             Send the details to the supplier, then mark as Processing. While still Pending you can cancel &amp; refund.
           </p>
         )}
+        {isProcessing && (
+          <p className="text-[12px] text-muted-foreground">
+            Marked as sent to the supplier. If it wasn't actually sent, move it back to Pending to re-enable cancel &amp; refund.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {isPending && (
             <Button size="sm" disabled={working} onClick={() => changeStatus("processing")} className="gap-1.5">
@@ -195,6 +203,11 @@ export default function AdminSpecialOrderDetailPage() {
           {(isProcessing || isPending) && (
             <Button size="sm" variant="outline" disabled={working} onClick={() => changeStatus("delivered")} className="gap-1.5">
               <CheckCircle2 className="h-4 w-4" /> Mark Delivered
+            </Button>
+          )}
+          {isProcessing && (
+            <Button size="sm" variant="outline" disabled={working} onClick={() => setRevertOpen(true)} className="gap-1.5">
+              <RotateCcw className="h-4 w-4" /> Move back to Pending
             </Button>
           )}
           {isPending && (
@@ -272,6 +285,24 @@ export default function AdminSpecialOrderDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Move back to Pending confirm */}
+      <ConfirmActionDialog
+        open={revertOpen}
+        onOpenChange={setRevertOpen}
+        title="Move order back to Pending?"
+        description={
+          <>
+            This sets the order back to <strong>Pending</strong> — use it if it wasn't actually sent to the supplier.
+            It re-enables <strong>Cancel &amp; Refund</strong>.
+          </>
+        }
+        confirmLabel="Move to Pending"
+        withNote
+        noteLabel="Reason (optional)"
+        notePlaceholder="E.g. not yet sent to supplier; needs refund…"
+        onConfirm={(note) => changeStatus("pending", note || "Reverted to pending by admin")}
+      />
     </div>
   );
 }
