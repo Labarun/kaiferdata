@@ -46,11 +46,30 @@ export default function LandingPage() {
           className="flex flex-col items-center relative z-10 w-full max-w-5xl mx-auto glass-hero rounded-[3rem] p-8 sm:p-12 md:p-16 border border-border/50 shadow-2xl shadow-primary/5"
         >
           {/* Dynamic Badge */}
-          <div className="glass-elevated px-4 py-1.5 rounded-full flex items-center gap-2 mb-8 border border-primary/20 bg-background/40 backdrop-blur-md">
-            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-[10px] sm:text-[11px] whitespace-nowrap uppercase tracking-wider font-semibold text-muted-foreground">
-              System Online · <span className="text-foreground">{deliverySpeed}</span>
+          <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden mb-8">
+            <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
             </span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
+              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
+            </div>
+            <div className="flex flex-col text-left mr-2 sm:mr-4 min-w-0">
+              <p className="text-[11px] sm:text-[12px] font-bold text-success leading-tight truncate">Delivery Status: {deliverySpeed}</p>
+              <p className="text-[9px] sm:text-[10px] text-success/70 leading-tight truncate">Orders are delivered according to this status.</p>
+            </div>
+            <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
+              <div className="flex items-end gap-0.5 h-2.5">
+                <div className="w-[2.5px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
+                <div className="w-[2.5px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
+                <div className="w-[2.5px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
+              </div>
+            </div>
+            <div className="ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
+              <span className="text-[7.5px] sm:text-[8px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
+                <span className="h-1 sm:h-1.2 w-1 sm:w-1.2 rounded-full bg-success"></span> Live
+              </span>
+            </div>
           </div>
 
           <h1 className="text-5xl md:text-4xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">

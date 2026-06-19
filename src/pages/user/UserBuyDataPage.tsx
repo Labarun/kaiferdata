@@ -44,6 +44,7 @@ type PaymentMethod = "wallet" | "paystack";
 export default function UserBuyDataPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const isAgent = user?.role === "agent" || user?.role === "admin";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -108,12 +109,16 @@ export default function UserBuyDataPage() {
   // Paystack auto-takes over when wallet can't cover the selected bundle.
   useEffect(() => {
     if (userTouchedPayment || !selectedPkg) return;
-    if (walletBalance >= Number(selectedPkg.selling_price)) {
+    const pkgPrice = (isAgent && Number(selectedPkg.agent_base_price) > 0)
+      ? Number(selectedPkg.agent_base_price)
+      : Number(selectedPkg.selling_price);
+
+    if (walletBalance >= pkgPrice) {
       setPaymentMethod("wallet");
     } else {
       setPaymentMethod("paystack");
     }
-  }, [walletBalance, selectedPkg, userTouchedPayment]);
+  }, [walletBalance, selectedPkg, userTouchedPayment, isAgent]);
 
   const handlePaymentMethodChange = useCallback((m: PaymentMethod) => {
     setUserTouchedPayment(true);
@@ -154,7 +159,9 @@ export default function UserBuyDataPage() {
       plan_code: selectedPkg.package_code,
       plan_name: selectedPkg.package_name,
       volume: selectedPkg.package_size_label,
-      amount: selectedPkg.selling_price,
+      amount: (isAgent && Number(selectedPkg.agent_base_price) > 0)
+        ? Number(selectedPkg.agent_base_price)
+        : Number(selectedPkg.selling_price),
       description: selectedPkg.validity_label,
       is_active: selectedPkg.is_active,
       sort_order: selectedPkg.display_order,
@@ -185,13 +192,17 @@ export default function UserBuyDataPage() {
       const previousOrders = queryClient.getQueryData(["user-orders", user?.id, ""]);
       const previousWallet = queryClient.getQueryData(["user-wallet", user?.id]);
 
+      const pkgPrice = (isAgent && Number(selectedPkg!.agent_base_price) > 0)
+        ? Number(selectedPkg!.agent_base_price)
+        : Number(selectedPkg!.selling_price);
+
       // 3. Optimistically update orders list
       const optimisticOrder = {
         id: "opt-" + Date.now(),
         actor_id: user?.id,
         network,
         beneficiary_number: phoneNumber,
-        amount_charged: selectedPkg!.selling_price,
+        amount_charged: pkgPrice,
         status: "processing",
         bundle_snapshot: { volume: selectedPkg!.package_size_label },
         created_at: new Date().toISOString(),
@@ -205,7 +216,7 @@ export default function UserBuyDataPage() {
       if (previousWallet) {
         queryClient.setQueryData(["user-wallet", user?.id], (old: any) => ({
           ...old,
-          current_balance: Number(old.current_balance) - selectedPkg!.selling_price,
+          current_balance: Number(old.current_balance) - pkgPrice,
         }));
       }
 
@@ -251,10 +262,14 @@ export default function UserBuyDataPage() {
 
     setPaymentError(null);
     try {
+      const pkgPrice = (isAgent && Number(selectedPkg.agent_base_price) > 0)
+        ? Number(selectedPkg.agent_base_price)
+        : Number(selectedPkg.selling_price);
+
       if (paymentMethod === "wallet") {
-        if (walletBalance < selectedPkg.selling_price) {
+        if (walletBalance < pkgPrice) {
           throw new Error(
-            `Wallet balance is too low. You need GH₵${selectedPkg.selling_price.toFixed(2)} but have GH₵${walletBalance.toFixed(2)}. Top up first.`,
+            `Wallet balance is too low. You need GH₵${pkgPrice.toFixed(2)} but have GH₵${walletBalance.toFixed(2)}. Top up first.`,
           );
         }
         // Fire mutation (this navigates instantly)
@@ -270,7 +285,7 @@ export default function UserBuyDataPage() {
         plan: planBridge!,
         customerEmail: customerEmail || user?.email || undefined,
         customerName: customerName || user?.fullName || user?.username || undefined,
-        actorType: "user",
+        actorType: isAgent ? "agent" : "user",
         actorId: user?.id,
         sourceChannel: "user_dashboard",
         intentType: "user_buy",
@@ -290,7 +305,9 @@ export default function UserBuyDataPage() {
     setSubmitting(false);
   };
 
-  const canAfford = selectedPkg ? walletBalance >= selectedPkg.selling_price : false;
+  const canAfford = selectedPkg
+    ? walletBalance >= ((isAgent && Number(selectedPkg.agent_base_price) > 0) ? Number(selectedPkg.agent_base_price) : Number(selectedPkg.selling_price))
+    : false;
 
   if (loading) {
     return (
@@ -333,8 +350,8 @@ export default function UserBuyDataPage() {
               <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
             </div>
             <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
-              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">{deliverySpeed}</p>
-              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">All orders are being processed according to the current network conditions.</p>
+              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">Delivery Status: {deliverySpeed}</p>
+              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
             </div>
             <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
               <div className="flex items-end gap-0.5 h-3">
@@ -473,15 +490,22 @@ export default function UserBuyDataPage() {
                       </span>
 
                       <div className="flex items-center justify-between pt-2.5 border-t border-border/20 relative z-[1]">
-                        <span
-                          className={cn(
-                            "text-[15px] font-bold tracking-tight transition-colors duration-200",
-                            !isActive && "text-foreground/60"
+                        <div className="flex flex-col">
+                          <span
+                            className={cn(
+                              "text-[15px] font-bold tracking-tight transition-colors duration-200",
+                              !isActive && "text-foreground/60"
+                            )}
+                            style={isActive ? { color: `hsl(${brand.hsl})` } : undefined}
+                          >
+                            GH₵{(isAgent && Number(pkg.agent_base_price) > 0 ? Number(pkg.agent_base_price) : Number(pkg.selling_price)).toLocaleString()}
+                          </span>
+                          {isAgent && Number(pkg.agent_base_price) > 0 && (
+                            <span className="text-[9px] font-semibold text-success tracking-wide uppercase mt-0.5">
+                              Agent Price
+                            </span>
                           )}
-                          style={isActive ? { color: `hsl(${brand.hsl})` } : undefined}
-                        >
-                          GH₵{Number(pkg.selling_price).toLocaleString()}
-                        </span>
+                        </div>
                         <ChevronRight
                           className={cn(
                             "h-3.5 w-3.5 transition-all duration-200",

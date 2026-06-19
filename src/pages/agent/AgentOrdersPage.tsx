@@ -209,7 +209,7 @@ export default function AgentOrdersPage() {
                         </p>
                       ) : (
                         <p className="text-[10px] text-muted-foreground/50 mt-0.5">
-                          {o.status === "delivered" ? "—" : "pending"}
+                          {o.origin_type === 'agent_bulk_buy' ? 'wholesale' : "—"}
                         </p>
                       )}
                       <p className="text-[9.5px] text-muted-foreground/40 mt-1 font-medium">

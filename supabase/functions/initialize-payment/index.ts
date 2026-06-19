@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
             resolvedPrice = Number(pkg.selling_price);
             priceSource = "data_packages";
           }
-        } else if (intent.intent_type === "agent_bulk_buy") {
+        } else if (intent.intent_type === "agent_bulk_buy" || intent.actor_type === "agent") {
           resolvedPrice = Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
           priceSource = "data_packages";
         } else {
@@ -397,20 +397,40 @@ Deno.serve(async (req) => {
       // finalization, commission calc) see the same number.
       const intentPatch: Record<string, unknown> = {};
       if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
-      if (priceSource === "agent_storefront") {
-        const existingCtx2 = existingCtx;
-        const existingReferral = (existingCtx2.referral || {}) as Record<string, unknown>;
-        intentPatch.order_context = {
-          ...existingCtx2,
-          referral: {
-            ...existingReferral,
-            agent_selling_price: resolvedPrice,
-            agent_base_price: pkg
-              ? Number(pkg.agent_base_price ?? existingReferral.agent_base_price ?? 0)
-              : Number(existingReferral.agent_base_price ?? 0),
-          },
-          server_resolved_price_source: priceSource,
+      if (agentProfileIdForPrice) {
+        const existingReferral = (existingCtx.referral || {}) as Record<string, unknown>;
+        let basePrice = pkg ? Number(pkg.agent_base_price ?? 0) : 0;
+
+        // Resolve agent_user_id from agent_profiles when missing on the referral,
+        // so the commission trigger can always credit the right agent.
+        let resolvedAgentUserId =
+          typeof existingReferral.agent_user_id === "string" && existingReferral.agent_user_id
+            ? (existingReferral.agent_user_id as string)
+            : null;
+        if (!resolvedAgentUserId) {
+          const { data: ap } = await supabase
+            .from("agent_profiles")
+            .select("user_id")
+            .eq("id", agentProfileIdForPrice)
+            .maybeSingle();
+          if (ap?.user_id) resolvedAgentUserId = ap.user_id as string;
+        }
+
+        // Never let a 0/null base silently overwrite a previously-captured base.
+        if ((!basePrice || basePrice <= 0) && typeof existingReferral.agent_base_price === "number") {
+          basePrice = Number(existingReferral.agent_base_price) / Math.max(quantity, 1);
+        }
+
+        existingCtx.referral = {
+          ...existingReferral,
+          agent_profile_id: agentProfileIdForPrice,
+          ...(resolvedAgentUserId ? { agent_user_id: resolvedAgentUserId } : {}),
+          agent_selling_price: resolvedPrice,
+          agent_base_price: basePrice * quantity,
         };
+        existingCtx.server_resolved_price_source = priceSource;
+
+        intentPatch.order_context = existingCtx;
       }
       if (Object.keys(intentPatch).length > 0) {
         await supabase

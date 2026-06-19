@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 
-import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle } from "lucide-react";
+import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -262,7 +262,7 @@ export default function AgentStorefrontPage() {
           <div className="max-w-md mx-auto text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-premium text-[9.5px] mb-6 refraction-rim overflow-hidden">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="font-semibold text-foreground/65 tracking-[0.12em] uppercase">Verified Store · <span className="text-foreground">{deliverySpeed}</span></span>
+              <span className="font-semibold text-foreground/65 tracking-[0.12em] uppercase">Verified Store</span>
             </div>
 
             <div className="mx-auto mb-5 h-24 w-24 rounded-3xl glass-elevated flex items-center justify-center overflow-hidden ring-1 ring-primary/10 shadow-[0_18px_40px_-18px_hsl(213_55%_50%/0.35)]">
@@ -312,7 +312,39 @@ export default function AgentStorefrontPage() {
         </div>
       </section>
 
-      <div className="container pt-7 sm:pt-9">
+      {/* Delivery speed pill */}
+      <div className="container relative z-10 pt-6 mb-2 flex flex-col items-center">
+        <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
+          <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
+          </span>
+          <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
+            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
+          </div>
+          <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
+            <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">Delivery Status: {deliverySpeed}</p>
+            <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
+          </div>
+          <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
+            <div className="flex items-end gap-0.5 h-3">
+              <div className="w-[3px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
+              <div className="w-[3px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
+              <div className="w-[3px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
+            </div>
+          </div>
+          <div className="ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
+            <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
+              <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-success"></span> Live
+            </span>
+          </div>
+        </div>
+        <a href="#notices" className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-warning hover:text-warning/80 transition-colors">
+          <AlertTriangle className="h-3 w-3" /> Important Notices
+        </a>
+      </div>
+
+      <div className="container pt-4 sm:pt-6">
         <div className="max-w-lg mx-auto">
           {loadingPackages ? (
             <div className="min-h-[40vh] flex items-center justify-center">

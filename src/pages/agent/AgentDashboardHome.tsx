@@ -386,13 +386,71 @@ export default function AgentDashboardHome() {
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-5 outline-none">
-          <div className="text-center py-10 glass-card rounded-2xl">
-             <ShoppingCart className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-             <p className="text-sm text-foreground/80 font-bold">Orders Management</p>
-             <p className="text-[11px] text-muted-foreground/70 mt-1">Visit your full orders ledger to view history.</p>
-             <Button asChild size="sm" variant="outline" className="mt-4 text-xs h-8">
-               <Link to="/agent/orders">Go to Orders</Link>
-             </Button>
+          {loadingAnalytics ? (
+            <div className="py-12 text-center text-xs text-muted-foreground flex flex-col items-center">
+               <Loader2 className="h-6 w-6 animate-spin text-primary/50 mb-3" />
+               Loading orders...
+            </div>
+          ) : (!analytics?.recentOrders || analytics.recentOrders.length === 0) ? (
+            <div className="py-16 text-center glass-card rounded-2xl flex flex-col items-center border border-border/40">
+              <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mb-4">
+                <ShoppingCart className="h-7 w-7 text-primary/60" />
+              </div>
+              <p className="text-[14px] font-bold text-foreground/90 tracking-tight">No orders found</p>
+              <p className="text-[11.5px] text-muted-foreground/60 mt-1.5 max-w-[250px] mx-auto leading-relaxed">
+                Orders made from your storefront or your bulk purchases will appear here.
+              </p>
+            </div>
+          ) : (
+            <Card className="glass-card overflow-hidden">
+              <CardContent className="p-0">
+                <ul className="divide-y divide-border/40">
+                  {analytics.recentOrders.map((o: any) => {
+                    const matchingEarning = analytics.recentEarnings?.find((e: any) => e.order_id === o.id);
+                    return (
+                      <li key={o.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/10 transition-colors">
+                        <div className="min-w-0 flex-1 pr-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-[13px] font-semibold text-foreground truncate">
+                              {o.network} · {o.bundle_name}
+                            </p>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 capitalize">
+                              {o.status}
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground/70 truncate font-medium">
+                            {o.beneficiary_number} <span className="mx-0.5">•</span> {o.public_order_id}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[13px] font-bold text-foreground tabular-nums">
+                            {fmt(Number(o.amount_charged))}
+                          </p>
+                          {matchingEarning ? (
+                            <p className="text-[10px] text-success font-semibold tabular-nums mt-0.5">
+                              +{fmt(Number(matchingEarning.commission_amount))}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                              {o.origin_type === 'agent_bulk_buy' ? 'wholesale' : "—"}
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground/40 mt-1">
+                            {new Date(o.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+          
+          <div className="flex justify-center pt-2">
+            <Button asChild variant="outline" size="sm" className="rounded-xl glass-card h-9">
+              <Link to="/agent/orders">View All Orders & Commissions</Link>
+            </Button>
           </div>
         </TabsContent>
 

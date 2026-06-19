@@ -1875,6 +1875,39 @@ export type Database = {
           total_profit: number
         }[]
       }
+      get_agent_storefront_orders: {
+        Args: { p_limit?: number; p_profile_id: string }
+        Returns: {
+          actor_id: string | null
+          actor_type: string
+          amount_charged: number
+          beneficiary_number: string
+          bundle_code: string
+          bundle_name: string
+          bundle_snapshot: Json
+          created_at: string
+          currency: string
+          delivery_message: string | null
+          id: string
+          intent_id: string | null
+          metadata: Json | null
+          network: string
+          origin_type: string
+          payment_record_id: string | null
+          public_order_id: string
+          source_channel: string
+          status: Database["public"]["Enums"]["order_status"]
+          supplier_reference: string | null
+          supplier_status: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_public_agent_store: {
         Args: { _slug: string }
         Returns: {
@@ -1901,6 +1934,7 @@ export type Database = {
           store_name: string
           store_slug: string
           store_tagline: string
+          user_id: string
         }[]
       }
       get_sales_source_breakdown: {
@@ -1951,6 +1985,7 @@ export type Database = {
       list_public_packages: {
         Args: { _logged_in?: boolean }
         Returns: {
+          agent_base_price: number
           currency: string
           display_order: number
           id: string
@@ -1997,8 +2032,8 @@ export type Database = {
           _user_id: string
         }
         Returns: {
-          created_count: number
           new_balance: number
+          orders_created: number
           txn_id: string
         }[]
       }

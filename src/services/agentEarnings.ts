@@ -116,29 +116,38 @@ export async function fetchCommissionRate(): Promise<number> {
 
 /** Fetch the agent's referred orders (independent of whether commission has posted yet) PLUS bulk orders they placed. */
 export async function fetchAgentReferredOrders(userId: string, agentProfileId: string, limit = 50) {
-  // 1. Filter intents whose order_context.referral.agent_profile_id matches.
-  const { data: intents } = await supabase
-    .from("purchase_intents")
-    .select("id")
-    .filter("order_context->referral->>agent_profile_id", "eq", agentProfileId)
-    .limit(limit);
+  // 1. Fetch referred orders using the RPC to bypass purchase_intents RLS
+  const { data: referredOrders, error: referredError } = await supabase.rpc("get_agent_storefront_orders", {
+    p_profile_id: agentProfileId,
+    p_limit: limit,
+  });
 
-  const intentIds = (intents || []).map((i: any) => i.id);
+  if (referredError) {
+    console.error("fetchAgentReferredOrders RPC error:", referredError);
+  }
 
-  // 2. Fetch orders that are EITHER referred by the agent OR bulk orders placed by the agent
-  let query = supabase
+  // 2. Fetch direct orders placed by the agent directly (both bulk and single buys)
+  const { data: directOrders, error: directError } = await supabase
     .from("orders")
     .select("*")
+    .eq("actor_id", userId)
+    .or("actor_type.eq.agent,origin_type.eq.agent_bulk_buy")
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (intentIds.length > 0) {
-    query = query.or(`intent_id.in.(${intentIds.join(',')}),and(actor_id.eq.${userId},origin_type.eq.agent_bulk_buy)`);
-  } else {
-    // If no referred intents, only fetch their bulk orders
-    query = query.eq('actor_id', userId).eq('origin_type', 'agent_bulk_buy');
+  if (directError) {
+    console.error("fetchAgentReferredOrders direct query error:", directError);
   }
 
-  const { data: orders } = await query;
-  return orders || [];
+  // Combine and sort them
+  const allOrders = [...(referredOrders || []), ...(directOrders || [])];
+  
+  // Sort by created_at descending and deduplicate by id
+  const uniqueOrdersMap = new Map();
+  allOrders.forEach(o => uniqueOrdersMap.set(o.id, o));
+  const uniqueOrders = Array.from(uniqueOrdersMap.values());
+  
+  uniqueOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  
+  return uniqueOrders.slice(0, limit);
 }
