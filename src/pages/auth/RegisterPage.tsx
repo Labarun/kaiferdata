@@ -23,12 +23,17 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (username.length < 3) { setError("Username must be at least 3 characters."); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError("Username can only contain letters, numbers, and underscores."); return; }
-    if (phone.length < 10) { setError("Enter a valid phone number."); return; }
+    // Trim inputs to avoid whitespace mismatches during login
+    const trimmedUsername = username.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedUsername.length < 3) { setError("Username must be at least 3 characters."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) { setError("Username can only contain letters, numbers, and underscores."); return; }
+    if (trimmedPhone.length < 10) { setError("Enter a valid phone number."); return; }
 
     setLoading(true);
-    const { error: err } = await signUp(email, password, username, phone);
+    const { error: err } = await signUp(trimmedEmail, password, trimmedUsername, trimmedPhone);
     if (err) {
       setError(err.message);
       setLoading(false);

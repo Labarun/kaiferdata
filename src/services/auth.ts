@@ -41,11 +41,16 @@ export async function ensureUserScaffold(params: EnsureUserScaffoldParams) {
 
 /** Sign up a new user */
 export async function signUp(email: string, password: string, username: string, phone: string) {
+  // Normalize inputs to prevent whitespace/case mismatches during login
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanUsername = username.trim();
+  const cleanPhone = phone.trim();
+
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: cleanEmail,
     password,
     options: {
-      data: { full_name: username, username, phone },
+      data: { full_name: cleanUsername, username: cleanUsername, phone: cleanPhone },
       emailRedirectTo: window.location.origin,
     },
   });
@@ -53,16 +58,16 @@ export async function signUp(email: string, password: string, username: string, 
   if (data?.user && !error) {
     await ensureUserScaffold({
       userId: data.user.id,
-      email: data.user.email ?? email,
-      fullName: username,
-      username,
-      phone,
+      email: data.user.email ?? cleanEmail,
+      fullName: cleanUsername,
+      username: cleanUsername,
+      phone: cleanPhone,
     });
 
     // After signup, update profile with username and phone
     await supabase
       .from("profiles")
-      .update({ username, phone, full_name: username })
+      .update({ username: cleanUsername, phone: cleanPhone, full_name: cleanUsername })
       .eq("user_id", data.user.id);
   }
 
