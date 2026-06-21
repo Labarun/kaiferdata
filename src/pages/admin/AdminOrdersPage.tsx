@@ -137,12 +137,10 @@ export default function AdminOrdersPage() {
     else toast({ title: "Fulfilment failed", description: "Could not re-send to supplier", variant: "destructive" });
   };
 
-  // Bulk: re-send every FAILED order to the supplier.
-  const retryAllFailed = async () => {
+  // Shared bulk re-send: loop fulfilment over a set of order ids with progress.
+  const retryOrders = async (ids: string[]) => {
+    if (ids.length === 0) { toast({ title: "Nothing to retry" }); return; }
     const { data: { session } } = await supabase.auth.getSession();
-    const { data } = await supabase.from("orders").select("id").eq("status", "failed").limit(500);
-    const ids = (data || []).map((o: any) => o.id as string);
-    if (ids.length === 0) { toast({ title: "No failed orders to retry" }); return; }
     setRetryingAll(true);
     setRetryProgress({ done: 0, total: ids.length });
     let ok = 0;
@@ -152,12 +150,24 @@ export default function AdminOrdersPage() {
     }
     setRetryingAll(false);
     toast({
-      title: `Retried ${ids.length} failed order(s)`,
+      title: `Retried ${ids.length} order(s)`,
       description: `${ok} re-sent · ${ids.length - ok} still failed`,
       variant: ok > 0 ? "default" : "destructive",
     });
+    setSelected(new Set());
     refresh();
   };
+
+  // All failed orders across the whole platform (not just this page).
+  const retryAllFailed = async () => {
+    const { data } = await supabase.from("orders").select("id").eq("status", "failed").limit(500);
+    await retryOrders((data || []).map((o: any) => o.id as string));
+  };
+
+  // Only the retriable orders among the current selection.
+  const RETRIABLE = ["failed", "paid", "queued"];
+  const retriableSelected = orders.filter((o) => selected.has(o.id) && RETRIABLE.includes(o.status));
+  const retrySelected = () => retryOrders(retriableSelected.map((o) => o.id));
 
   const statStrip: AdminStat[] = [
     { label: "Total", value: stats.total.toLocaleString(), icon: ShoppingCart, tone: "primary" },
@@ -230,6 +240,19 @@ export default function AdminOrdersPage() {
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openBulk(Array.from(selected))}>
             <ListChecks className="h-3.5 w-3.5" /> Bulk status
           </Button>
+          {retriableSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={retryingAll}
+              className="gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/5"
+              onClick={retrySelected}
+            >
+              {retryingAll
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying {retryProgress.done}/{retryProgress.total}</>
+                : <><RotateCcw className="h-3.5 w-3.5" /> Retry fulfilment ({retriableSelected.length})</>}
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copy(orders.filter((o) => selected.has(o.id)).map((o) => o.public_order_id).join("\n"))}>
             <Copy className="h-3.5 w-3.5" /> Copy IDs
           </Button>
