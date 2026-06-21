@@ -1,5 +1,10 @@
 /**
  * Reset Password Page - handles the reset link callback
+ *
+ * Supports both legacy (hash-based) and PKCE (code-based) recovery flows:
+ *  - Legacy: URL contains #type=recovery → fires PASSWORD_RECOVERY event
+ *  - PKCE:   URL contains ?code=xxx → Supabase exchanges code for session,
+ *            fires SIGNED_IN event instead of PASSWORD_RECOVERY
  */
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -17,21 +22,49 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  // Brief check phase so we don't flash "invalid" before the auth listener fires
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for recovery event
+    let settled = false;
+    const settle = () => { if (!settled) { settled = true; setChecking(false); } };
+
+    // 1. Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setIsRecovery(true);
+        settle();
       }
     });
-    // Also check hash
+
+    // 2. Check URL indicators (hash for legacy, query param for PKCE)
     const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has("code");
+
+    if (hash.includes("type=recovery") || hasCode) {
+      // Mark as recovery optimistically — the auth listener will also fire
       setIsRecovery(true);
+      settle();
     }
-    return () => subscription.unsubscribe();
+
+    // 3. Fallback: check if there's already an active session
+    //    (in case the auth event already fired before this component mounted)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && (hasCode || hash.includes("type=recovery"))) {
+        setIsRecovery(true);
+      }
+      settle();
+    });
+
+    // Safety timeout — stop checking after 3 seconds regardless
+    const timeout = setTimeout(settle, 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +80,15 @@ export default function ResetPasswordPage() {
     }
     setLoading(false);
   };
+
+  // Show spinner while we're still verifying recovery status
+  if (checking) {
+    return (
+      <div className="flex min-h-[80vh] items-center justify-center px-4">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!isRecovery && !success) {
     return (
