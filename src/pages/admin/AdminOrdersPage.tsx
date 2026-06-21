@@ -20,10 +20,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  RefreshCw, ListChecks, MoreVertical, Eye, Edit3, Copy, RotateCcw, ShoppingCart, CheckCircle2, Clock, XCircle,
+  RefreshCw, ListChecks, MoreVertical, Eye, Edit3, Copy, RotateCcw, ShoppingCart, CheckCircle2, Clock, XCircle, Loader2,
 } from "lucide-react";
 import { triggerStatusSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 
 const STATUSES = ["all", "paid", "queued", "processing", "delivered", "failed", "cancelled", "refunded"];
 const NETWORKS = ["all", "MTN", "Telecel", "AirtelTigo"];
@@ -49,6 +50,9 @@ export default function AdminOrdersPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkIds, setBulkIds] = useState<string[]>([]);
   const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, failed: 0 });
+  const [retryAllOpen, setRetryAllOpen] = useState(false);
+  const [retryingAll, setRetryingAll] = useState(false);
+  const [retryProgress, setRetryProgress] = useState({ done: 0, total: 0 });
 
   // global stat strip (once)
   useEffect(() => {
@@ -111,19 +115,48 @@ export default function AdminOrdersPage() {
     catch (e) { toast({ title: "Sync failed", description: (e as Error).message, variant: "destructive" }); }
   };
 
-  const retry = async (id: string) => {
+  const fulfillOnce = async (id: string, token?: string): Promise<boolean> => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/fulfill-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ order_id: id }),
       });
       const d = await res.json();
-      if (d.success) { toast({ title: "Fulfilment triggered", description: `Status: ${d.status}` }); refresh(); }
-      else toast({ title: "Fulfilment failed", description: d.error || "Unknown error", variant: "destructive" });
-    } catch { toast({ title: "Network error", variant: "destructive" }); }
+      return !!d?.success;
+    } catch {
+      return false;
+    }
+  };
+
+  const retry = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const ok = await fulfillOnce(id, session?.access_token);
+    if (ok) { toast({ title: "Fulfilment triggered" }); refresh(); }
+    else toast({ title: "Fulfilment failed", description: "Could not re-send to supplier", variant: "destructive" });
+  };
+
+  // Bulk: re-send every FAILED order to the supplier.
+  const retryAllFailed = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data } = await supabase.from("orders").select("id").eq("status", "failed").limit(500);
+    const ids = (data || []).map((o: any) => o.id as string);
+    if (ids.length === 0) { toast({ title: "No failed orders to retry" }); return; }
+    setRetryingAll(true);
+    setRetryProgress({ done: 0, total: ids.length });
+    let ok = 0;
+    for (let i = 0; i < ids.length; i++) {
+      if (await fulfillOnce(ids[i], session?.access_token)) ok++;
+      setRetryProgress({ done: i + 1, total: ids.length });
+    }
+    setRetryingAll(false);
+    toast({
+      title: `Retried ${ids.length} failed order(s)`,
+      description: `${ok} re-sent · ${ids.length - ok} still failed`,
+      variant: ok > 0 ? "default" : "destructive",
+    });
+    refresh();
   };
 
   const statStrip: AdminStat[] = [
@@ -171,7 +204,22 @@ export default function AdminOrdersPage() {
   return (
     <div className="animate-fade-in space-y-4">
       <PageHeader title="Orders" description="Review, moderate and fulfil orders" actions={
-        <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+        <div className="flex items-center gap-2">
+          {stats.failed > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={retryingAll}
+              onClick={() => setRetryAllOpen(true)}
+              className="gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/5"
+            >
+              {retryingAll
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying {retryProgress.done}/{retryProgress.total}</>
+                : <><RotateCcw className="h-3.5 w-3.5" /> Retry all failed ({stats.failed})</>}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+        </div>
       } />
 
       <AdminStatStrip stats={statStrip} />
@@ -223,6 +271,20 @@ export default function AdminOrdersPage() {
       <DataPagination pagination={pg} rowsOnPage={orders.length} />
 
       <BulkStatusDialog open={bulkOpen} onOpenChange={setBulkOpen} orderIds={bulkIds} onSuccess={refresh} />
+
+      <ConfirmActionDialog
+        open={retryAllOpen}
+        onOpenChange={setRetryAllOpen}
+        title={`Retry all ${stats.failed} failed order(s)?`}
+        description={
+          <>
+            This re-sends every <strong>failed</strong> order to the supplier. Orders that succeed move out of
+            Failed; ones that still can't be delivered stay Failed. This may take a moment.
+          </>
+        }
+        confirmLabel="Retry all failed"
+        onConfirm={retryAllFailed}
+      />
     </div>
   );
 }
