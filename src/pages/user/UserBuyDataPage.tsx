@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { WalletCard } from "@/components/shared/WalletCard";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
+import { ServicePaused } from "@/components/buy/ServicePaused";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -83,6 +84,7 @@ export default function UserBuyDataPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const [deliverySpeed, setDeliverySpeed] = useState("Fast Delivery");
+  const [orderingPaused, setOrderingPaused] = useState(false);
 
   useEffect(() => {
     fetchLoggedInPackages()
@@ -91,15 +93,20 @@ export default function UserBuyDataPage() {
       .finally(() => setLoading(false));
 
     async function fetchSettings() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("system_settings")
-        .select("setting_value")
-        .eq("setting_key", "delivery_speed")
-        .single();
+        .select("setting_key, setting_value")
+        .in("setting_key", ["delivery_speed", "user_buy_enabled", "order_submission_enabled", "system_maintenance_mode"]);
 
-      if (!error && data?.setting_value) {
-        setDeliverySpeed(data.setting_value);
-      }
+      const map = new Map((data || []).map((r: any) => [r.setting_key, r.setting_value]));
+      if (map.get("delivery_speed")) setDeliverySpeed(map.get("delivery_speed")!);
+
+      // Fail-open: only an explicit pause toggle hides the buy flow. Paystack-only
+      // toggle is excluded so wallet buyers aren't wrongly blocked.
+      const off = (k: string) => map.get(k) === "false";
+      setOrderingPaused(
+        off("user_buy_enabled") || off("order_submission_enabled") || map.get("system_maintenance_mode") === "true",
+      );
     }
     fetchSettings();
   }, []);
@@ -325,21 +332,29 @@ export default function UserBuyDataPage() {
   return (
     <div className="space-y-6 pb-4">
       <div className="animate-fade-in flex flex-col items-start gap-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle text-[11px] font-medium border-primary/20">
-          <div className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
+        {orderingPaused ? (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-[11px] font-medium">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-amber-600 font-semibold">Paused · Back very soon</span>
           </div>
-          <span className="text-muted-foreground">Service Online</span>
-          <span className="text-border mx-0.5">•</span>
-          <SendHorizonal className="h-3 w-3 text-warning" />
-          <span className="text-muted-foreground">Processing Orders</span>
-        </div>
+        ) : (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle text-[11px] font-medium border-primary/20">
+            <div className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
+            </div>
+            <span className="text-muted-foreground">Service Online</span>
+            <span className="text-border mx-0.5">•</span>
+            <SendHorizonal className="h-3 w-3 text-warning" />
+            <span className="text-muted-foreground">Processing Orders</span>
+          </div>
+        )}
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Buy Data</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
         </div>
 
+        {!orderingPaused && (
         <div className="mt-4 flex flex-col items-start w-full">
           <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
             <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
@@ -367,6 +382,7 @@ export default function UserBuyDataPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
 
@@ -376,6 +392,10 @@ export default function UserBuyDataPage() {
         <WalletCard compact />
       </div>
 
+      {orderingPaused ? (
+        <ServicePaused variant="global" />
+      ) : (
+        <>
       {/* Network Selector */}
       <section className="animate-fade-in animate-stagger-2">
         <div className="flex items-center gap-2 mb-3">
@@ -532,6 +552,8 @@ export default function UserBuyDataPage() {
             </div>
           )}
         </section>
+      )}
+        </>
       )}
 
       <div className="mt-8 mb-4">
