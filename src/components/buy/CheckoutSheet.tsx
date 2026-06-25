@@ -67,6 +67,9 @@ interface CheckoutSheetProps {
   /** When true, hides optional name/email fields and redundant review rows
    *  (network/bundle/name/email). Used by logged-in dashboard flow. */
   simplified?: boolean;
+  /** When true, ordering is paused — fades + disables the Review/Pay buttons
+   *  and shows a notice, so the buy action can never be clicked while paused. */
+  orderingPaused?: boolean;
 }
 
 export function CheckoutSheet({
@@ -90,6 +93,7 @@ export function CheckoutSheet({
   walletBalance,
   walletComingSoon = true,
   simplified = false,
+  orderingPaused = false,
 }: CheckoutSheetProps) {
   const [phoneError, setPhoneError] = useState("");
   const [step, setStep] = useState<CheckoutStep>("details");
@@ -255,6 +259,19 @@ export function CheckoutSheet({
             </div>
           )}
 
+          {/* Paused notice — buy action is disabled while ordering is paused */}
+          {orderingPaused && step !== "processing" && step !== "error" && (
+            <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/[0.08] p-3.5 flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[13px] font-semibold text-foreground">Ordering is paused right now</p>
+                <p className="text-[11.5px] text-muted-foreground leading-relaxed">
+                  We're briefly paused — back very soon. You can't place an order at the moment.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── STEP: Details ── */}
           {step === "details" && (
             <div className="space-y-5 animate-fade-in">
@@ -345,11 +362,11 @@ export function CheckoutSheet({
               <Button
                 onClick={handleContinueToReview}
                 className="w-full h-13 rounded-2xl text-[14px] font-semibold"
-                disabled={!canReview}
+                disabled={!canReview || orderingPaused}
                 style={{ height: 52 }}
               >
-                Review Order
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {orderingPaused ? "Ordering paused" : "Review Order"}
+                {!orderingPaused && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
 
               <p className="text-[9.5px] text-muted-foreground/35 text-center font-medium flex items-center justify-center gap-1.5">
@@ -569,16 +586,23 @@ export function CheckoutSheet({
                 <Button
                   onClick={onConfirm}
                   disabled={
-                    paymentMethod === "wallet" &&
-                    typeof walletBalance === "number" &&
-                    walletBalance < feeBreakdown.baseAmount
+                    orderingPaused ||
+                    (paymentMethod === "wallet" &&
+                      typeof walletBalance === "number" &&
+                      walletBalance < feeBreakdown.baseAmount)
                   }
                   className="flex-[2.2] h-[52px] rounded-2xl text-[14px] font-semibold relative overflow-hidden shimmer-edge"
                 >
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                  Pay GH₵
-                  {formatGHS(
-                    paymentMethod === "wallet" ? feeBreakdown.baseAmount : feeBreakdown.totalAmount
+                  {orderingPaused ? (
+                    "Unavailable"
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-1.5" />
+                      Pay GH₵
+                      {formatGHS(
+                        paymentMethod === "wallet" ? feeBreakdown.baseAmount : feeBreakdown.totalAmount
+                      )}
+                    </>
                   )}
                 </Button>
               </div>

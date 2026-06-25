@@ -265,7 +265,7 @@ export default function UserBuyDataPage() {
   });
 
   const handleConfirm = async () => {
-    if (!network || !selectedPkg) return;
+    if (orderingPaused || !network || !selectedPkg) return;
 
     setPaymentError(null);
     try {
@@ -582,6 +582,7 @@ export default function UserBuyDataPage() {
         walletBalance={walletBalance}
         walletComingSoon={false}
         simplified
+        orderingPaused={orderingPaused}
       />
     </div>
   );

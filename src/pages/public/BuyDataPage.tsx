@@ -140,7 +140,7 @@ export default function BuyDataPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
-    if (!network || !plan) return;
+    if (orderingPaused || !network || !plan) return;
     setSubmitting(true);
     setPaymentError(null);
     try {
@@ -379,6 +379,7 @@ export default function BuyDataPage() {
         processingLabel={processingLabel}
         paymentError={paymentError}
         onClearError={handleClearError}
+        orderingPaused={orderingPaused}
       />
     </div>
   );
