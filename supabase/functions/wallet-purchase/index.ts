@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    const { data: result, error: rpcErr } = await supabase.rpc("purchase_with_wallet_atomic", {
       _user_id: userId,
       _package_id: packageId,
       _phone_number: phoneNumber,
