@@ -67,12 +67,16 @@ Deno.serve(async (req) => {
     const { data: safetySettings } = await supabase
       .from("system_settings")
       .select("setting_key, setting_value")
-      .in("setting_key", ["paystack_checkout_enabled", "guest_checkout_enabled", "order_submission_enabled"]);
+      .in("setting_key", ["paystack_checkout_enabled", "guest_checkout_enabled", "order_submission_enabled", "guest_buy_enabled", "user_buy_enabled"]);
 
     const settingsMap: Record<string, string> = {};
     (safetySettings || []).forEach((s: { setting_key: string; setting_value: string }) => {
       settingsMap[s.setting_key] = s.setting_value;
     });
+
+    if (settingsMap["order_submission_enabled"] === "false") {
+      return json({ error: "Ordering is temporarily paused. Please try again soon." }, 503);
+    }
 
     if (settingsMap["paystack_checkout_enabled"] === "false") {
       return json({ error: "Payments are temporarily disabled. Please try again later." }, 503);
@@ -142,6 +146,14 @@ Deno.serve(async (req) => {
     // Check guest checkout toggle
     if (intent.actor_type === "guest" && settingsMap["guest_checkout_enabled"] === "false") {
       return json({ error: "Guest checkout is temporarily disabled. Please try again later." }, 503);
+    }
+
+    // Order-pause toggles per actor type
+    if (intent.actor_type === "guest" && settingsMap["guest_buy_enabled"] === "false") {
+      return json({ error: "Guest ordering is temporarily paused. Please try again soon." }, 503);
+    }
+    if ((intent.actor_type === "user" || intent.actor_type === "agent") && settingsMap["user_buy_enabled"] === "false") {
+      return json({ error: "Ordering is temporarily paused. Please try again soon." }, 503);
     }
 
     // Check expiry
