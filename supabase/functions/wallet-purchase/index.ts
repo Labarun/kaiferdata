@@ -84,7 +84,25 @@ Deno.serve(async (req) => {
 
     // ── 3. Atomic purchase ──
     const supabase = createClient(supabaseUrl, supabaseService);
-    const { data: result, error: rpcErr } = await supabase.rpc("purchase_with_wallet_atomic", {
+
+    // System safety toggles — block paused ordering before any debit
+    {
+      const { data: safetySettings } = await supabase
+        .from("system_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["order_submission_enabled", "user_buy_enabled"]);
+      const s: Record<string, string> = {};
+      (safetySettings || []).forEach((r: { setting_key: string; setting_value: string }) => {
+        s[r.setting_key] = r.setting_value;
+      });
+      if (s["order_submission_enabled"] === "false") {
+        return json({ error: "Ordering is temporarily paused. Please try again soon." }, 503);
+      }
+      if (s["user_buy_enabled"] === "false") {
+        return json({ error: "Ordering is temporarily paused. Please try again soon." }, 503);
+      }
+    }
+
       _user_id: userId,
       _package_id: packageId,
       _phone_number: phoneNumber,
