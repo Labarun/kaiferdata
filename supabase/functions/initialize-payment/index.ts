@@ -148,6 +148,14 @@ Deno.serve(async (req) => {
       return json({ error: "Guest checkout is temporarily disabled. Please try again later." }, 503);
     }
 
+    // Order-pause toggles per actor type
+    if (intent.actor_type === "guest" && settingsMap["guest_buy_enabled"] === "false") {
+      return json({ error: "Guest ordering is temporarily paused. Please try again soon." }, 503);
+    }
+    if ((intent.actor_type === "user" || intent.actor_type === "agent") && settingsMap["user_buy_enabled"] === "false") {
+      return json({ error: "Ordering is temporarily paused. Please try again soon." }, 503);
+    }
+
     // Check expiry
     if (intent.expires_at && new Date(intent.expires_at) < new Date()) {
       await supabase
