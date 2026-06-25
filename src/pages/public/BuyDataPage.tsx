@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
+import { ServicePaused } from "@/components/buy/ServicePaused";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { AgentPromoModal } from "@/components/marketing/AgentPromoModal";
 import {
@@ -69,6 +70,7 @@ export default function BuyDataPage() {
 
   const [plansKey, setPlansKey] = useState(0);
   const [deliverySpeed, setDeliverySpeed] = useState("Fast Delivery");
+  const [orderingPaused, setOrderingPaused] = useState(false);
 
   useEffect(() => {
     fetchPublicPackages()
@@ -77,15 +79,30 @@ export default function BuyDataPage() {
       .finally(() => setLoading(false));
 
     async function fetchSettings() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("system_settings")
-        .select("setting_value")
-        .eq("setting_key", "delivery_speed")
-        .single();
+        .select("setting_key, setting_value")
+        .in("setting_key", [
+          "delivery_speed",
+          "guest_buy_enabled",
+          "guest_checkout_enabled",
+          "order_submission_enabled",
+          "paystack_checkout_enabled",
+          "system_maintenance_mode",
+        ]);
 
-      if (!error && data?.setting_value) {
-        setDeliverySpeed(data.setting_value);
-      }
+      const map = new Map((data || []).map((r: any) => [r.setting_key, r.setting_value]));
+      if (map.get("delivery_speed")) setDeliverySpeed(map.get("delivery_speed")!);
+
+      // Fail-open: only an explicit "false" (or maintenance "true") pauses guests.
+      const off = (k: string) => map.get(k) === "false";
+      setOrderingPaused(
+        off("guest_buy_enabled") ||
+          off("guest_checkout_enabled") ||
+          off("order_submission_enabled") ||
+          off("paystack_checkout_enabled") ||
+          map.get("system_maintenance_mode") === "true",
+      );
     }
     fetchSettings();
   }, []);
@@ -170,16 +187,23 @@ export default function BuyDataPage() {
         <div className="container relative pt-12 pb-8 sm:pt-16 sm:pb-10">
           <div className="max-w-md mx-auto text-center">
             {/* Status pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-5 animate-fade-in refraction-rim overflow-hidden">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
-              </span>
-              <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
-              <span className="h-3 w-px bg-border/40 mx-0.5" />
-              <SendHorizonal className="h-3 w-3 text-warning" />
-              <span className="text-foreground/50 font-medium">Processing Orders</span>
-            </div>
+            {orderingPaused ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/25 text-[11px] mb-5 animate-fade-in">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="font-semibold text-amber-600 tracking-wide">Paused · Back very soon</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass-premium text-[11px] mb-5 animate-fade-in refraction-rim overflow-hidden">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.45)]" />
+                </span>
+                <span className="font-semibold text-foreground/65 tracking-wide">Service Online</span>
+                <span className="h-3 w-px bg-border/40 mx-0.5" />
+                <SendHorizonal className="h-3 w-3 text-warning" />
+                <span className="text-foreground/50 font-medium">Processing Orders</span>
+              </div>
+            )}
 
             {/* Headline */}
             <h1 className="text-[1.75rem] sm:text-[2.125rem] font-bold tracking-[-0.035em] text-foreground/90 leading-[1.1] animate-fade-in">
@@ -222,7 +246,8 @@ export default function BuyDataPage() {
 
 
 
-      {/* Delivery speed pill */}
+      {/* Delivery speed pill — hidden while paused */}
+      {!orderingPaused && (
       <div className="container relative z-10 pt-6 mb-8 flex flex-col items-center">
         <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
           <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
@@ -253,37 +278,50 @@ export default function BuyDataPage() {
           <AlertTriangle className="h-3 w-3" /> Important Notices
         </a>
       </div>
+      )}
 
       {/* ─── Main buy flow ─── */}
       <div className="container pt-2 sm:pt-4">
         <div className="max-w-lg mx-auto">
 
-          <section className="mb-7">
-            <div className="flex items-center gap-2 mb-3.5">
-              <div className="h-1 w-1 rounded-full bg-primary/50" />
-              <p className="section-label">Choose Network</p>
+          {orderingPaused ? (
+            <div className="mb-7">
+              <ServicePaused variant="global" />
             </div>
-            <NetworkSelector
-              networks={networks.length > 0 ? networks : GHANA_NETWORKS}
-              selected={network}
-              onSelect={handleNetworkSelect}
-            />
-          </section>
-
-          {network && (
-            <section key={plansKey} className="animate-plans-enter mb-7">
-              <div className={`absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b ${networkTint} rounded-3xl opacity-60`} />
-              <div className="flex items-center justify-between mb-3.5">
-                <div className="flex items-center gap-2">
+          ) : (
+            <>
+              <section className="mb-7">
+                <div className="flex items-center gap-2 mb-3.5">
                   <div className="h-1 w-1 rounded-full bg-primary/50" />
-                  <p className="section-label">{network} Bundles</p>
+                  <p className="section-label">Choose Network</p>
                 </div>
-                <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
-                  {filteredPlans.length} available
-                </span>
-              </div>
-              <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
-            </section>
+                <NetworkSelector
+                  networks={networks.length > 0 ? networks : GHANA_NETWORKS}
+                  selected={network}
+                  onSelect={handleNetworkSelect}
+                />
+              </section>
+
+              {network && (
+                <section key={plansKey} className="animate-plans-enter mb-7">
+                  <div className={`absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b ${networkTint} rounded-3xl opacity-60`} />
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-1 rounded-full bg-primary/50" />
+                      <p className="section-label">{network} Bundles</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
+                      {filteredPlans.length} available
+                    </span>
+                  </div>
+                  {filteredPlans.length === 0 ? (
+                    <ServicePaused variant="network" network={network} />
+                  ) : (
+                    <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                  )}
+                </section>
+              )}
+            </>
           )}
 
           <div className="flex items-center justify-center gap-2 pt-2 pb-2">
