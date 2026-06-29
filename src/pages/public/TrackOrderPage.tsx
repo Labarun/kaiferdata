@@ -21,6 +21,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SEOHead } from "@/components/seo/SEOHead";
 import {
   customerStatusLabel,
   customerStatusHelper,
@@ -118,6 +119,10 @@ export default function TrackOrderPage() {
 
   return (
     <div className="min-h-[70vh]">
+      <SEOHead
+        title="Track Your Order"
+        description="Track your Kaiferdata data bundle order in real-time. Enter your Order ID or reference to check delivery status for MTN, Telecel, and AirtelTigo orders."
+      />
       {/* Header */}
       <div className="bg-hero-gradient border-b border-border/20">
         <div className="container py-8 sm:py-10 text-center">

@@ -30,6 +30,9 @@ const AgentPerksPage = lazy(() => import("@/pages/public/AgentPerksPage"));
 const GetAppPage = lazy(() => import("@/pages/public/GetAppPage"));
 const GetAppAndroidPage = lazy(() => import("@/pages/public/GetAppAndroidPage"));
 const GetAppIosPage = lazy(() => import("@/pages/public/GetAppIosPage"));
+const ContactPage = lazy(() => import("@/pages/public/ContactPage"));
+const TermsPage = lazy(() => import("@/pages/public/TermsPage"));
+const PrivacyPage = lazy(() => import("@/pages/public/PrivacyPage"));
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
@@ -133,6 +136,9 @@ const App = () => (
                 <Route path="/get-app/android" element={<GetAppAndroidPage />} />
                 <Route path="/get-app/ios" element={<GetAppIosPage />} />
                 <Route path="/agent-perks" element={<AgentPerksPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
 
                 <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                 <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />

@@ -63,6 +63,7 @@ function packageToPlan(pkg: DataPackage): DataPlan {
     metadata: null,
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
+    buying_enabled: pkg.buying_enabled,
   };
 }
 

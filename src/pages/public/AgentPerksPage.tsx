@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Wallet
 } from "lucide-react";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const perks = [
   {
@@ -64,6 +65,10 @@ const itemVariants = {
 export default function AgentPerksPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEOHead
+        title="Become a Data Reseller Agent"
+        description="Join the Kaiferdata Agent Program and start earning by reselling data bundles in Ghana. Get wholesale prices, your own storefront, and automated commission tracking."
+      />
       {/* ── Hero Section ── */}
       <section className="relative pt-20 pb-16 overflow-hidden">
         {/* Ambient background glow */}

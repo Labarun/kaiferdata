@@ -247,13 +247,16 @@ Deno.serve(async (req) => {
 
       const { data: pkg } = await supabase
         .from("data_packages")
-        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, is_agent_resaleable, agent_base_price")
+        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, is_agent_resaleable, agent_base_price, buying_enabled")
         .eq("id", packageId)
         .single();
 
       if (pkg) {
         if (!pkg.is_active) {
           return json({ error: "This package is no longer available." }, 422);
+        }
+        if (pkg.buying_enabled === false) {
+          return json({ error: "Ordering for this bundle is temporarily disabled." }, 422);
         }
         if (intent.actor_type === "guest" && !pkg.visible_on_public && !agentProfileIdForPrice) {
           // Agent storefront purchases are allowed for guests even when the

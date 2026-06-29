@@ -25,6 +25,7 @@ import {
   type DataPlan,
 } from "@/services/purchaseIntent";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
@@ -49,6 +50,7 @@ function packageToPlan(pkg: DataPackage): DataPlan {
     metadata: null,
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
+    buying_enabled: pkg.buying_enabled,
   };
 }
 
@@ -175,6 +177,10 @@ export default function BuyDataPage() {
 
   return (
     <div className="min-h-[70vh] pb-6">
+      <SEOHead
+        title="Buy Data — MTN, Telecel & AirtelTigo Bundles"
+        description="Buy cheap MTN, Telecel, and AirtelTigo data bundles in Ghana. No signup required, instant delivery via Paystack. Choose your network and bundle size."
+      />
       {/* ─── Premium hero atmosphere ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
         {/* Layered ambient orbs — deeper, richer */}
@@ -317,7 +323,14 @@ export default function BuyDataPage() {
                   {filteredPlans.length === 0 ? (
                     <ServicePaused variant="network" network={network} />
                   ) : (
-                    <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                    <>
+                      {filteredPlans.every((p) => p.buying_enabled === false) && (
+                        <div className="mb-6">
+                          <ServicePaused variant="network" network={network} />
+                        </div>
+                      )}
+                      <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                    </>
                   )}
                 </section>
               )}
