@@ -244,18 +244,22 @@ function BulkOrderFlow() {
             {filteredPackages.map((pkg) => {
               const isSelected = selectedPkg?.id === pkg.id;
               const netBrand = getNetworkBrand(pkg.network);
+              const isBuyingPaused = pkg.buying_enabled === false;
               return (
                 <button
                   key={pkg.id}
-                  onClick={() => setSelectedPkg(pkg)}
+                  onClick={() => !isBuyingPaused && setSelectedPkg(pkg)}
+                  disabled={isBuyingPaused}
                   className={cn(
                     "relative text-left p-4 rounded-2xl border transition-all duration-200 overflow-hidden group",
-                    isSelected
-                      ? "border-transparent bg-[hsl(var(--card))] shadow-[0_0_0_2px_hsl(var(--primary)),0_8px_20px_-8px_hsl(var(--primary)/0.25)]"
-                      : "border-border/40 bg-card hover:border-primary/30 hover:bg-muted/30"
+                    isBuyingPaused
+                      ? "opacity-60 cursor-not-allowed bg-muted/20 border-border/40"
+                      : isSelected
+                        ? "border-transparent bg-[hsl(var(--card))] shadow-[0_0_0_2px_hsl(var(--primary)),0_8px_20px_-8px_hsl(var(--primary)/0.25)]"
+                        : "border-border/40 bg-card hover:border-primary/30 hover:bg-muted/30"
                   )}
                 >
-                  {isSelected && (
+                  {(isSelected && !isBuyingPaused) && (
                     <div 
                       className="absolute inset-0 opacity-[0.03] pointer-events-none"
                       style={{ background: `linear-gradient(45deg, hsl(${netBrand.hsl}), transparent)` }}
@@ -265,10 +269,19 @@ function BulkOrderFlow() {
                     <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground/60">
                       {pkg.network}
                     </span>
-                    <span className="font-bold text-[15px] tracking-tight">GH₵{formatGHS(getAgentPrice(pkg))}</span>
+                    {isBuyingPaused ? (
+                      <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                        Paused
+                      </span>
+                    ) : (
+                      <span className="font-bold text-[15px] tracking-tight">GH₵{formatGHS(getAgentPrice(pkg))}</span>
+                    )}
                   </div>
                   <div className="relative">
-                    <h4 className="text-[17px] font-bold tracking-tight text-foreground/90">{pkg.package_size_label}</h4>
+                    <h4 className={cn(
+                      "text-[17px] font-bold tracking-tight",
+                      isBuyingPaused ? "text-muted-foreground" : "text-foreground/90"
+                    )}>{pkg.package_size_label}</h4>
                     <p className="text-[11px] font-medium text-muted-foreground/60 mt-1">{pkg.validity_label}</p>
                   </div>
                 </button>

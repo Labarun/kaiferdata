@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData, organizationSchema, websiteSchema } from "@/components/seo/StructuredData";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -29,6 +31,13 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center overflow-x-hidden">
+      <SEOHead
+        title="Kaiferdata — Buy Cheap Data Bundles in Ghana"
+        description="Buy affordable MTN, Telecel, and AirtelTigo data bundles in Ghana. Instant delivery, secure Paystack checkout, no signup required. Trusted by 20,000+ users."
+        canonicalPath="/"
+        raw
+      />
+      <StructuredData data={[organizationSchema, websiteSchema]} />
 
       {/* ── HERO SECTION ── */}
       <section className="w-full relative flex flex-col items-center justify-center pt-10 pb-10 md:pt-24 md:pb-24 px-4 text-center bg-hero-gradient overflow-hidden border-b border-border/30">

@@ -175,6 +175,7 @@ export default function UserBuyDataPage() {
       metadata: null,
       created_at: selectedPkg.created_at,
       updated_at: selectedPkg.updated_at,
+      buying_enabled: selectedPkg.buying_enabled,
     }
     : null;
 
@@ -422,33 +423,34 @@ export default function UserBuyDataPage() {
             </span>
           </div>
 
-          {filteredPackages.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl glass-card">
-              <p className="text-xs text-muted-foreground/60">No packages available for this network yet.</p>
-            </div>
+          {filteredPackages.length === 0 || filteredPackages.every((p) => p.buying_enabled === false) ? (
+            <ServicePaused variant="network" network={network} />
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {filteredPackages.map((pkg, i) => {
                 const isActive = selectedPkg?.id === pkg.id;
                 const brand = getNetworkBrand(network);
+                const isBuyingPaused = pkg.buying_enabled === false;
                 return (
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={isBuyingPaused ? undefined : { scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     key={pkg.id}
                     type="button"
-                    onClick={() => handlePackageSelect(pkg)}
+                    onClick={() => !isBuyingPaused && handlePackageSelect(pkg)}
+                    disabled={isBuyingPaused}
                     className={cn(
                       "group relative flex flex-col rounded-2xl text-left overflow-hidden",
                       "transition-all duration-300 ease-out",
-                      "active:scale-[0.95] active:duration-100",
-                      isActive
-                        ? "glass-elevated refraction-rim"
-                        : "glass-card hover:glass-elevated"
+                      isBuyingPaused
+                        ? "opacity-60 cursor-not-allowed bg-muted/20 border border-border/40"
+                        : isActive
+                          ? "glass-elevated refraction-rim"
+                          : "glass-card hover:glass-elevated"
                     )}
                     style={{
                       animationDelay: `${i * 50}ms`,
-                      ...(isActive
+                      ...((isActive && !isBuyingPaused)
                         ? {
                           boxShadow: `0 0 20px -4px hsl(${brand.hsl} / 0.2), 0 4px 16px -4px hsl(${brand.hsl} / 0.12)`,
                         }
@@ -459,14 +461,14 @@ export default function UserBuyDataPage() {
                     <div
                       className="h-[2px] transition-all duration-400"
                       style={
-                        isActive
+                        (isActive && !isBuyingPaused)
                           ? { background: `linear-gradient(90deg, transparent, hsl(${brand.hsl} / 0.7), transparent)` }
                           : { background: `linear-gradient(90deg, transparent, hsl(0 0% 50% / 0.06), transparent)` }
                       }
                     />
 
                     <div className="p-4 pb-3.5 flex flex-col gap-2 relative">
-                      {isActive && (
+                      {(isActive && !isBuyingPaused) && (
                         <div
                           className="absolute inset-0 rounded-b-2xl pointer-events-none"
                           style={{
@@ -479,29 +481,39 @@ export default function UserBuyDataPage() {
                         <span
                           className={cn(
                             "text-[21px] font-bold leading-none tracking-tight transition-colors duration-200",
-                            isActive ? "text-foreground/90" : "text-foreground/80"
+                            isBuyingPaused
+                              ? "text-muted-foreground"
+                              : isActive
+                                ? "text-foreground/90"
+                                : "text-foreground/80"
                           )}
-                          style={isActive ? { color: `hsl(${brand.hsl})` } : undefined}
+                          style={(isActive && !isBuyingPaused) ? { color: `hsl(${brand.hsl})` } : undefined}
                         >
                           {pkg.package_size_label}
                         </span>
-                        <div
-                          className={cn(
-                            "h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                            "transition-all duration-300",
-                            !isActive && "border border-border/40 bg-secondary/40 group-hover:border-border/60"
-                          )}
-                          style={
-                            isActive
-                              ? {
-                                background: `hsl(${brand.hsl})`,
-                                boxShadow: `0 0 14px -2px hsl(${brand.hsl} / 0.4)`,
-                              }
-                              : undefined
-                          }
-                        >
-                          {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                        </div>
+                        {isBuyingPaused ? (
+                          <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase tracking-wider scale-90 origin-top-right">
+                            Paused
+                          </span>
+                        ) : (
+                          <div
+                            className={cn(
+                              "h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                              "transition-all duration-300",
+                              !isActive && "border border-border/40 bg-secondary/40 group-hover:border-border/60"
+                            )}
+                            style={
+                              isActive
+                                ? {
+                                  background: `hsl(${brand.hsl})`,
+                                  boxShadow: `0 0 14px -2px hsl(${brand.hsl} / 0.4)`,
+                                }
+                                : undefined
+                            }
+                          >
+                            {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                          </div>
+                        )}
                       </div>
 
                       <span className="text-[10.5px] text-muted-foreground/45 leading-snug line-clamp-1 font-medium relative z-[1]">
@@ -514,9 +526,9 @@ export default function UserBuyDataPage() {
                           <span
                             className={cn(
                               "text-[15px] font-bold tracking-tight transition-colors duration-200",
-                              !isActive && "text-foreground/60"
+                              isBuyingPaused ? "text-muted-foreground" : !isActive && "text-foreground/60"
                             )}
-                            style={isActive ? { color: `hsl(${brand.hsl})` } : undefined}
+                            style={(isActive && !isBuyingPaused) ? { color: `hsl(${brand.hsl})` } : undefined}
                           >
                             GH₵{(isAgent && Number(pkg.agent_base_price) > 0 ? Number(pkg.agent_base_price) : Number(pkg.selling_price)).toLocaleString()}
                           </span>
@@ -526,19 +538,21 @@ export default function UserBuyDataPage() {
                             </span>
                           )}
                         </div>
-                        <ChevronRight
-                          className={cn(
-                            "h-3.5 w-3.5 transition-all duration-200",
-                            isActive
-                              ? "translate-x-0"
-                              : "text-muted-foreground/20 -translate-x-1 group-hover:translate-x-0 group-hover:text-muted-foreground/35"
-                          )}
-                          style={isActive ? { color: `hsl(${brand.hsl} / 0.5)` } : undefined}
-                        />
+                        {!isBuyingPaused && (
+                          <ChevronRight
+                            className={cn(
+                              "h-3.5 w-3.5 transition-all duration-200",
+                              isActive
+                                ? "translate-x-0"
+                                : "text-muted-foreground/20 -translate-x-1 group-hover:translate-x-0 group-hover:text-muted-foreground/35"
+                            )}
+                            style={isActive ? { color: `hsl(${brand.hsl} / 0.5)` } : undefined}
+                          />
+                        )}
                       </div>
                     </div>
 
-                    {isActive && (
+                    {(isActive && !isBuyingPaused) && (
                       <div
                         className="absolute bottom-0 left-0 right-0 h-[1px]"
                         style={{

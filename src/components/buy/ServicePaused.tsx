@@ -1,13 +1,12 @@
 /**
- * ServicePaused — premium "we're briefly paused" state for GUESTS.
+ * ServicePaused — premium "we're briefly paused" state for GUESTS and USERS.
  *
- * Shown on the public buy page when ordering is turned off (or a network has no
+ * Shown on the public and user buy page when ordering is turned off (or a network has no
  * bundles available). Instead of a dead/empty screen, it reassures the visitor
  * that it's temporary and converts them hard to the WhatsApp channel so we can
  * pull them back the moment we reopen (often with cheaper prices).
  */
-import { Clock, Sparkles, Tag, BadgeCheck, Bell } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Clock, Tag } from "lucide-react";
 
 const WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029VbCn7xiKbYMWspFUrd2r";
 
@@ -29,60 +28,55 @@ export function ServicePaused({
 }) {
   const heading =
     variant === "network" && network
-      ? `${network} bundles are paused right now`
-      : "We'll be right back";
+      ? `${network} data is taking a short break`
+      : "Our ordering service is taking a short break";
 
   return (
-    <div className="animate-fade-in">
-      <div className="relative overflow-hidden rounded-[2rem] glass-premium p-6 sm:p-8 text-center shimmer-edge">
-        {/* warm ambient glow — temporary, not "dead" */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-56 h-40 rounded-full bg-amber-400/15 blur-3xl pointer-events-none" />
+    <div className="animate-fade-in w-full">
+      <div className="relative overflow-hidden rounded-2xl border border-success/20 bg-emerald-950/[0.04] dark:bg-[#06140E]/80 p-5 sm:p-6 backdrop-blur-xl shadow-xl shadow-black/10">
+        {/* Subtle ambient green radial glow */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-32 rounded-full bg-[#25D366]/5 blur-3xl pointer-events-none" />
 
-        <div className="relative">
-          {/* Pulsing pause badge */}
-          <div className="mx-auto mb-4 h-16 w-16 rounded-2xl glass-elevated flex items-center justify-center">
-            <span className="relative flex h-9 w-9 items-center justify-center">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/30 animate-ping" />
-              <Clock className="relative h-7 w-7 text-amber-500" />
+        <div className="flex flex-col gap-4 relative z-[1]">
+          {/* Header Row */}
+          <div className="flex items-start gap-4">
+            {/* Green circle with WhatsApp icon */}
+            <div className="h-10 w-10 shrink-0 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-md shadow-[#25D366]/20">
+              <WhatsAppIcon className="h-5 w-5" />
+            </div>
+            
+            <div className="flex flex-col gap-1 min-w-0">
+              <h3 className="text-[15px] sm:text-[16px] font-bold text-foreground leading-snug tracking-tight">
+                {heading}
+              </h3>
+              <p className="text-[12px] sm:text-[13px] text-muted-foreground/80 leading-relaxed">
+                We're restoring it very soon — often with <span className="font-bold text-foreground">even better prices</span>. Join our WhatsApp channel and you'll be the first to know the moment it's back.
+              </p>
+            </div>
+          </div>
+
+          {/* Button Row */}
+          <a 
+            href={WHATSAPP_CHANNEL} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="w-full block"
+          >
+            <button className="w-full h-11 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-[13px] sm:text-[14px] flex items-center justify-center gap-2 transition-all shadow-md shadow-[#25D366]/15 active:scale-[0.99]">
+              <WhatsAppIcon className="h-4.5 w-4.5" /> Join our WhatsApp channel
+            </button>
+          </a>
+
+          {/* Footer Details */}
+          <div className="flex items-center justify-center gap-4 text-[10.5px] text-muted-foreground/60 font-semibold pt-1">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-[#25D366]" /> Back very soon
+            </span>
+            <span className="h-3 w-px bg-border/40" />
+            <span className="inline-flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5 text-[#25D366]" /> First to get deals
             </span>
           </div>
-
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-[11px] font-semibold mb-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Paused — back very soon
-          </span>
-
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{heading}</h2>
-          <p className="mt-2 text-[13.5px] text-muted-foreground/80 leading-relaxed max-w-sm mx-auto">
-            We've briefly paused orders to restock and come back even stronger — usually back within a short while,
-            often with <span className="font-semibold text-foreground">even cheaper prices</span>. 🇬🇭
-          </p>
-
-          {/* The hook — join the channel */}
-          <div className="mt-6 rounded-2xl border border-[#25D366]/30 bg-[#25D366]/[0.06] p-4 sm:p-5">
-            <p className="text-[13px] font-semibold text-foreground flex items-center justify-center gap-1.5">
-              <Bell className="h-4 w-4 text-[#25D366]" /> Don't miss the reopen
-            </p>
-            <p className="text-[12px] text-muted-foreground mt-1 max-w-xs mx-auto leading-relaxed">
-              Join our WhatsApp channel and we'll ping you the second we're back — with first access to the cheaper deals.
-            </p>
-            <a href={WHATSAPP_CHANNEL} target="_blank" rel="noopener noreferrer" className="block mt-3.5">
-              <button className="w-full h-12 rounded-xl bg-[#25D366] hover:bg-[#1fb855] text-white font-bold text-[14px] flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#25D366]/20 active:scale-[0.98]">
-                <WhatsAppIcon className="h-5 w-5" /> Join our WhatsApp channel
-              </button>
-            </a>
-          </div>
-
-          {/* Reassurance chips */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground/70">
-            <span className="inline-flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /> Restoring soon</span>
-            <span className="inline-flex items-center gap-1"><Tag className="h-3 w-3 text-success" /> Cheaper prices coming</span>
-            <span className="inline-flex items-center gap-1"><BadgeCheck className="h-3 w-3 text-primary" /> Same trusted delivery</span>
-          </div>
-
-          <p className="mt-5 text-[11px] text-muted-foreground/55">
-            Already ordered?{" "}
-            <Link to="/track" className="text-primary font-medium hover:underline">Track your order</Link>
-          </p>
         </div>
       </div>
     </div>

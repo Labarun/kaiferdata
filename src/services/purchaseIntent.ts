@@ -9,7 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { ensureUserScaffold } from "@/services/auth";
 
-export type DataPlan = Database["public"]["Tables"]["data_plans"]["Row"];
+export type DataPlan = Database["public"]["Tables"]["data_plans"]["Row"] & {
+  buying_enabled?: boolean;
+};
 export type PurchaseIntent = Database["public"]["Tables"]["purchase_intents"]["Row"];
 
 /** Generate a unique intent reference */

@@ -28,21 +28,25 @@ const PlanCard = memo(function PlanCard({
   brandHsl: string;
   onSelect: (plan: DataPlan) => void;
 }) {
+  const isBuyingPaused = plan.buying_enabled === false;
+
   return (
     <button
       type="button"
-      onClick={() => onSelect(plan)}
+      onClick={() => !isBuyingPaused && onSelect(plan)}
+      disabled={isBuyingPaused}
       className={cn(
         "group relative flex flex-col rounded-2xl text-left overflow-hidden",
         "transition-[transform,box-shadow,border-color,background] duration-200 ease-out",
-        "active:scale-[0.97] active:duration-100",
-        isActive
-          ? "glass-elevated refraction-rim -translate-y-[1px]"
-          : "glass-card hover:glass-elevated hover:-translate-y-[1px]"
+        isBuyingPaused
+          ? "opacity-60 cursor-not-allowed bg-muted/20 border border-border/40"
+          : isActive
+            ? "glass-elevated refraction-rim -translate-y-[1px] active:scale-[0.97] active:duration-100"
+            : "glass-card hover:glass-elevated hover:-translate-y-[1px] active:scale-[0.97] active:duration-100"
       )}
       style={{
         animationDelay: `${index * 50}ms`,
-        ...(isActive ? {
+        ...((isActive && !isBuyingPaused) ? {
           boxShadow: `0 0 24px -4px hsl(${brandHsl} / 0.22), 0 6px 20px -6px hsl(${brandHsl} / 0.15), 0 1px 3px 0 hsl(213 35% 50% / 0.06)`,
         } : {}),
       }}
@@ -50,7 +54,7 @@ const PlanCard = memo(function PlanCard({
       {/* Top accent bar */}
       <div
         className="h-[2px] transition-[background] duration-300"
-        style={isActive ? {
+        style={(isActive && !isBuyingPaused) ? {
           background: `linear-gradient(90deg, transparent, hsl(${brandHsl} / 0.7), transparent)`,
         } : {
           background: `linear-gradient(90deg, transparent, hsl(0 0% 50% / 0.06), transparent)`,
@@ -58,7 +62,7 @@ const PlanCard = memo(function PlanCard({
       />
 
       <div className="p-4 pb-3.5 flex flex-col gap-2.5 relative">
-        {isActive && (
+        {(isActive && !isBuyingPaused) && (
           <div
             className="absolute inset-0 rounded-b-2xl pointer-events-none"
             style={{
@@ -71,25 +75,35 @@ const PlanCard = memo(function PlanCard({
           <span
             className={cn(
               "text-[22px] font-bold leading-none tracking-tight transition-colors duration-200",
-              isActive ? "text-foreground/90" : "text-foreground/75"
+              isBuyingPaused
+                ? "text-muted-foreground"
+                : isActive
+                  ? "text-foreground/90"
+                  : "text-foreground/75"
             )}
-            style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
+            style={(isActive && !isBuyingPaused) ? { color: `hsl(${brandHsl})` } : undefined}
           >
             {plan.volume}
           </span>
-          <div
-            className={cn(
-              "h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 mt-0.5",
-              "transition-[background,box-shadow,border-color] duration-300",
-              !isActive && "border border-border/40 bg-secondary/40 group-hover:border-border/60"
-            )}
-            style={isActive ? {
-              background: `hsl(${brandHsl})`,
-              boxShadow: `0 0 14px -2px hsl(${brandHsl} / 0.4)`,
-            } : undefined}
-          >
-            {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-          </div>
+          {isBuyingPaused ? (
+            <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase tracking-wider scale-90 origin-top-right">
+              Paused
+            </span>
+          ) : (
+            <div
+              className={cn(
+                "h-[22px] w-[22px] rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                "transition-[background,box-shadow,border-color] duration-300",
+                !isActive && "border border-border/40 bg-secondary/40 group-hover:border-border/60"
+              )}
+              style={isActive ? {
+                background: `hsl(${brandHsl})`,
+                boxShadow: `0 0 14px -2px hsl(${brandHsl} / 0.4)`,
+              } : undefined}
+            >
+              {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+            </div>
+          )}
         </div>
 
         <span className="text-[10px] text-muted-foreground/40 leading-snug line-clamp-1 font-medium relative z-[1]">
@@ -100,26 +114,28 @@ const PlanCard = memo(function PlanCard({
           <span
             className={cn(
               "tracking-tight transition-colors duration-200 font-bold",
-              !isActive && "text-foreground/60"
+              isBuyingPaused ? "text-muted-foreground" : !isActive && "text-foreground/60"
             )}
-            style={isActive ? { color: `hsl(${brandHsl})` } : undefined}
+            style={(isActive && !isBuyingPaused) ? { color: `hsl(${brandHsl})` } : undefined}
           >
             <span className="text-[12px]">GH₵</span>
             <span className="text-[16px] ml-[1px]">{Number(plan.amount).toFixed(2)}</span>
           </span>
-          <ChevronRight
-            className={cn(
-              "h-3.5 w-3.5 transition-[transform,color] duration-200",
-              isActive
-                ? "translate-x-0"
-                : "text-muted-foreground/20 -translate-x-1 group-hover:translate-x-0 group-hover:text-muted-foreground/35"
-            )}
-            style={isActive ? { color: `hsl(${brandHsl} / 0.5)` } : undefined}
-          />
+          {!isBuyingPaused && (
+            <ChevronRight
+              className={cn(
+                "h-3.5 w-3.5 transition-[transform,color] duration-200",
+                isActive
+                  ? "translate-x-0"
+                  : "text-muted-foreground/20 -translate-x-1 group-hover:translate-x-0 group-hover:text-muted-foreground/35"
+              )}
+              style={isActive ? { color: `hsl(${brandHsl} / 0.5)` } : undefined}
+            />
+          )}
         </div>
       </div>
 
-      {isActive && (
+      {(isActive && !isBuyingPaused) && (
         <div
           className="absolute bottom-0 left-0 right-0 h-[1px]"
           style={{

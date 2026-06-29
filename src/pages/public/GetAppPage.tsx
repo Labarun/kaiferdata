@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Smartphone, Apple, Download, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { detectDevice } from "@/lib/deviceDetect";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 export default function GetAppPage() {
   const navigate = useNavigate();
@@ -20,6 +21,10 @@ export default function GetAppPage() {
 
   return (
     <div className="min-h-[80vh] container py-10 sm:py-14">
+      <SEOHead
+        title="Download the Kaiferdata App"
+        description="Download the Kaiferdata app for Android or add to your iPhone home screen. Get faster data purchases, instant dashboard access, and an app-like experience."
+      />
       <div className="max-w-md mx-auto text-center">
         <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl glass-premium mb-5">
           <Smartphone className="h-6 w-6 text-primary" />

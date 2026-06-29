@@ -190,7 +190,18 @@ export default function AdminPackagesPage() {
           { key: "network", header: "Network", mobile: "row", cell: (p) => <Badge variant="outline" className="text-xs">{p.network}</Badge> },
           { key: "supplier", header: "Supplier", align: "right", mobile: "row", cell: (p) => <span className="font-mono text-xs">GH₵{Number(p.supplier_price).toFixed(2)}</span> },
           { key: "profit", header: "Profit", align: "right", mobile: "row", cell: (p) => { const pr = calcProfit(p); return <span className={`font-mono text-xs font-semibold ${pr >= 0 ? "text-success" : "text-destructive"}`}>GH₵{pr.toFixed(2)} <span className="text-[10px] text-muted-foreground">({calcMargin(p).toFixed(0)}%)</span></span>; } },
-          { key: "status", header: "Status", align: "center", mobile: "row", cell: (p) => <Badge variant={p.is_active ? "default" : "secondary"} className="text-[10px]">{p.is_active ? "Active" : "Inactive"}</Badge> },
+          { key: "status", header: "Status", align: "center", mobile: "row", cell: (p) => (
+            <div className="flex flex-col items-center gap-1">
+              <Badge variant={p.is_active ? "default" : "secondary"} className="text-[10px]">
+                {p.is_active ? "Active" : "Inactive"}
+              </Badge>
+              {p.is_active && p.buying_enabled === false && (
+                <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Paused
+                </span>
+              )}
+            </div>
+          ) },
           { key: "visibility", header: "Visibility", align: "center", mobile: "row", cell: (p) => (
             <div className="flex items-center gap-1">
               {p.visible_on_public && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Pub</span>}

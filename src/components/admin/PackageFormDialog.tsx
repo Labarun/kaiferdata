@@ -53,6 +53,7 @@ const emptyForm = {
   source_type: "manual",
   agent_base_price: "",
   is_agent_resaleable: true,
+  buying_enabled: true,
 };
 
 export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, suppliers }: PackageFormDialogProps) {
@@ -93,6 +94,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
         supplier_source_id: pkg.supplier_source_id || "",
         agent_base_price: String(pkg.agent_base_price ?? 0),
         is_agent_resaleable: pkg.is_agent_resaleable ?? true,
+        buying_enabled: pkg.buying_enabled ?? true,
       });
     } else {
       setForm({ ...emptyForm, supplier_id: "none", supplier_source_id: "" });
@@ -140,6 +142,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
           : null,
         agent_base_price: parseFloat(form.agent_base_price) || 0,
         is_agent_resaleable: form.is_agent_resaleable,
+        buying_enabled: form.buying_enabled,
       };
 
       if (isEdit) {
@@ -327,6 +330,13 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Active</Label>
                 <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-xs">Buying Enabled</Label>
+                  <p className="text-[10px] text-muted-foreground/60">If false, package remains visible but buying is disabled</p>
+                </div>
+                <Switch checked={form.buying_enabled} onCheckedChange={(v) => set("buying_enabled", v)} />
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Visible on Public Page</Label>

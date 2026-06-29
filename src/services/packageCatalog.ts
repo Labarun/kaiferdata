@@ -25,6 +25,7 @@ export interface DataPackage {
   source_metadata: Record<string, unknown> | null;
   agent_base_price: number;
   is_agent_resaleable: boolean;
+  buying_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

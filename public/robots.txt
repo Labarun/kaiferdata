@@ -12,3 +12,11 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Disallow private/dashboard areas from indexing
+Disallow: /dashboard
+Disallow: /agent
+Disallow: /admin
+Disallow: /staff
+
+Sitemap: https://kaiferdata.com/sitemap.xml
