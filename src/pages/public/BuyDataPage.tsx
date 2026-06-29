@@ -320,10 +320,17 @@ export default function BuyDataPage() {
                       {filteredPlans.length} available
                     </span>
                   </div>
-                  {filteredPlans.length === 0 || filteredPlans.every((p) => p.buying_enabled === false) ? (
+                  {filteredPlans.length === 0 ? (
                     <ServicePaused variant="network" network={network} />
                   ) : (
-                    <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                    <>
+                      {filteredPlans.every((p) => p.buying_enabled === false) && (
+                        <div className="mb-6">
+                          <ServicePaused variant="network" network={network} />
+                        </div>
+                      )}
+                      <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                    </>
                   )}
                 </section>
               )}
