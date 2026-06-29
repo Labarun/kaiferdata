@@ -526,6 +526,7 @@ export type Database = {
       data_packages: {
         Row: {
           agent_base_price: number
+          buying_enabled: boolean | null
           created_at: string
           currency: string
           display_order: number
@@ -550,6 +551,7 @@ export type Database = {
         }
         Insert: {
           agent_base_price?: number
+          buying_enabled?: boolean | null
           created_at?: string
           currency?: string
           display_order?: number
@@ -574,6 +576,7 @@ export type Database = {
         }
         Update: {
           agent_base_price?: number
+          buying_enabled?: boolean | null
           created_at?: string
           currency?: string
           display_order?: number
@@ -1986,6 +1989,7 @@ export type Database = {
         Args: { _logged_in?: boolean }
         Returns: {
           agent_base_price: number
+          buying_enabled: boolean
           currency: string
           display_order: number
           id: string
