@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     const { error: err } = await updatePassword(password);
     if (err) {
-      setError(err.message);
+      setError("Password reset failed. Please try again or request a new link.");
     } else {
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2000);

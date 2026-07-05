@@ -19,12 +19,9 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error: err } = await resetPassword(email);
-    if (err) {
-      setError(err.message);
-    } else {
-      setSent(true);
-    }
+    await resetPassword(email);
+    // Always show success state to prevent email enumeration
+    setSent(true);
     setLoading(false);
   };
 
@@ -38,8 +35,8 @@ export default function ForgotPasswordPage() {
           <h1 className="text-xl font-medium text-foreground">
             {sent ? "Check your email" : "Reset password"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {sent ? "We've sent you a reset link" : "We'll send you a reset link"}
+          <p className="text-sm text-muted-foreground mt-1 px-4">
+            {sent ? "If that email is registered, you'll receive a reset link" : "We'll send you a reset link"}
           </p>
         </div>
 
@@ -47,7 +44,7 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                Check your email for the password reset link.
+                Please check your inbox (and spam folder) for the password reset link.
               </p>
               <Link to="/login" className="text-sm text-primary hover:underline">
                 Back to sign in

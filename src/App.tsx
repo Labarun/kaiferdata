@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -95,6 +96,12 @@ const SpecialOfferOrdersPage = lazy(() => import("@/pages/special/SpecialOfferOr
 const SpecialOfferOrderDetailPage = lazy(() => import("@/pages/special/SpecialOfferOrderDetailPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
+// Blog pages
+const BlogPage = lazy(() => import("@/pages/public/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/public/BlogPostPage"));
+const AdminBlogPage = lazy(() => import("@/pages/admin/AdminBlogPage"));
+const AdminBlogEditPage = lazy(() => import("@/pages/admin/AdminBlogEditPage"));
+
 // Tuned defaults: cut needless refetches on tab focus, keep cached data warm
 // for 30s — fixes "every navigation refetches" sluggishness on mobile.
 const queryClient = new QueryClient({
@@ -117,132 +124,141 @@ const DynamicSubscriptionLayout = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ThemeProvider defaultTheme="system" storageKey="kaifer-theme">
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-              {/* ====== PUBLIC AREA ====== */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/buy" element={<BuyDataPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/track" element={<TrackOrderPage />} />
-                <Route path="/get-app" element={<GetAppPage />} />
-                <Route path="/get-app/android" element={<GetAppAndroidPage />} />
-                <Route path="/get-app/ios" element={<GetAppIosPage />} />
-                <Route path="/agent-perks" element={<AgentPerksPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ThemeProvider defaultTheme="system" storageKey="kaifer-theme">
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* ====== PUBLIC AREA ====== */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/buy" element={<BuyDataPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/track" element={<TrackOrderPage />} />
+                    <Route path="/get-app" element={<GetAppPage />} />
+                    <Route path="/get-app/android" element={<GetAppAndroidPage />} />
+                    <Route path="/get-app/ios" element={<GetAppIosPage />} />
+                    <Route path="/agent-perks" element={<AgentPerksPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/blog/:slug" element={<BlogPostPage />} />
 
-                <Route path="/payment/callback" element={<PaymentCallbackPage />} />
-                <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
-                <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-              </Route>
+                    <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+                    <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
+                    <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  </Route>
 
-              {/* ====== USER DASHBOARD ====== */}
-              <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><UserLayout /></ProtectedRoute>}>
-                <Route path="/dashboard" element={<UserDashboardHome />} />
-                <Route path="/dashboard/buy" element={<UserBuyDataPage />} />
-                <Route path="/dashboard/wallet" element={<UserWalletPage />} />
-                <Route path="/dashboard/orders" element={<UserOrdersPage />} />
-                <Route path="/dashboard/orders/:orderId" element={<UserOrderDetailPage />} />
-                <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
-                <Route path="/dashboard/transactions/:transactionId" element={<UserTransactionDetailPage />} />
-                <Route path="/dashboard/profile" element={<UserProfilePage />} />
-                <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
-                {/* Special bundle offer (user panel) */}
-                <Route path="/dashboard/special" element={<SpecialOfferPage />} />
-                <Route path="/dashboard/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
-                <Route path="/dashboard/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
-                <Route path="/dashboard/special/orders" element={<SpecialOfferOrdersPage />} />
-                <Route path="/dashboard/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
-              </Route>
+                  {/* ====== STANDALONE PUBLIC ROUTES (No Navbar/Footer) ====== */}
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-              {/* ====== DYNAMIC SUBSCRIPTION LAYOUT ====== */}
-              {/* Agents see the Agent dashboard shell, newly approved users see the User shell */}
-              <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><DynamicSubscriptionLayout /></ProtectedRoute>}>
-                <Route path="/agent/subscription" element={<AgentSubscriptionPage />} />
-              </Route>
+                  {/* ====== USER DASHBOARD ====== */}
+                  <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><UserLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<UserDashboardHome />} />
+                    <Route path="/dashboard/buy" element={<UserBuyDataPage />} />
+                    <Route path="/dashboard/wallet" element={<UserWalletPage />} />
+                    <Route path="/dashboard/orders" element={<UserOrdersPage />} />
+                    <Route path="/dashboard/orders/:orderId" element={<UserOrderDetailPage />} />
+                    <Route path="/dashboard/transactions" element={<UserTransactionsPage />} />
+                    <Route path="/dashboard/transactions/:transactionId" element={<UserTransactionDetailPage />} />
+                    <Route path="/dashboard/profile" element={<UserProfilePage />} />
+                    <Route path="/dashboard/become-agent" element={<BecomeAgentPage />} />
+                    {/* Special bundle offer (user panel) */}
+                    <Route path="/dashboard/special" element={<SpecialOfferPage />} />
+                    <Route path="/dashboard/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
+                    <Route path="/dashboard/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
+                    <Route path="/dashboard/special/orders" element={<SpecialOfferOrdersPage />} />
+                    <Route path="/dashboard/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
+                  </Route>
 
-              {/* ====== AGENT DASHBOARD ====== */}
-              <Route element={<ProtectedRoute allowedRoles={["agent", "admin"]}><AgentLayout /></ProtectedRoute>}>
-                <Route path="/agent" element={<AgentDashboardHome />} />
-                <Route path="/agent/store" element={<AgentStorePage />} />
-                <Route path="/agent/orders" element={<AgentOrdersPage />} />
-                <Route path="/agent/earnings" element={<AgentEarningsPage />} />
-                <Route path="/agent/withdraw" element={<AgentWithdrawPage />} />
-                <Route path="/agent/pricing" element={<AgentPricingPage />} />
-                <Route path="/agent/marketing" element={<AgentMarketingPage />} />
-                <Route path="/agent/customers" element={<AgentCustomersPage />} />
-                <Route path="/agent/transactions" element={<AgentTransactionsPage />} />
-                <Route path="/agent/bulk" element={<AgentBulkOrdersPage />} />
-                {/* Special bundle offer (agent panel — not on storefronts) */}
-                <Route path="/agent/special" element={<SpecialOfferPage />} />
-                <Route path="/agent/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
-                <Route path="/agent/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
-                <Route path="/agent/special/orders" element={<SpecialOfferOrdersPage />} />
-                <Route path="/agent/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
-              </Route>
+                  {/* ====== DYNAMIC SUBSCRIPTION LAYOUT ====== */}
+                  {/* Agents see the Agent dashboard shell, newly approved users see the User shell */}
+                  <Route element={<ProtectedRoute allowedRoles={["user", "agent", "admin", "staff"]}><DynamicSubscriptionLayout /></ProtectedRoute>}>
+                    <Route path="/agent/subscription" element={<AgentSubscriptionPage />} />
+                  </Route>
 
-              {/* ====== ADMIN PANEL ====== */}
-              <Route element={<ProtectedRoute allowedRoles={["admin"]}><FullAdminLayout /></ProtectedRoute>}>
-                <Route path="/admin" element={<AdminDashboardHome />} />
-                <Route path="/admin/supplier" element={<AdminSupplierPage />} />
-                <Route path="/admin/packages" element={<AdminPackagesPage />} />
-                <Route path="/admin/orders" element={<AdminOrdersPage />} />
-                <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
-                <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
-                <Route path="/admin/transactions/:transactionId" element={<AdminTransactionDetailPage />} />
-                <Route path="/admin/reconciliation" element={<AdminReconciliationPage />} />
-                <Route path="/admin/intents" element={<AdminIntentsPage />} />
-                <Route path="/admin/intents/:intentId" element={<AdminIntentDetailPage />} />
-                <Route path="/admin/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/agents" element={<AdminAgentsPage />} />
-                <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
-                <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
-                <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-                <Route path="/admin/special-orders" element={<AdminSpecialOrdersPage />} />
-                <Route path="/admin/special-orders/:orderId" element={<AdminSpecialOrderDetailPage />} />
-                <Route path="/admin/special-packages" element={<AdminSpecialPackagesPage />} />
-                <Route path="/admin/notices" element={<AdminNoticesPage />} />
-                <Route path="/admin/security" element={<SecurityCenterPage />} />
-                <Route path="/admin/system-controls" element={<SystemControlsPage />} />
-                <Route path="/admin/staff" element={<ScaffoldPage title="Staff" description="Staff management" />} />
-              </Route>
+                  {/* ====== AGENT DASHBOARD ====== */}
+                  <Route element={<ProtectedRoute allowedRoles={["agent", "admin"]}><AgentLayout /></ProtectedRoute>}>
+                    <Route path="/agent" element={<AgentDashboardHome />} />
+                    <Route path="/agent/store" element={<AgentStorePage />} />
+                    <Route path="/agent/orders" element={<AgentOrdersPage />} />
+                    <Route path="/agent/earnings" element={<AgentEarningsPage />} />
+                    <Route path="/agent/withdraw" element={<AgentWithdrawPage />} />
+                    <Route path="/agent/pricing" element={<AgentPricingPage />} />
+                    <Route path="/agent/marketing" element={<AgentMarketingPage />} />
+                    <Route path="/agent/customers" element={<AgentCustomersPage />} />
+                    <Route path="/agent/transactions" element={<AgentTransactionsPage />} />
+                    <Route path="/agent/bulk" element={<AgentBulkOrdersPage />} />
+                    {/* Special bundle offer (agent panel — not on storefronts) */}
+                    <Route path="/agent/special" element={<SpecialOfferPage />} />
+                    <Route path="/agent/special/buy/:packageId" element={<SpecialOfferOrderPage />} />
+                    <Route path="/agent/special/success/:orderId" element={<SpecialOfferSuccessPage />} />
+                    <Route path="/agent/special/orders" element={<SpecialOfferOrdersPage />} />
+                    <Route path="/agent/special/orders/:orderId" element={<SpecialOfferOrderDetailPage />} />
+                  </Route>
 
-              {/* ====== STAFF PANEL ====== */}
-              <Route element={<ProtectedRoute allowedRoles={["staff", "admin"]}><StaffLayout /></ProtectedRoute>}>
-                <Route path="/staff" element={<StaffDashboardHome />} />
-                <Route path="/staff/orders" element={<StaffOrdersPage />} />
-                <Route path="/staff/orders/:orderId" element={<StaffOrderDetailPage />} />
-                <Route path="/staff/transactions" element={<StaffTransactionsPage />} />
-                <Route path="/staff/transactions/:transactionId" element={<StaffTransactionDetailPage />} />
-                <Route path="/staff/intents" element={<StaffIntentsPage />} />
-                <Route path="/staff/intents/:intentId" element={<StaffIntentDetailPage />} />
-                <Route path="/staff/issues" element={<StaffIssueQueuePage />} />
-              </Route>
+                  {/* ====== ADMIN PANEL ====== */}
+                  <Route element={<ProtectedRoute allowedRoles={["admin"]}><FullAdminLayout /></ProtectedRoute>}>
+                    <Route path="/admin" element={<AdminDashboardHome />} />
+                    <Route path="/admin/supplier" element={<AdminSupplierPage />} />
+                    <Route path="/admin/packages" element={<AdminPackagesPage />} />
+                    <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                    <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
+                    <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+                    <Route path="/admin/transactions/:transactionId" element={<AdminTransactionDetailPage />} />
+                    <Route path="/admin/reconciliation" element={<AdminReconciliationPage />} />
+                    <Route path="/admin/intents" element={<AdminIntentsPage />} />
+                    <Route path="/admin/intents/:intentId" element={<AdminIntentDetailPage />} />
+                    <Route path="/admin/deposits" element={<ScaffoldPage title="Deposits" description="Deposit management" />} />
+                    <Route path="/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/admin/agents" element={<AdminAgentsPage />} />
+                    <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
+                    <Route path="/admin/tickets" element={<ScaffoldPage title="Tickets" description="Support ticket management" />} />
+                    <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                    <Route path="/admin/special-orders" element={<AdminSpecialOrdersPage />} />
+                    <Route path="/admin/special-orders/:orderId" element={<AdminSpecialOrderDetailPage />} />
+                    <Route path="/admin/special-packages" element={<AdminSpecialPackagesPage />} />
+                    <Route path="/admin/notices" element={<AdminNoticesPage />} />
+                    <Route path="/admin/security" element={<SecurityCenterPage />} />
+                    <Route path="/admin/system-controls" element={<SystemControlsPage />} />
+                    <Route path="/admin/staff" element={<ScaffoldPage title="Staff" description="Staff management" />} />
+                    <Route path="/admin/blog" element={<AdminBlogPage />} />
+                    <Route path="/admin/blog/new" element={<AdminBlogEditPage />} />
+                    <Route path="/admin/blog/edit/:postId" element={<AdminBlogEditPage />} />
+                  </Route>
 
-              {/* ====== AGENT STOREFRONT (STANDALONE) ====== */}
-              <Route path="/store/:slug" element={<AgentStorefrontPage />} />
+                  {/* ====== STAFF PANEL ====== */}
+                  <Route element={<ProtectedRoute allowedRoles={["staff", "admin"]}><StaffLayout /></ProtectedRoute>}>
+                    <Route path="/staff" element={<StaffDashboardHome />} />
+                    <Route path="/staff/orders" element={<StaffOrdersPage />} />
+                    <Route path="/staff/orders/:orderId" element={<StaffOrderDetailPage />} />
+                    <Route path="/staff/transactions" element={<StaffTransactionsPage />} />
+                    <Route path="/staff/transactions/:transactionId" element={<StaffTransactionDetailPage />} />
+                    <Route path="/staff/intents" element={<StaffIntentsPage />} />
+                    <Route path="/staff/intents/:intentId" element={<StaffIntentDetailPage />} />
+                    <Route path="/staff/issues" element={<StaffIssueQueuePage />} />
+                  </Route>
 
-              {/* ====== CATCH-ALL ====== */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </AuthProvider>
-      </ThemeProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+                  {/* ====== AGENT STOREFRONT (STANDALONE) ====== */}
+                  <Route path="/store/:slug" element={<AgentStorefrontPage />} />
+
+                  {/* ====== CATCH-ALL ====== */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </AuthProvider>
+        </ThemeProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

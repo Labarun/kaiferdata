@@ -5,7 +5,7 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   LayoutDashboard, ShoppingCart, ArrowRightLeft, Scale, ArrowDownToLine,
   Users, UserCheck, BarChart3, Bell, Settings, Shield, FileText, Package, Server,
-  Banknote, ShieldAlert, Sparkles,
+  Banknote, ShieldAlert, Sparkles, BookOpen,
 } from "lucide-react";
 import type { AdminNavGroup, AdminNavItem } from "@/layouts/AdminLayout";
 
@@ -31,6 +31,12 @@ const navGroups: AdminNavGroup[] = [
     items: [
       { label: "Packages", path: "/admin/packages", icon: Package },
       { label: "Suppliers", path: "/admin/supplier", icon: Server },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { label: "Blog Editor", path: "/admin/blog", icon: BookOpen },
     ],
   },
   {
