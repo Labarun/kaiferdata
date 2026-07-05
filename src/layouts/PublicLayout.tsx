@@ -68,6 +68,7 @@ export function PublicLayout() {
               { label: "Home", path: "/" },
               { label: "Buy Data", path: "/buy" },
               { label: "Track Order", path: "/track" },
+              { label: "Blog", path: "/blog" },
               { label: "About", path: "/about" },
               { label: "Kaifer Agents", path: "/agent-perks" },
             ].map((link) => (
@@ -126,6 +127,7 @@ export function PublicLayout() {
                 { label: "Home", path: "/" },
                 { label: "Buy Data", path: "/buy" },
                 { label: "Track Order", path: "/track" },
+                { label: "Blog", path: "/blog" },
                 { label: "About", path: "/about" },
                 { label: "Kaifer Agents", path: "/agent-perks" },
               ].map((link) => (
@@ -215,6 +217,7 @@ export function PublicLayout() {
               <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-3">Company</p>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link></li>
+                <li><Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog Spot</Link></li>
                 <li><Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact & Support</Link></li>
                 <li><Link to="/agent-perks" className="text-primary/90 hover:text-primary transition-colors font-semibold">Kaifer Agents</Link></li>
               </ul>

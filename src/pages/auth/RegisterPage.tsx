@@ -35,7 +35,7 @@ export default function RegisterPage() {
     setLoading(true);
     const { error: err } = await signUp(trimmedEmail, password, trimmedUsername, trimmedPhone);
     if (err) {
-      setError(err.message);
+      setError("An error occurred during registration. Please try again.");
       setLoading(false);
       return;
     }

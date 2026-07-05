@@ -82,7 +82,7 @@ export async function signIn(identifier: string, password: string) {
   if (!identifier.includes("@")) {
     const { data } = await supabase.rpc("resolve_login_identifier", { _identifier: identifier });
     if (!data) {
-      return { data: null, error: { message: "No account found with that username or phone number." } as Error };
+      return { data: null, error: { message: "Incorrect email or password" } as Error };
     }
     email = data as string;
   }
