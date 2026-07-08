@@ -298,12 +298,12 @@ export type Database = {
           store_name: string
           store_slug: string
           store_tagline: string | null
+          storefront_enabled: boolean
           suspended_at: string | null
           suspension_reason: string | null
           total_orders: number
           total_profit: number
           total_sales: number
-          storefront_enabled: boolean
           updated_at: string
           user_id: string
         }
@@ -320,12 +320,12 @@ export type Database = {
           store_name: string
           store_slug: string
           store_tagline?: string | null
+          storefront_enabled?: boolean
           suspended_at?: string | null
           suspension_reason?: string | null
           total_orders?: number
           total_profit?: number
           total_sales?: number
-          storefront_enabled?: boolean
           updated_at?: string
           user_id: string
         }
@@ -342,12 +342,12 @@ export type Database = {
           store_name?: string
           store_slug?: string
           store_tagline?: string | null
+          storefront_enabled?: boolean
           suspended_at?: string | null
           suspension_reason?: string | null
           total_orders?: number
           total_profit?: number
           total_sales?: number
-          storefront_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1987,8 +1987,8 @@ export type Database = {
           store_logo_url: string
           store_name: string
           store_slug: string
-          storefront_enabled: boolean
           store_tagline: string
+          storefront_enabled: boolean
           user_id: string
         }[]
       }
