@@ -9,7 +9,7 @@
  * floor/ceiling and ownership.
  */
 import { supabase } from "@/integrations/supabase/client";
-import type { DataPackage } from "@/services/packageCatalog";
+import { sortPackagesAutomatically, type DataPackage } from "@/services/packageCatalog";
 
 export interface AgentBundlePrice {
   id: string;
@@ -49,7 +49,8 @@ export async function fetchAgentPricingMatrix(agentProfileId: string): Promise<P
   const priceMap = new Map<string, AgentBundlePrice>();
   ((prices as any[]) ?? []).forEach((p) => priceMap.set(p.package_id, p as AgentBundlePrice));
 
-  return ((pkgs as any[]) ?? []).map((pkg: any) => {
+  const sortedPkgs = sortPackagesAutomatically((pkgs as any[]) ?? [], true);
+  return sortedPkgs.map((pkg: any) => {
     const ap = priceMap.get(pkg.id);
     const base = Number(pkg.agent_base_price ?? 0);
     const selling = ap ? Number(ap.selling_price) : null;
@@ -112,7 +113,7 @@ export async function fetchPublishedAgentBundles(agentProfileId: string) {
   const baseMap = new Map<string, number>();
   (prices as any[]).forEach((p) => priceMap.set(p.package_id, Number(p.selling_price)));
 
-  return ((pkgs as any[]) ?? []).map((pkg: any) => {
+  const result = ((pkgs as any[]) ?? []).map((pkg: any) => {
     baseMap.set(pkg.id, Number(pkg.agent_base_price ?? 0));
     return {
       ...pkg,
@@ -121,4 +122,6 @@ export async function fetchPublishedAgentBundles(agentProfileId: string) {
       _agent_base_price: baseMap.get(pkg.id) ?? 0,
     } as DataPackage & { _agent_base_price: number };
   });
+
+  return sortPackagesAutomatically(result, true);
 }
