@@ -26,8 +26,8 @@ import {
 import { StorefrontTrackOrderSheet } from "@/components/agent/StorefrontTrackOrderSheet";
 import {
   fetchPublicPackages,
-  getPackageNetworks,
   filterPackagesByNetwork,
+  sortPackagesAutomatically,
   type DataPackage,
 } from "@/services/packageCatalog";
 import { fetchPublishedAgentBundles } from "@/services/agentPricing";
@@ -89,17 +89,21 @@ export default function AgentStorefrontPage() {
   const [trackOpen, setTrackOpen] = useState(false);
   const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
   const [deliverySpeed, setDeliverySpeed] = useState("Swift Delivery");
+  const [masterEnabled, setMasterEnabled] = useState(true);
 
   useEffect(() => {
     async function fetchSettings() {
       const { data, error } = await supabase
         .from("system_settings")
-        .select("setting_value")
-        .eq("setting_key", "delivery_speed")
-        .single();
+        .select("setting_key, setting_value")
+        .in("setting_key", ["delivery_speed", "master_storefront_enabled"]);
 
-      if (!error && data?.setting_value) {
-        setDeliverySpeed(data.setting_value);
+      if (!error && data) {
+        const speed = data.find(d => d.setting_key === "delivery_speed");
+        if (speed?.setting_value) setDeliverySpeed(speed.setting_value);
+        
+        const master = data.find(d => d.setting_key === "master_storefront_enabled");
+        if (master?.setting_value) setMasterEnabled(master.setting_value === "true");
       }
     }
     fetchSettings();
@@ -144,7 +148,7 @@ export default function AgentStorefrontPage() {
         const map = new Map<string, DataPackage & { _agent_base_price?: number }>();
         publicPkgs.filter((p) => p.is_agent_resaleable).forEach((p) => map.set(p.id, p as any));
         agentPriced.forEach((p) => map.set(p.id, p as any));
-        setPackages(Array.from(map.values()));
+        setPackages(sortPackagesAutomatically(Array.from(map.values()), true) as any[]);
       } catch {
         toast({ title: "Error", description: "Failed to load plans", variant: "destructive" });
       } finally {
@@ -353,31 +357,45 @@ export default function AgentStorefrontPage() {
             </div>
           ) : (
             <>
-              <section className="mb-7">
-                <div className="flex items-center gap-2 mb-3.5">
-                  <div className="h-1 w-1 rounded-full bg-primary/50" />
-                  <p className="section-label">Choose Network</p>
-                </div>
-                <NetworkSelector
-                  networks={networks.length > 0 ? networks : GHANA_NETWORKS}
-                  selected={network}
-                  onSelect={handleNetworkSelect}
-                />
-              </section>
-
-              {network && (
-                <section key={plansKey} className="animate-plans-enter mb-7">
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-1 rounded-full bg-primary/50" />
-                      <p className="section-label">{network} Bundles</p>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
-                      {filteredPlans.length} available
-                    </span>
+              {(!masterEnabled || store?.storefront_enabled === false) ? (
+                <div className="py-12 text-center mb-7">
+                  <div className="mx-auto h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                    <StoreIcon className="h-6 w-6 text-warning" />
                   </div>
-                  <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
-                </section>
+                  <h3 className="text-[15px] font-bold text-foreground">Storefront Closed</h3>
+                  <p className="text-[12px] text-muted-foreground/80 mt-1 max-w-[250px] mx-auto">
+                    This store is currently not accepting new orders. Please try again later.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <section className="mb-7">
+                    <div className="flex items-center gap-2 mb-3.5">
+                      <div className="h-1 w-1 rounded-full bg-primary/50" />
+                      <p className="section-label">Choose Network</p>
+                    </div>
+                    <NetworkSelector
+                      networks={networks.length > 0 ? networks : GHANA_NETWORKS}
+                      selected={network}
+                      onSelect={handleNetworkSelect}
+                    />
+                  </section>
+
+                  {network && (
+                    <section key={plansKey} className="animate-plans-enter mb-7">
+                      <div className="flex items-center justify-between mb-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-1 rounded-full bg-primary/50" />
+                          <p className="section-label">{network} Bundles</p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
+                          {filteredPlans.length} available
+                        </span>
+                      </div>
+                      <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                    </section>
+                  )}
+                </>
               )}
 
               <div className="flex items-center justify-center pt-2 pb-2">

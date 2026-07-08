@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import {
   Store, ShoppingCart, DollarSign, TrendingUp, Share2, Copy, Check, ExternalLink,
   Users, Package, Crown, ArrowDownToLine, AlertCircle, Tag, ListChecks
@@ -47,6 +48,9 @@ export default function AgentDashboardHome() {
   const [storeName, setStoreName] = useState("");
   const [storeStatus, setStoreStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [storefrontEnabled, setStorefrontEnabled] = useState(true);
+  const [masterEnabled, setMasterEnabled] = useState(true);
+  const [savingToggle, setSavingToggle] = useState(false);
 
   // Analytics
   const [range, setRange] = useState<AnalyticsRange>("7d");
@@ -104,17 +108,20 @@ export default function AgentDashboardHome() {
     }
     let cancelled = false;
     (async () => {
-      const [w, p, s] = await Promise.all([
+      const [w, p, s, ms] = await Promise.all([
         fetchEarningsWallet(user.id),
-        supabase.from("agent_profiles").select("store_slug, store_name, status").eq("user_id", user.id).maybeSingle(),
-        supabase.from("wallets").select("current_balance").eq("user_id", user.id).single()
+        supabase.from("agent_profiles").select("store_slug, store_name, status, storefront_enabled").eq("user_id", user.id).maybeSingle(),
+        supabase.from("wallets").select("current_balance").eq("user_id", user.id).single(),
+        supabase.from("system_settings").select("setting_value").eq("setting_key", "master_storefront_enabled").maybeSingle()
       ]);
       if (cancelled) return;
       setWallet(w);
       setStoreSlug(p.data?.store_slug ?? null);
       setStoreName(p.data?.store_name ?? "");
       setStoreStatus(p.data?.status ?? null);
+      if (p.data?.storefront_enabled !== undefined) setStorefrontEnabled(p.data.storefront_enabled);
       setSpendingBalance(s.data ? Number(s.data.current_balance) : null);
+      if (ms.data?.setting_value) setMasterEnabled(ms.data.setting_value === "true");
       setLoadingWallet(false);
     })();
     return () => { cancelled = true; };
@@ -147,6 +154,25 @@ export default function AgentDashboardHome() {
     if (!storeUrl) return;
     const text = `Buy data fast at ${storeName}! ${storeUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const handleToggleStorefront = async (checked: boolean) => {
+    if (!user) return;
+    setSavingToggle(true);
+    try {
+      const { error } = await supabase
+        .from("agent_profiles")
+        .update({ storefront_enabled: checked })
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      setStorefrontEnabled(checked);
+      toast({ title: "Success", description: `Storefront is now ${checked ? 'open' : 'closed'}.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: "Failed to update storefront status.", variant: "destructive" });
+    } finally {
+      setSavingToggle(false);
+    }
   };
 
   const isInitialLoad = loadingWallet && !!user;
@@ -332,6 +358,28 @@ export default function AgentDashboardHome() {
                   <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                 </a>
               </Button>
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-border/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-foreground">Storefront Status</p>
+                  <p className="text-[10px] text-muted-foreground">{storefrontEnabled ? "Accepting new orders" : "Not accepting orders"}</p>
+                </div>
+                <Switch 
+                  checked={storefrontEnabled && masterEnabled}
+                  disabled={!masterEnabled || savingToggle}
+                  onCheckedChange={handleToggleStorefront}
+                />
+              </div>
+              {!masterEnabled && (
+                <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 flex items-start gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-warning font-medium leading-relaxed">
+                    The platform administrator has temporarily disabled storefront orders globally.
+                  </p>
+                </div>
+              )}
             </div>
             
             <Button size="sm" asChild className="w-full text-xs font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all border border-primary/20 mt-1">
