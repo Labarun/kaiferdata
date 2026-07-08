@@ -123,11 +123,10 @@ export function CheckoutSheet({
 
   const dotHsl = NET_DOT[network] || "215 72% 42%";
 
-  const cleanPhone = (v: string) => v.replace(/[^0-9]/g, "").slice(0, 11);
+  const cleanPhone = (v: string) => v.replace(/[^0-9]/g, "").slice(0, 10);
   const handlePhoneInput = (v: string) => {
     const cleaned = cleanPhone(v);
     onPhoneChange(cleaned);
-    if (phoneError && cleaned.length >= 10) setPhoneError("");
   };
 
   const formatPhone = (p: string) => {
@@ -136,15 +135,12 @@ export function CheckoutSheet({
     return `${p.slice(0, 3)} ${p.slice(3, 6)} ${p.slice(6)}`;
   };
 
-  const canReview = phoneNumber.length >= 10;
+  const isValidPhone = phoneNumber.length === 10 && phoneNumber.startsWith("0");
+  const showPhoneError = phoneNumber.length > 0 && !isValidPhone;
+  const canReview = isValidPhone;
 
   const handleContinueToReview = () => {
-    const cleaned = cleanPhone(phoneNumber);
-    if (cleaned.length < 10 || cleaned.length > 11) {
-      setPhoneError("Enter a valid Ghana phone number (10–11 digits)");
-      return;
-    }
-    setPhoneError("");
+    if (!canReview) return;
     setStep("review");
   };
 
@@ -275,41 +271,54 @@ export function CheckoutSheet({
           {/* ── STEP: Details ── */}
           {step === "details" && (
             <div className="space-y-5 animate-fade-in">
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 <Label
                   htmlFor="checkout-phone"
-                  className="text-[11px] text-foreground/50 flex items-center gap-1.5 font-semibold tracking-wide"
+                  className="text-[10px] text-muted-foreground/60 font-semibold tracking-widest uppercase ml-0.5"
                 >
-                  <Phone className="h-3 w-3 text-primary/50" />
-                  Recipient Phone Number
+                  Recipient Number
                 </Label>
                 <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+                    <Phone className={cn("h-4 w-4", showPhoneError ? "text-destructive/50" : "text-muted-foreground/50")} />
+                  </div>
                   <Input
                     id="checkout-phone"
                     type="tel"
                     inputMode="numeric"
-                    placeholder="024 XXX XXXX"
+                    placeholder="055970901"
                     value={phoneNumber}
                     onChange={(e) => handlePhoneInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (canReview && !orderingPaused) {
+                          handleContinueToReview();
+                        }
+                      }
+                    }}
                     className={cn(
-                      "h-14 text-base font-semibold tracking-widest rounded-2xl pl-4 pr-12",
+                      "h-14 text-base font-semibold tracking-widest rounded-2xl pl-11 pr-12",
                       "bg-[hsl(0_0%_100%/0.6)] dark:bg-[hsl(213_30%_16%/0.6)] border-[hsl(228_20%_84%/0.5)] dark:border-[hsl(213_30%_26%/0.5)]",
                       "focus:bg-[hsl(0_0%_100%/0.75)] dark:focus:bg-[hsl(213_30%_16%/0.8)] focus:border-primary/25",
                       "focus:shadow-[0_0_0_4px_hsl(215_72%_42%/0.06),0_0_0_1px_hsl(215_72%_42%/0.12),0_4px_16px_-4px_hsl(215_30%_48%/0.08)] dark:focus:shadow-[0_0_0_4px_hsl(213_73%_50%/0.15)]",
                       "placeholder:text-muted-foreground/25 placeholder:font-normal placeholder:tracking-wider placeholder:text-base",
                       "transition-all duration-200",
-                      phoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)]"
+                      showPhoneError && "border-destructive/40 focus:border-destructive/50 focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.06)] dark:focus:shadow-[0_0_0_4px_hsl(0_62%_50%/0.15)] text-destructive"
                     )}
-                    maxLength={11}
+                    maxLength={10}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
                     <span className="text-[11px]">🇬🇭</span>
                   </div>
                 </div>
-                {phoneError ? (
-                  <p className="text-[10.5px] text-destructive/80 font-medium pl-0.5">{phoneError}</p>
+                {showPhoneError ? (
+                  <p className="text-[11px] text-destructive flex items-center gap-1.5 font-medium pl-0.5 mt-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Must be 10 digits starting with 0
+                  </p>
                 ) : (
-                  <p className="text-[10px] text-muted-foreground/35 font-medium pl-0.5">
+                  <p className="text-[10px] text-muted-foreground/35 font-medium pl-0.5 mt-1.5">
                     Ghana mobile number where data will be sent
                   </p>
                 )}
