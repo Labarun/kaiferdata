@@ -563,24 +563,66 @@ Deno.serve(async (req) => {
     // ═══ 2. SELECT SUPPLIER ═══
     const snapshotForSupplier = (order.bundle_snapshot || {}) as Record<string, unknown>;
     let selectedSupplier = null;
+    let actualSourceType = snapshotForSupplier.source_type;
 
-    if (snapshotForSupplier.source_type !== "manual") {
-      const { data: suppliers } = await supabase
-        .from("suppliers")
-        .select("*")
-        .eq("is_active", true)
-        .order("priority", { ascending: true });
-
-      if (suppliers && suppliers.length > 0) {
-        for (const s of suppliers) {
-          const networks = (s.supported_networks as string[]) || [];
-          if (networks.length === 0 || networks.includes(order.network)) {
-            selectedSupplier = s;
-            break;
-          }
-        }
-        if (!selectedSupplier) selectedSupplier = suppliers[0];
+    if (!actualSourceType) {
+      const { data: pkgLookup } = await supabase
+        .from("data_packages")
+        .select("source_type")
+        .eq("network", order.network)
+        .eq("package_code", order.bundle_code)
+        .maybeSingle();
+      if (pkgLookup?.source_type) {
+        actualSourceType = pkgLookup.source_type;
       }
+    }
+
+    if (actualSourceType === "manual") {
+      // Revert status to 'paid' so admin can see it in pending queue and manually process it
+      await supabase
+        .from("orders")
+        .update({
+          status: "paid",
+          supplier_status: "manual",
+          delivery_message: "Order is awaiting manual processing.",
+        })
+        .eq("id", order_id);
+
+      await logStatusChange(
+        supabase,
+        order_id,
+        "processing",
+        "paid",
+        "fulfillment_service",
+        "Order identified as manual source. Reverted to paid for manual processing.",
+        { source_type: "manual" }
+      );
+
+      return json({
+        success: true,
+        order_id,
+        public_order_id: order.public_order_id,
+        status: "paid",
+        supplier_outcome: "manual",
+        delivery_message: "Order is awaiting manual processing.",
+      });
+    }
+
+    const { data: suppliers } = await supabase
+      .from("suppliers")
+      .select("*")
+      .eq("is_active", true)
+      .order("priority", { ascending: true });
+
+    if (suppliers && suppliers.length > 0) {
+      for (const s of suppliers) {
+        const networks = (s.supported_networks as string[]) || [];
+        if (networks.length === 0 || networks.includes(order.network)) {
+          selectedSupplier = s;
+          break;
+        }
+      }
+      if (!selectedSupplier) selectedSupplier = suppliers[0];
     }
 
     if (!selectedSupplier) {
