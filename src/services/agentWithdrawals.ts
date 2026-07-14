@@ -25,6 +25,7 @@ export interface WithdrawalRequest {
   reviewed_by: string | null;
   created_at: string;
   updated_at: string;
+  agent_profiles?: { store_name: string | null } | null;
 }
 
 /** v2 — debits the agent earnings wallet (preferred). */

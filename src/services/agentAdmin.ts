@@ -13,6 +13,11 @@ export type AgentApplicationWithUser = AgentApplication & {
   profile?: AgentProfile | null;
   latest_subscription?: AgentSubscription | null;
   wallet?: any | null;
+  stats?: {
+    totalOrders: number;
+    successRate: number;
+    lastActive: string | null;
+  };
 };
 
 /** List all applications (most recent first) with optional status filter. */
@@ -37,14 +42,15 @@ export async function listApplications(filter?: {
   const userIds = apps.map((a) => a.user_id);
   if (userIds.length === 0) return apps;
 
-  const [{ data: profiles }, { data: subs }, { data: wallets }] = await Promise.all([
+  const [{ data: profiles }, { data: subs }, { data: wallets }, { data: orders }] = await Promise.all([
     supabase.from("agent_profiles").select("*").in("user_id", userIds),
     supabase
       .from("agent_subscriptions")
       .select("*")
       .in("user_id", userIds)
       .order("created_at", { ascending: false }),
-    supabase.from("agent_earnings_wallets").select("*").in("user_id", userIds)
+    supabase.from("agent_earnings_wallets").select("*").in("user_id", userIds),
+    supabase.from("orders").select("actor_id, status, created_at").in("actor_id", userIds).eq("actor_type", "agent")
   ]);
 
   const profileByUser = new Map((profiles || []).map((p) => [p.user_id, p]));
@@ -53,13 +59,37 @@ export async function listApplications(filter?: {
     if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
   });
   const walletByUser = new Map((wallets || []).map((w) => [w.user_id, w]));
+  const ordersByUser = new Map<string, any[]>();
+  (orders || []).forEach((o) => {
+    if (!ordersByUser.has(o.actor_id)) ordersByUser.set(o.actor_id, []);
+    ordersByUser.get(o.actor_id)!.push(o);
+  });
 
-  let hydrated = apps.map((a) => ({
-    ...a,
-    profile: profileByUser.get(a.user_id) || null,
-    latest_subscription: subByUser.get(a.user_id) || null,
-    wallet: walletByUser.get(a.user_id) || null,
-  }));
+  let hydrated = apps.map((a) => {
+    const userOrders = ordersByUser.get(a.user_id) || [];
+    const totalOrders = userOrders.length;
+    const delivered = userOrders.filter(o => o.status === 'delivered').length;
+    const successRate = totalOrders > 0 ? (delivered / totalOrders) * 100 : 0;
+    
+    // Get most recent order date
+    let lastActive = null;
+    if (userOrders.length > 0) {
+      const sorted = [...userOrders].sort((x, y) => new Date(y.created_at).getTime() - new Date(x.created_at).getTime());
+      lastActive = sorted[0].created_at;
+    }
+
+    return {
+      ...a,
+      profile: profileByUser.get(a.user_id) || null,
+      latest_subscription: subByUser.get(a.user_id) || null,
+      wallet: walletByUser.get(a.user_id) || null,
+      stats: {
+        totalOrders,
+        successRate,
+        lastActive,
+      }
+    };
+  });
 
   if (filter?.search) {
     const q = filter.search.toLowerCase();

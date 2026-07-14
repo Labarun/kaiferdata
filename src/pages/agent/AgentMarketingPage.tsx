@@ -14,13 +14,59 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeCanvas } from "qrcode.react";
 import { SubscriptionGate } from "@/components/agent/SubscriptionGate";
 
+import React, { Component, ErrorInfo, ReactNode } from "react";
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
+    hasError: false,
+    error: null,
+  };
+
+  public static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("AgentMarketingPage caught an error:", error, errorInfo);
+  }
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 max-w-lg mx-auto my-8 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl space-y-3">
+          <h2 className="text-base font-bold">Marketing Page Load Failure</h2>
+          <p className="text-xs font-mono bg-background/50 p-3 rounded border overflow-auto max-h-60 whitespace-pre-wrap">
+            {this.state.error?.stack || this.state.error?.toString()}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Please copy this error message and share it with the administrator.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function AgentMarketingPage() {
+  console.log("Rendering AgentMarketingPage, QRCodeCanvas type:", typeof QRCodeCanvas);
   return (
     <div className="animate-fade-in pb-8 space-y-4">
       <PageHeader title="Marketing" description="Promote your store and grow your customer base." />
-      <SubscriptionGate message="Subscribe to unlock marketing tools.">
-        <MarketingInner />
-      </SubscriptionGate>
+      <ErrorBoundary>
+        <SubscriptionGate message="Subscribe to unlock marketing tools.">
+          <MarketingInner />
+        </SubscriptionGate>
+      </ErrorBoundary>
     </div>
   );
 }
@@ -33,19 +79,31 @@ function MarketingInner() {
   const [loading, setLoading] = useState(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  console.log("MarketingInner state: user.id =", user?.id, "loading =", loading, "storeSlug =", storeSlug);
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("MarketingInner useEffect: no user.id, skipping fetch");
+      return;
+    }
     let cancelled = false;
+    console.log("MarketingInner useEffect: fetching agent profile for", user.id);
     (async () => {
-      const { data } = await supabase
-        .from("agent_profiles")
-        .select("store_slug, store_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      setStoreSlug(data?.store_slug ?? null);
-      setStoreName(data?.store_name ?? "");
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("agent_profiles")
+          .select("store_slug, store_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        console.log("MarketingInner fetched profile:", data, "error:", error);
+        if (cancelled) return;
+        setStoreSlug(data?.store_slug ?? null);
+        setStoreName(data?.store_name ?? "");
+        setLoading(false);
+      } catch (err) {
+        console.error("MarketingInner fetch exception:", err);
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [user?.id]);

@@ -28,6 +28,7 @@ export interface AgentEarningsSummary {
   total_profit: number;
   this_month_orders: number;
   this_month_profit: number;
+  this_week_profit: number;
 }
 
 export async function fetchAgentEarnings(userId: string, limit = 50): Promise<AgentEarning[]> {
@@ -93,6 +94,12 @@ export async function fetchAgentSummary(userId: string): Promise<AgentEarningsSu
     .gte("created_at", startOfMonth.toISOString());
 
   const month = (monthRows as any[]) || [];
+  
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday start
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const weekRows = month.filter(r => new Date(r.created_at) >= startOfWeek);
 
   return {
     total_orders: Number(profile?.total_orders || 0),
@@ -100,6 +107,7 @@ export async function fetchAgentSummary(userId: string): Promise<AgentEarningsSu
     total_profit: Number(profile?.total_profit || 0),
     this_month_orders: month.length,
     this_month_profit: month.reduce((s, r) => s + Number(r.commission_amount || 0), 0),
+    this_week_profit: weekRows.reduce((s, r) => s + Number(r.commission_amount || 0), 0),
   };
 }
 

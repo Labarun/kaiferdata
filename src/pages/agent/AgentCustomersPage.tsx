@@ -142,50 +142,72 @@ function CustomersInner() {
         <Card>
           <CardContent className="p-0">
             <ul className="divide-y divide-border/40">
-              {customers.map((c) => (
-                <li key={c.beneficiary_number} className="px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold text-foreground truncate">
-                        {c.name || c.beneficiary_number}
-                      </p>
-                      {c.is_saved && (
-                        <Bookmark className="h-3 w-3 text-primary shrink-0" fill="currentColor" />
+              {customers.map((c) => {
+                const isChurnRisk = c.last_order_at && (Date.now() - new Date(c.last_order_at).getTime()) > 30 * 86_400_000;
+                
+                return (
+                  <li key={c.beneficiary_number} className="px-4 py-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] font-semibold text-foreground truncate">
+                          {c.name || c.beneficiary_number}
+                        </p>
+                        {c.is_saved && (
+                          <Bookmark className="h-3 w-3 text-primary shrink-0" fill="currentColor" />
+                        )}
+                        {isChurnRisk && (
+                          <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-transparent px-1.5 py-0">
+                            Risk
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-[11px] text-muted-foreground tabular-nums tracking-wide">
+                          {c.name ? c.beneficiary_number : ''}
+                        </span>
+                        <Badge variant="outline" className="text-[9px]">{c.network}</Badge>
+                        {c.orders > 1 && (
+                          <Badge variant="secondary" className="text-[9px] bg-primary/10 text-primary">
+                            ×{c.orders}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {c.first_order_at && (
+                        <p className="text-[9.5px] text-muted-foreground/60 mt-1">
+                          Joined: {new Date(c.first_order_at).toLocaleDateString()}
+                          {isChurnRisk && c.last_order_at && ` • Last seen: ${new Date(c.last_order_at).toLocaleDateString()}`}
+                        </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-muted-foreground tabular-nums tracking-wide">
-                        {c.name ? c.beneficiary_number : ''}
-                      </span>
-                      <Badge variant="outline" className="text-[9px]">{c.network}</Badge>
-                      {c.orders > 1 && (
-                        <Badge variant="secondary" className="text-[9px] bg-primary/10 text-primary">
-                          ×{c.orders}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="text-right shrink-0">
-                      <p className="text-[13px] font-bold tabular-nums">{fmt(c.total_spend)}</p>
-                      <p className="text-[10px] text-muted-foreground/60">
-                        {c.orders === 0 ? "No orders yet" : `${c.orders} order${c.orders === 1 ? "" : "s"}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEdit(c)}>
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                      {c.is_saved && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => handleDelete(c.beneficiary_number)}>
-                          <Trash2 className="h-3 w-3" />
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-bold tabular-nums">{fmt(c.total_spend)}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                          {c.orders === 0 ? "No orders" : `${c.orders} order${c.orders === 1 ? "" : "s"}`}
+                        </p>
+                        {c.avg_order_value > 0 && (
+                          <p className="text-[9.5px] text-primary/70 font-medium mt-0.5 tabular-nums">
+                            {fmt(c.avg_order_value)} avg
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEdit(c)}>
+                          <Edit2 className="h-3 w-3" />
                         </Button>
-                      )}
+                        {c.is_saved && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive/80" onClick={() => handleDelete(c.beneficiary_number)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </CardContent>
         </Card>

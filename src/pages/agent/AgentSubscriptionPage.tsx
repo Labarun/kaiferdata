@@ -25,24 +25,44 @@ import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/shared/LoadingState";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Check, Sparkles, ShieldCheck, CreditCard, Loader2, Calendar, ArrowRight, RefreshCw,
+  Check, Sparkles, ShieldCheck, CreditCard, Loader2, Calendar, ArrowRight, RefreshCw, TrendingUp
 } from "lucide-react";
+import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export default function AgentSubscriptionPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Use the local snapshot instead of the non-existent context
+  const subContext = useSubscriptionSnapshot();
+  
   const [state, setState] = useState<AgentState | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<AgentPlanCode>("monthly");
   const [paying, setPaying] = useState(false);
+  const [periodEarnings, setPeriodEarnings] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      setState(await resolveAgentState(user.id));
+      const s = await resolveAgentState(user.id);
+      setState(s);
+      
+      // Calculate earnings in the current subscription period
+      if (s.kind === "active" && s.subscription.starts_at && s.profile.id) {
+        const { data } = await supabase
+          .from("agent_earnings" as any)
+          .select("commission_amount")
+          .eq("agent_profile_id", s.profile.id)
+          .gte("created_at", s.subscription.starts_at);
+          
+        const total = (data || []).reduce((sum: number, row: any) => sum + Number(row.commission_amount || 0), 0);
+        setPeriodEarnings(total);
+      }
     } finally {
       setLoading(false);
     }
@@ -106,28 +126,36 @@ export default function AgentSubscriptionPage() {
       ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000))
       : null;
     const renewSoon = daysLeft !== null && daysLeft <= 7;
+    
+    // Cost of the plan (fallback to monthly if plan doesn't match)
+    const planCost = AGENT_PLANS[sub.plan as AgentPlanCode]?.price || AGENT_PLANS.monthly.price;
+    const profit = periodEarnings || 0;
+    const isProfitable = profit >= planCost;
+    const roiPercentage = planCost > 0 ? ((profit - planCost) / planCost) * 100 : 0;
 
     return (
       <div className="space-y-5 pb-32 md:pb-8 animate-fade-in">
-        <div className="glass-premium rounded-2xl p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-success" />
+        <div className="glass-premium rounded-2xl p-5 space-y-4">
+          
+          <div className="flex items-start justify-between border-b border-border/40 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-success/10 flex items-center justify-center">
+                <ShieldCheck className="h-6 w-6 text-success" />
               </div>
               <div>
-                <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/65 font-semibold">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/65 font-bold mb-0.5">
                   Status
                 </p>
-                <p className="text-sm font-bold text-foreground">Active subscription</p>
+                <p className="text-base font-bold text-foreground">Active subscription</p>
               </div>
             </div>
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20 capitalize">
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20 capitalize">
               {sub.plan}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="glass-card rounded-xl p-3">
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card rounded-xl p-3 flex flex-col justify-between">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground/55 font-semibold">
                 Started
               </p>
@@ -135,29 +163,71 @@ export default function AgentSubscriptionPage() {
                 {sub.starts_at ? new Date(sub.starts_at).toLocaleDateString() : "—"}
               </p>
             </div>
-            <div className="glass-card rounded-xl p-3">
+            <div className="glass-card rounded-xl p-3 flex flex-col justify-between">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground/55 font-semibold">
                 Expires
               </p>
               <p className="text-[12.5px] font-semibold text-foreground/85 mt-1 flex items-center gap-1.5">
-                <Calendar className="h-3 w-3 text-muted-foreground/55" />
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground/55" />
                 {expiresAt ? expiresAt.toLocaleDateString() : "—"}
               </p>
             </div>
           </div>
+          
           {daysLeft !== null && (
-            <p
-              className={cn(
-                "text-[11px] text-center font-medium pt-1",
-                renewSoon ? "text-warning" : "text-muted-foreground/65",
-              )}
-            >
+            <div className={cn(
+              "px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 text-xs font-semibold",
+              renewSoon ? "bg-warning/10 text-warning border border-warning/20" : "bg-muted/50 text-muted-foreground"
+            )}>
+              {renewSoon && <Sparkles className="h-3.5 w-3.5" />}
               {daysLeft === 0
-                ? "Expires today — renew to avoid losing access."
-                : `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining`}
-            </p>
+                ? "Expires today — renew now to avoid losing access."
+                : `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining until expiry`}
+            </div>
           )}
         </div>
+        
+        {/* Subscription ROI Card */}
+        <div className="glass-card rounded-2xl overflow-hidden border border-border/50">
+          <div className="bg-muted/30 px-5 py-3 border-b border-border/40">
+            <p className="text-[12px] font-semibold text-foreground/80 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> Current Period Return on Investment (ROI)
+            </p>
+          </div>
+          <div className="p-5">
+            <div className="flex justify-between items-end mb-4">
+              <div>
+                <p className="text-[11px] text-muted-foreground font-medium mb-1">Plan Cost</p>
+                <p className="text-sm font-semibold text-foreground/70">GH₵{planCost.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] text-muted-foreground font-medium mb-1">Profit Earned</p>
+                <p className="text-sm font-semibold text-success">GH₵{profit.toFixed(2)}</p>
+              </div>
+            </div>
+            
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
+              <div 
+                className={cn("h-full transition-all duration-1000 ease-out", isProfitable ? "bg-success" : "bg-primary")}
+                style={{ width: `${Math.min(100, (profit / planCost) * 100)}%` }}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground/80">
+                {isProfitable 
+                  ? "Your subscription has paid for itself!" 
+                  : `Earn GH₵${(planCost - profit).toFixed(2)} more to break even.`}
+              </span>
+              <span className={cn("font-bold px-1.5 py-0.5 rounded-md", isProfitable ? "bg-success/15 text-success" : "text-muted-foreground/80")}>
+                {isProfitable ? "+" : ""}{roiPercentage.toFixed(0)}% ROI
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Member Since / History Stats */}
+        {/* Temporarily removed because memberSince and renewalCount are not in SubscriptionSnapshot */}
 
         <PlanPicker
           selected={selectedPlan}

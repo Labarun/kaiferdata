@@ -8,11 +8,14 @@
  *  - Suspend / Reactivate (for existing profiles)
  */
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/shared/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -27,7 +30,7 @@ import {
   suspendAgent,
 } from "@/services/agentAdmin";
 import type { AgentApplication, AgentProfile, AgentSubscription } from "@/services/agent";
-import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap } from "lucide-react";
+import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap, DollarSign, Percent, ShoppingCart, Activity } from "lucide-react";
 
 interface Props {
   applicationId: string;
@@ -42,6 +45,9 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
   const [application, setApplication] = useState<AgentApplication | null>(null);
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [subscriptions, setSubscriptions] = useState<AgentSubscription[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, successRate: 0, currentBalance: 0 });
+  const [activeTab, setActiveTab] = useState<"profile" | "transactions" | "subscription">("profile");
   const [note, setNote] = useState("");
   const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | "activate" | null>(null);
   const [activatePlan, setActivatePlan] = useState<"monthly" | "yearly">("monthly");
@@ -56,6 +62,24 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
         setApplication(detail.application);
         setProfile(detail.profile);
         setSubscriptions(detail.subscriptions);
+        
+        if (detail.application.user_id) {
+          const [ordersRes, walletRes] = await Promise.all([
+            supabase.from("orders").select("id, public_order_id, status, network, amount_charged, created_at").eq("actor_id", detail.application.user_id).eq("actor_type", "agent").order("created_at", { ascending: false }),
+            supabase.from("agent_earnings_wallets").select("current_balance").eq("user_id", detail.application.user_id).maybeSingle()
+          ]);
+          
+          const allOrders = ordersRes.data || [];
+          setRecentOrders(allOrders.slice(0, 15)); // Keep up to 15 for transaction tab
+          
+          const totalOrders = allOrders.length;
+          const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
+          const successRate = totalOrders > 0 ? (deliveredOrders.length / totalOrders) * 100 : 0;
+          const totalRevenue = deliveredOrders.reduce((sum, o) => sum + Number(o.amount_charged || 0), 0);
+          const currentBalance = walletRes.data?.current_balance || 0;
+          
+          setStats({ totalOrders, successRate, totalRevenue, currentBalance });
+        }
 
         // Auto-mark under_review the moment an admin opens a fresh submission
         if (detail.application.status === "submitted" && user?.id) {
@@ -221,210 +245,276 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
               </div>
             </div>
 
-            <Separator />
+            {/* Top Summary Grid (4 Cards) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Total Revenue</p>
+                  <p className="text-lg font-bold text-foreground">GH₵{stats.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Earnings Balance</p>
+                  <p className="text-lg font-bold text-success">GH₵{stats.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><ShoppingCart className="h-3 w-3" /> Total Orders</p>
+                  <p className="text-lg font-bold text-foreground">{stats.totalOrders}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><Percent className="h-3 w-3" /> Success Rate</p>
+                  <p className="text-lg font-bold text-foreground">{Math.round(stats.successRate)}%</p>
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Applicant */}
-            <DetailGrid
-              items={[
-                ["Full name", application.full_name],
-                ["Email", application.email],
-                ["Phone", application.phone],
-                ["City", application.city],
-                ["Business name", application.business_name],
-                ["Selling channels", application.selling_channels],
-                ["Customer base", application.expected_customer_base],
-                ["Sold data before", application.has_sold_data_before ? "Yes" : "No"],
-                ["Social link", application.social_link],
-                ["Submitted", application.submitted_at ? new Date(application.submitted_at).toLocaleString() : "—"],
-              ]}
-            />
+            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="subscription">Actions</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="profile" className="space-y-4">
+                <DetailGrid
+                  items={[
+                    ["Full name", application.full_name],
+                    ["Email", application.email],
+                    ["Phone", application.phone],
+                    ["City", application.city],
+                    ["Business name", application.business_name],
+                    ["Selling channels", application.selling_channels],
+                    ["Customer base", application.expected_customer_base],
+                    ["Sold data before", application.has_sold_data_before ? "Yes" : "No"],
+                    ["Social link", application.social_link],
+                    ["Submitted", application.submitted_at ? new Date(application.submitted_at).toLocaleString() : "—"],
+                  ]}
+                />
+                {application.motivation && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Motivation</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{application.motivation}</p>
+                  </div>
+                )}
+                {application.admin_note && (
+                  <div className="rounded-lg border border-slate-800 bg-muted/30 p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Previous admin note</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{application.admin_note}</p>
+                  </div>
+                )}
+              </TabsContent>
 
-            {application.motivation && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Motivation</p>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{application.motivation}</p>
-              </div>
-            )}
-
-            {application.admin_note && (
-              <div className="rounded-lg border border-border bg-muted/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Previous admin note</p>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{application.admin_note}</p>
-              </div>
-            )}
-
-            {/* Subscriptions */}
-            {subscriptions.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Subscription history</p>
-                <div className="space-y-1.5">
-                  {subscriptions.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between text-xs rounded-md bg-muted/40 px-3 py-2">
-                      <div>
-                        <span className="font-medium capitalize">{s.plan}</span>
-                        <span className="text-muted-foreground ml-2">GH₵{Number(s.amount_paid).toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={s.status === "active" ? "default" : "outline"} className="text-[10px]">
-                          {s.status}
-                        </Badge>
-                        {s.expires_at && (
-                          <span className="text-muted-foreground">
-                            until {new Date(s.expires_at).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
+              <TabsContent value="transactions">
+                {recentOrders.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">No transaction history found.</div>
+                ) : (
+                  <div className="rounded-md border border-slate-800 overflow-hidden">
+                    <div className="grid grid-cols-4 bg-muted/40 p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div>Order ID</div>
+                      <div>Network</div>
+                      <div>Amount</div>
+                      <div className="text-right">Status</div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <div className="divide-y divide-slate-800">
+                      {recentOrders.map(o => (
+                        <div key={o.id} className="grid grid-cols-4 p-3 text-xs items-center hover:bg-muted/20 transition-colors">
+                          <div className="font-mono text-foreground">{o.public_order_id}</div>
+                          <div className="text-muted-foreground">{o.network}</div>
+                          <div className="font-medium">GH₵{Number(o.amount_charged).toFixed(2)}</div>
+                          <div className="text-right">
+                            <Badge variant={o.status === 'delivered' ? 'success' : o.status === 'failed' ? 'destructive' : 'outline'} className="text-[10px]">
+                              {o.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
 
-            <Separator />
+              <TabsContent value="subscription" className="space-y-6">
+                {/* Subscriptions */}
+                {subscriptions.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Subscription history</p>
+                    <div className="space-y-1.5">
+                      {subscriptions.map((s) => (
+                        <div key={s.id} className="flex items-center justify-between text-xs rounded-md bg-muted/40 border border-slate-800 px-3 py-2">
+                          <div>
+                            <span className="font-medium capitalize">{s.plan}</span>
+                            <span className="text-muted-foreground ml-2">GH₵{Number(s.amount_paid).toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={s.status === "active" ? "default" : "outline"} className="text-[10px]">
+                              {s.status}
+                            </Badge>
+                            {s.expires_at && (
+                              <span className="text-muted-foreground">
+                                until {new Date(s.expires_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No subscription history.</p>
+                )}
+                
+                <Separator className="bg-slate-800" />
 
-            {/* Action area */}
-            {activeForm === "activate" && (
-              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Manual activation</p>
-                  <p className="text-xs text-muted-foreground">
-                    Activates this agent's store immediately, even without a Paystack payment.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={activatePlan === "monthly" ? "default" : "outline"}
-                    onClick={() => setActivatePlan("monthly")}
-                    disabled={busy}
-                  >
-                    1 Month
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={activatePlan === "yearly" ? "default" : "outline"}
-                    onClick={() => setActivatePlan("yearly")}
-                    disabled={busy}
-                  >
-                    1 Year
-                  </Button>
-                </div>
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={2}
-                  placeholder="Optional internal note (audit log)"
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" disabled={busy} onClick={handleManualActivate}>
-                    <Zap className="mr-1 h-4 w-4" />
-                    {busy ? "Activating…" : `Activate ${activatePlan === "monthly" ? "1 Month" : "1 Year"}`}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {activeForm && activeForm !== "activate" && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {activeForm === "approve" ? "Optional internal note" : "Note (required)"}
-                </label>
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={3}
-                  placeholder={
-                    activeForm === "changes"
-                      ? "What does the applicant need to fix?"
-                      : activeForm === "decline"
-                      ? "Reason for declining (visible to applicant)"
-                      : activeForm === "suspend"
-                      ? "Reason for suspending this agent"
-                      : "Optional note"
-                  }
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={activeForm === "decline" || activeForm === "suspend" ? "destructive" : "default"}
-                    disabled={busy}
-                    onClick={
-                      activeForm === "approve" ? handleApprove :
-                      activeForm === "changes" ? handleChanges :
-                      activeForm === "decline" ? handleDecline :
-                      handleSuspend
-                    }
-                  >
-                    {busy ? "Working…" :
-                      activeForm === "approve" ? "Confirm approval" :
-                      activeForm === "changes" ? "Send back" :
-                      activeForm === "decline" ? "Decline" :
-                      "Suspend agent"}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {!activeForm && (
-              <div className="flex flex-wrap gap-2 justify-end">
-                {/* Application-level actions */}
-                {(application.status === "submitted" || application.status === "under_review" || application.status === "needs_changes") && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setActiveForm("changes")}>
-                      <MessageSquareWarning className="mr-1 h-4 w-4" />
-                      Request changes
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setActiveForm("decline")}>
-                      <XCircle className="mr-1 h-4 w-4" />
-                      Decline
-                    </Button>
-                    <Button size="sm" onClick={() => setActiveForm("approve")}>
-                      <CheckCircle2 className="mr-1 h-4 w-4" />
-                      Approve
-                    </Button>
-                  </>
+                {/* Action area */}
+                {activeForm === "activate" && (
+                  <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Manual activation</p>
+                      <p className="text-xs text-muted-foreground">
+                        Activates this agent's store immediately, even without a Paystack payment.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={activatePlan === "monthly" ? "default" : "outline"}
+                        onClick={() => setActivatePlan("monthly")}
+                        disabled={busy}
+                      >
+                        1 Month
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={activatePlan === "yearly" ? "default" : "outline"}
+                        onClick={() => setActivatePlan("yearly")}
+                        disabled={busy}
+                      >
+                        1 Year
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      rows={2}
+                      placeholder="Optional internal note (audit log)"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" disabled={busy} onClick={handleManualActivate}>
+                        <Zap className="mr-1 h-4 w-4" />
+                        {busy ? "Activating…" : `Activate ${activatePlan === "monthly" ? "1 Month" : "1 Year"}`}
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
-                {/* Manual admin activation — available for approved agents
-                    that aren't currently 'active' (and aren't suspended). */}
-                {profile && profile.status !== "active" && profile.status !== "suspended" && (
-                  <Button size="sm" variant="default" onClick={() => setActiveForm("activate")}>
-                    <Zap className="mr-1 h-4 w-4" />
-                    Manually activate
-                  </Button>
+                {activeForm && activeForm !== "activate" && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {activeForm === "approve" ? "Optional internal note" : "Note (required)"}
+                    </label>
+                    <Textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      rows={3}
+                      placeholder={
+                        activeForm === "changes"
+                          ? "What does the applicant need to fix?"
+                          : activeForm === "decline"
+                          ? "Reason for declining (visible to applicant)"
+                          : activeForm === "suspend"
+                          ? "Reason for suspending this agent"
+                          : "Optional note"
+                      }
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => { setActiveForm(null); setNote(""); }} disabled={busy}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={activeForm === "decline" || activeForm === "suspend" ? "destructive" : "default"}
+                        disabled={busy}
+                        onClick={
+                          activeForm === "approve" ? handleApprove :
+                          activeForm === "changes" ? handleChanges :
+                          activeForm === "decline" ? handleDecline :
+                          handleSuspend
+                        }
+                      >
+                        {busy ? "Working…" :
+                          activeForm === "approve" ? "Confirm approval" :
+                          activeForm === "changes" ? "Send back" :
+                          activeForm === "decline" ? "Decline" :
+                          "Suspend agent"}
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
-                {/* Allow extending an already-active agent too */}
-                {profile && profile.status === "active" && (
-                  <Button size="sm" variant="outline" onClick={() => setActiveForm("activate")}>
-                    <Zap className="mr-1 h-4 w-4" />
-                    Extend activation
-                  </Button>
-                )}
+                {!activeForm && (
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {/* Application-level actions */}
+                    {(application.status === "submitted" || application.status === "under_review" || application.status === "needs_changes") && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => setActiveForm("changes")}>
+                          <MessageSquareWarning className="mr-1 h-4 w-4" />
+                          Request changes
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => setActiveForm("decline")}>
+                          <XCircle className="mr-1 h-4 w-4" />
+                          Decline
+                        </Button>
+                        <Button size="sm" onClick={() => setActiveForm("approve")}>
+                          <CheckCircle2 className="mr-1 h-4 w-4" />
+                          Approve
+                        </Button>
+                      </>
+                    )}
 
-                {/* Profile-level actions */}
-                {profile && profile.status !== "suspended" && (
-                  <Button variant="destructive" size="sm" onClick={() => setActiveForm("suspend")}>
-                    <PauseCircle className="mr-1 h-4 w-4" />
-                    Suspend agent
-                  </Button>
+                    {/* Manual admin activation — available for approved agents
+                        that aren't currently 'active' (and aren't suspended). */}
+                    {profile && profile.status !== "active" && profile.status !== "suspended" && (
+                      <Button size="sm" variant="default" onClick={() => setActiveForm("activate")}>
+                        <Zap className="mr-1 h-4 w-4" />
+                        Manually activate
+                      </Button>
+                    )}
+
+                    {/* Allow extending an already-active agent too */}
+                    {profile && profile.status === "active" && (
+                      <Button size="sm" variant="outline" onClick={() => setActiveForm("activate")}>
+                        <Zap className="mr-1 h-4 w-4" />
+                        Extend activation
+                      </Button>
+                    )}
+
+                    {/* Profile-level actions */}
+                    {profile && profile.status !== "suspended" && (
+                      <Button variant="destructive" size="sm" onClick={() => setActiveForm("suspend")}>
+                        <PauseCircle className="mr-1 h-4 w-4" />
+                        Suspend agent
+                      </Button>
+                    )}
+                    {profile && profile.status === "suspended" && (
+                      <Button size="sm" onClick={handleReactivate} disabled={busy}>
+                        <PlayCircle className="mr-1 h-4 w-4" />
+                        Reactivate
+                      </Button>
+                    )}
+                  </div>
                 )}
-                {profile && profile.status === "suspended" && (
-                  <Button size="sm" onClick={handleReactivate} disabled={busy}>
-                    <PlayCircle className="mr-1 h-4 w-4" />
-                    Reactivate
-                  </Button>
-                )}
-              </div>
-            )}
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </DialogContent>

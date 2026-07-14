@@ -11,6 +11,10 @@ interface StatCardProps {
   description?: string;
   variant?: "default" | "primary" | "success" | "warning" | "destructive";
   size?: "default" | "sm";
+  trend?: {
+    value: number; // positive or negative percentage
+    label?: string;
+  };
 }
 
 const variantStyles = {
@@ -41,7 +45,7 @@ const variantStyles = {
   },
 };
 
-export function StatCard({ title, value, icon: Icon, description, variant = "default", size = "default" }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, description, variant = "default", size = "default", trend }: StatCardProps) {
   const styles = variantStyles[variant] || variantStyles.default;
   const isSm = size === "sm";
 
@@ -55,10 +59,17 @@ export function StatCard({ title, value, icon: Icon, description, variant = "def
       <div className={cn("absolute bottom-0 left-0 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4 z-0 pointer-events-none opacity-50", isSm ? "w-16 h-16" : "w-24 h-24", styles.glow)} />
       
       {/* Content */}
-      <div className={cn("relative z-10 flex items-center justify-between gap-3", isSm && !description && "flex-col items-start gap-1.5")}>
-        <div className={cn("space-y-1 min-w-0 flex-1", isSm && !description && "order-2")}>
+      <div className={cn("relative z-10 flex items-center justify-between gap-3", isSm && !description && !trend && "flex-col items-start gap-1.5")}>
+        <div className={cn("space-y-1 min-w-0 flex-1", isSm && !description && !trend && "order-2")}>
           <p className={cn("font-semibold uppercase tracking-wider text-muted-foreground/70 truncate", isSm ? "text-[9.5px]" : "text-[11px]")}>{title}</p>
-          <p className={cn("font-bold text-foreground tracking-tight truncate", isSm ? "text-[18px]" : "text-2xl")}>{value}</p>
+          <div className="flex items-end gap-2 flex-wrap">
+            <p className={cn("font-bold text-foreground tracking-tight truncate", isSm ? "text-[18px]" : "text-2xl")}>{value}</p>
+            {trend && (
+              <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md", trend.value >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+                {trend.value > 0 ? "+" : ""}{trend.value.toFixed(1)}%
+              </span>
+            )}
+          </div>
           {description && <p className="text-[11px] text-muted-foreground mt-1 truncate">{description}</p>}
         </div>
         <div className={cn("rounded-xl shrink-0 transition-colors duration-300 ring-1 ring-inset ring-foreground/5", styles.iconBg, isSm ? "p-2 order-1" : "p-2.5")}>

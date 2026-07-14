@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, ShoppingCart, Percent, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentEarningsWallet";
 import {
   fetchAgentEarnings,
   fetchAgentSummary,
@@ -25,6 +26,7 @@ export default function AgentEarningsPage() {
   const { user } = useAuth();
   const [earnings, setEarnings] = useState<AgentEarning[]>([]);
   const [summary, setSummary] = useState<AgentEarningsSummary | null>(null);
+  const [wallet, setWallet] = useState<AgentEarningsWallet | null>(null);
   const [rate, setRate] = useState<number>(8);
   const [loading, setLoading] = useState(true);
 
@@ -33,19 +35,25 @@ export default function AgentEarningsPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [e, s, r] = await Promise.all([
+      const [e, s, r, w] = await Promise.all([
         fetchAgentEarnings(user.id),
         fetchAgentSummary(user.id),
         fetchCommissionRate(),
+        fetchEarningsWallet(user.id),
       ]);
       if (cancelled) return;
       setEarnings(e);
       setSummary(s);
       setRate(r);
+      setWallet(w);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+  
+  const withdrawalEfficiency = wallet && wallet.total_earned > 0 
+    ? ((wallet.total_withdrawn / wallet.total_earned) * 100).toFixed(0) 
+    : "0";
 
   return (
     <div className="animate-fade-in pb-8">
@@ -57,9 +65,9 @@ export default function AgentEarningsPage() {
       {/* Stat tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatTile
-          icon={DollarSign}
-          label="Lifetime Profit"
-          value={fmt(summary?.total_profit || 0)}
+          icon={TrendingUp}
+          label="This Week"
+          value={fmt(summary?.this_week_profit || 0)}
           tint="text-success"
         />
         <StatTile
@@ -69,16 +77,16 @@ export default function AgentEarningsPage() {
           tint="text-primary"
         />
         <StatTile
-          icon={ShoppingCart}
-          label="Lifetime Orders"
-          value={String(summary?.total_orders || 0)}
+          icon={DollarSign}
+          label="Lifetime Profit"
+          value={fmt(summary?.total_profit || 0)}
           tint="text-foreground"
         />
         <StatTile
           icon={Percent}
-          label="Commission Rate"
-          value={`${rate}%`}
-          tint="text-info"
+          label="Withdrawn"
+          value={`${withdrawalEfficiency}%`}
+          tint="text-warning"
         />
       </div>
 
