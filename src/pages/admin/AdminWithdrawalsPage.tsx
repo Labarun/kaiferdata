@@ -90,9 +90,27 @@ export default function AdminWithdrawalsPage() {
       if (status !== "all") q = q.eq("status", status);
       const term = search.trim().replace(/[%,]/g, "");
       if (term) q = q.or(`momo_number.ilike.%${term}%,momo_name.ilike.%${term}%`);
-      const { data, count } = await q;
+      const { data, count, error } = await q;
+      
+      if (error) {
+        console.error("Error fetching withdrawals:", error);
+      }
+      
       if (cancelled) return;
-      setRows((data || []) as WithdrawalRequest[]);
+      
+      const fetchedRows = (data || []) as WithdrawalRequest[];
+      
+      // Manually join agent_profiles to avoid PostgREST relationship errors
+      const userIds = [...new Set(fetchedRows.map(r => r.user_id))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await db.from("agent_profiles").select("user_id, store_name").in("user_id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.store_name]));
+        fetchedRows.forEach(r => {
+          r.agent_profiles = { store_name: profileMap.get(r.user_id) || null };
+        });
+      }
+      
+      setRows(fetchedRows);
       pg.setTotal(count || 0);
       setSelected(new Set());
       setLoading(false);
@@ -139,7 +157,12 @@ export default function AdminWithdrawalsPage() {
 
   const columns: ResponsiveColumn<WithdrawalRequest>[] = [
     { key: "amount", header: "Amount", mobile: "title", cell: (r) => <span className="font-semibold tabular-nums">{fmtMoney(r.amount)}</span> },
-    { key: "payee", header: "Payee", mobile: "subtitle", cell: (r) => <span className="text-muted-foreground">{r.momo_name} · {r.momo_network}</span> },
+    { key: "payee", header: "Payee", mobile: "subtitle", cell: (r) => (
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">{r.momo_name}</span>
+        <span className="text-[11px] text-muted-foreground">{r.momo_network}{r.agent_profiles?.store_name ? ` · Store: ${r.agent_profiles.store_name}` : ''}</span>
+      </div>
+    ) },
     {
       key: "status", header: "Status", mobile: "trailing",
       cell: (r) => {
@@ -293,6 +316,9 @@ function WithdrawalDetailDialog({
           {/* Payout details */}
           <div className="rounded-xl border bg-muted/20 p-3 space-y-1.5 text-[13px]">
             <Row icon={UserIcon} label="Name" value={row.momo_name} />
+            {row.agent_profiles?.store_name && (
+              <Row icon={UserIcon} label="Store" value={row.agent_profiles.store_name} />
+            )}
             <Row icon={Phone} label="Number" value={row.momo_number} mono />
             <Row icon={Banknote} label="Network" value={row.momo_network} />
             <Row icon={Wallet} label="From wallet" value={walletLabel(row.wallet_kind)} />

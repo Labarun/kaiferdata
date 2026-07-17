@@ -22,14 +22,17 @@ import { Search, Store, User, Mail, Phone, MapPin, UserCheck, Clock, Ban } from 
 import { AdminAgentDetailDialog } from "@/components/admin/AdminAgentDetailDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
+import { AdminAgentAnalyticsView } from "@/components/admin/AdminAgentAnalyticsView";
 
-type TabKey = "pending" | "active" | "suspended" | "declined" | "all";
+type TabKey = "pending" | "active" | "suspended" | "declined" | "subscribed" | "analytics" | "all";
 
 const TAB_FILTERS: Record<TabKey, AgentApplicationWithUser["status"][] | undefined> = {
   pending: ["submitted", "under_review", "needs_changes"],
   active: ["approved"],
   suspended: ["approved"],
   declined: ["declined"],
+  subscribed: ["approved"],
+  analytics: undefined,
   all: undefined,
 };
 
@@ -88,6 +91,7 @@ export default function AdminAgentsPage() {
   const visibleRows = useMemo(() => {
     if (tab === "active") return rows.filter((r) => r.profile?.status === "active" || r.profile?.status === "pending_subscription" || r.profile?.status === "subscription_expired");
     if (tab === "suspended") return rows.filter((r) => r.profile?.status === "suspended");
+    if (tab === "subscribed") return rows.filter((r) => r.latest_subscription?.status === "active");
     return rows;
   }, [rows, tab]);
 
@@ -113,35 +117,41 @@ export default function AdminAgentsPage() {
 
       {/* Tabs + search */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="flex-1">
-          <TabsList className="w-full sm:w-auto">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="flex-1 overflow-x-auto">
+          <TabsList className="w-auto sm:w-auto min-w-max">
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="subscribed">Subscribed</TabsTrigger>
             <TabsTrigger value="suspended">Suspended</TabsTrigger>
             <TabsTrigger value="declined">Declined</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            refresh();
-          }}
-          className="relative flex-1 sm:max-w-xs"
-        >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search name, email, store…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </form>
+        {tab !== "analytics" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              refresh();
+            }}
+            className="relative flex-1 sm:max-w-xs"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name, email, store…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </form>
+        )}
       </div>
 
       {/* Results */}
-      {loading ? (
+      {tab === "analytics" ? (
+        <AdminAgentAnalyticsView />
+      ) : loading ? (
         <PageLoader />
       ) : visibleRows.length === 0 ? (
         <Card>
@@ -159,72 +169,90 @@ export default function AdminAgentsPage() {
             >
               <Card className="hover:border-primary/40 hover:shadow-sm transition-all">
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {row.store_logo_url ? (
-                      <img
-                        src={row.store_logo_url}
-                        alt={row.store_name || ""}
-                        className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Store className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-foreground truncate">
-                          {row.store_name || row.full_name || "Unnamed agent"}
-                        </p>
-                        <Badge variant={STATUS_BADGE[row.status]?.variant || "outline"}>
-                          {STATUS_BADGE[row.status]?.label || row.status}
-                        </Badge>
-                        {row.profile && (
-                          <Badge variant="outline" className="text-xs">
-                            Profile: {row.profile.status}
-                          </Badge>
-                        )}
-                        {row.latest_subscription?.status === "active" && (
-                          <Badge variant="default" className="text-xs">
-                            {row.latest_subscription.plan} sub
-                          </Badge>
-                        )}
-                        {row.latest_subscription?.status === "active" && row.wallet && (
-                          <Badge variant="secondary" className="text-xs font-semibold text-success">
-                            Earned: GH₵{Number(row.wallet.total_earned || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                        {row.full_name && (
-                          <span className="inline-flex items-center gap-1">
-                            <User className="h-3 w-3" /> {row.full_name}
-                          </span>
-                        )}
-                        {row.email && (
-                          <span className="inline-flex items-center gap-1">
-                            <Mail className="h-3 w-3" /> {row.email}
-                          </span>
-                        )}
-                        {row.phone && (
-                          <span className="inline-flex items-center gap-1">
-                            <Phone className="h-3 w-3" /> {row.phone}
-                          </span>
-                        )}
-                        {row.city && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> {row.city}
-                          </span>
-                        )}
-                      </div>
-
-                      {row.admin_note && (
-                        <p className="mt-1.5 text-xs text-muted-foreground italic line-clamp-1">
-                          Admin note: {row.admin_note}
-                        </p>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-center">
+                    {/* Col 1: Brand Profile */}
+                    <div className="flex items-center gap-3">
+                      {row.store_logo_url ? (
+                        <img
+                          src={row.store_logo_url}
+                          alt={row.store_name || ""}
+                          className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <Store className="h-5 w-5 text-muted-foreground" />
+                        </div>
                       )}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground truncate">
+                          {row.business_name || row.store_name || "Unnamed Business"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {row.full_name || "Unknown"} &bull; {row.city || "No City"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Col 2: Subscription Status & Validity */}
+                    <div className="flex flex-col items-start justify-center">
+                      {row.latest_subscription ? (
+                        <>
+                          <Badge variant={row.latest_subscription.status === 'active' ? 'default' : 'secondary'} className="text-[10px] uppercase tracking-wider mb-1">
+                            {row.latest_subscription.plan} Sub
+                          </Badge>
+                          {row.latest_subscription.expires_at ? (() => {
+                            const daysLeft = Math.ceil((new Date(row.latest_subscription.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <>
+                                <p className={`text-xs font-medium ${daysLeft > 0 && daysLeft <= 5 ? 'text-amber-500' : daysLeft <= 0 ? 'text-destructive' : 'text-foreground'}`}>
+                                  {daysLeft > 0 ? `${daysLeft} days left` : 'Expired'}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                  Exp: {new Date(row.latest_subscription.expires_at).toLocaleDateString()}
+                                </p>
+                              </>
+                            );
+                          })() : (
+                            <p className="text-xs text-muted-foreground">No expiry</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">No Subscription</p>
+                      )}
+                    </div>
+
+                    {/* Col 3: Analytics & Activity */}
+                    <div className="flex flex-col items-start justify-center">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className={`relative flex h-2 w-2`}>
+                          {row.stats?.lastActive ? (
+                            <>
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                            </>
+                          ) : (
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"></span>
+                          )}
+                        </span>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {row.stats?.lastActive 
+                            ? `Active ${new Date(row.stats.lastActive).toLocaleDateString()}` 
+                            : 'Inactive'}
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-foreground font-medium bg-muted px-2 py-0.5 rounded-md">
+                        {row.stats?.totalOrders || 0} Orders &bull; {Math.round(row.stats?.successRate || 0)}% Success
+                      </p>
+                    </div>
+
+                    {/* Col 4: Financials */}
+                    <div className="flex flex-col items-end justify-center text-right">
+                      <p className="font-bold text-[15px] text-success">
+                        GH₵{Number(row.wallet?.current_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
+                        GH₵{Number(row.wallet?.total_earned || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Lifetime
+                      </p>
                     </div>
                   </div>
                 </CardContent>

@@ -20,9 +20,10 @@ import {
 import { EarningsBalanceCard } from "@/components/agent/EarningsBalanceCard";
 import { AnalyticsRangeFilter } from "@/components/agent/AnalyticsRangeFilter";
 import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentEarningsWallet";
-import { fetchAgentAnalytics, type AgentAnalytics, type AnalyticsRange } from "@/services/agentAnalytics";
+import { fetchAgentAnalytics, loadAnalyticsRange, saveAnalyticsRange, type AgentAnalytics, type AnalyticsRange } from "@/services/agentAnalytics";
 import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
 import { StatCard } from "@/components/shared/StatCard";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { DashboardSkeleton } from "@/components/shared/LoadingState";
 import { WalletCard } from "@/components/shared/WalletCard";
 import { SpecialOfferPromo } from "@/components/special/SpecialOfferPromo";
@@ -53,9 +54,13 @@ export default function AgentDashboardHome() {
   const [savingToggle, setSavingToggle] = useState(false);
 
   // Analytics
-  const [range, setRange] = useState<AnalyticsRange>("7d");
+  const [range, setRange] = useState<AnalyticsRange>(loadAnalyticsRange());
   const [analytics, setAnalytics] = useState<AgentAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+
+  useEffect(() => {
+    saveAnalyticsRange(range);
+  }, [range]);
 
   // Deposit sheet state
   const { toast } = useToast();
@@ -520,15 +525,126 @@ export default function AgentDashboardHome() {
                 <div className="h-24 glass-card rounded-2xl animate-pulse" />
                 <div className="h-24 glass-card rounded-2xl animate-pulse" />
               </>
-            ) : (
-              <>
-                <StatCard icon={ShoppingCart} title="Orders" value={String(analytics?.ordersCount ?? 0)} variant="primary" size="sm" />
-                <StatCard icon={TrendingUp} title="Revenue" value={fmt(analytics?.revenue ?? 0)} size="sm" />
-                <StatCard icon={DollarSign} title="Profit" value={fmt(analytics?.profit ?? 0)} variant="success" size="sm" />
-                <StatCard icon={Users} title="Customers" value={String(analytics?.activeCustomers ?? 0)} variant="primary" size="sm" />
-              </>
-            )}
+            ) : (() => {
+              const prevRev = analytics?.prevRevenue || 0;
+              const revDelta = prevRev > 0 ? ((analytics!.revenue - prevRev) / prevRev) * 100 : 0;
+              const prevProf = analytics?.prevProfit || 0;
+              const profDelta = prevProf > 0 ? ((analytics!.profit - prevProf) / prevProf) * 100 : 0;
+              
+              return (
+                <>
+                  <StatCard icon={ShoppingCart} title="Orders" value={String(analytics?.ordersCount ?? 0)} variant="primary" size="sm" />
+                  <StatCard 
+                    icon={TrendingUp} 
+                    title="Revenue" 
+                    value={fmt(analytics?.revenue ?? 0)} 
+                    size="sm" 
+                    trend={prevRev > 0 ? { value: revDelta } : undefined} 
+                  />
+                  <StatCard 
+                    icon={DollarSign} 
+                    title="Profit" 
+                    value={fmt(analytics?.profit ?? 0)} 
+                    variant="success" 
+                    size="sm" 
+                    trend={prevProf > 0 ? { value: profDelta } : undefined} 
+                  />
+                  <StatCard icon={Users} title="Customers" value={String(analytics?.activeCustomers ?? 0)} variant="primary" size="sm" />
+                </>
+              );
+            })()}
           </div>
+
+          {/* New: Sales Channel Split & Daily Trend Chart */}
+          {analytics && !loadingAnalytics && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              
+              {/* Daily Trend Chart (takes 2 columns on large screens) */}
+              <Card className="lg:col-span-2">
+                <CardContent className="p-4 space-y-4">
+                  <p className="text-sm font-semibold flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4 text-primary" /> Daily Revenue
+                  </p>
+                  <div className="h-48 w-full">
+                    {(analytics.dailyTrend?.length || 0) > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analytics.dailyTrend || []} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+                          <XAxis 
+                            dataKey="day" 
+                            tickFormatter={(tick) => {
+                              const d = new Date(tick);
+                              return `${d.getDate()}/${d.getMonth() + 1}`;
+                            }} 
+                            axisLine={false} 
+                            tickLine={false} 
+                            fontSize={10} 
+                            tickMargin={8} 
+                            stroke="hsl(var(--muted-foreground))"
+                          />
+                          <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            fontSize={10}
+                            tickFormatter={(val) => `GH₵${val}`}
+                            stroke="hsl(var(--muted-foreground))"
+                          />
+                          <Tooltip 
+                            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                            contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))', fontSize: '12px' }}
+                            labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                            formatter={(value: number) => [`GH₵${value.toFixed(2)}`, 'Revenue']}
+                          />
+                          <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+                        No daily data available for this range
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Sales Channel Split */}
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  <p className="text-sm font-semibold flex items-center gap-1.5">
+                    <Store className="h-4 w-4 text-primary" /> Sales Channel
+                  </p>
+                  
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Store className="h-3.5 w-3.5" /> Storefront</span>
+                        <span className="font-semibold">{fmt(analytics.storefrontRevenue || 0)}</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ width: `${analytics.revenue > 0 ? ((analytics.storefrontRevenue || 0) / analytics.revenue) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><ShoppingCart className="h-3.5 w-3.5" /> Self-Buy (Bulk)</span>
+                        <span className="font-semibold">{fmt(analytics.bulkRevenue || 0)}</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-500" 
+                          style={{ width: `${analytics.revenue > 0 ? ((analytics.bulkRevenue || 0) / analytics.revenue) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
+          )}
 
           {/* Top bundles */}
           {analytics && analytics.topBundles.length > 0 && (

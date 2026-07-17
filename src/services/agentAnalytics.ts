@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AnalyticsRange = "today" | "yesterday" | "7d" | "30d" | "60d" | "all";
 
+export function loadAnalyticsRange(): AnalyticsRange {
+  const saved = localStorage.getItem("agent_analytics_range");
+  return (saved as AnalyticsRange) || "30d";
+}
+
+export function saveAnalyticsRange(range: AnalyticsRange) {
+  localStorage.setItem("agent_analytics_range", range);
+}
+
 export function rangeToBounds(range: AnalyticsRange): { from: Date | null; to: Date | null } {
   const now = new Date();
   const startOfDay = (d: Date) => {
@@ -54,6 +63,11 @@ export interface AgentAnalytics {
   topBundles: { name: string; network: string; qty: number; revenue: number }[];
   recentOrders: any[];
   recentEarnings: any[];
+  storefrontRevenue: number;
+  bulkRevenue: number;
+  dailyTrend: { day: string; revenue: number }[];
+  prevRevenue?: number;
+  prevProfit?: number;
 }
 
 /** Fetch analytics for a given agent_profile_id within a range. */
@@ -87,7 +101,7 @@ export async function fetchAgentAnalytics(agentProfileId: string, range: Analyti
   }
 
   if (!orFilter) {
-    return { ordersCount: 0, revenue: 0, profit: 0, activeCustomers: 0, topBundles: [], recentOrders: [], recentEarnings: [] };
+    return { ordersCount: 0, revenue: 0, profit: 0, activeCustomers: 0, topBundles: [], recentOrders: [], recentEarnings: [], storefrontRevenue: 0, bulkRevenue: 0, dailyTrend: [], prevRevenue: 0, prevProfit: 0 };
   }
 
   // 4. Orders with date filter
@@ -119,6 +133,25 @@ export async function fetchAgentAnalytics(agentProfileId: string, range: Analyti
   const profit = earningRows.reduce((s, e) => s + Number(e.commission_amount || 0), 0);
   const uniqueBenef = new Set(orderRows.map((o) => o.beneficiary_number).filter(Boolean));
 
+  let storefrontRevenue = 0;
+  let bulkRevenue = 0;
+  const dailyMap = new Map<string, number>();
+
+  orderRows.forEach(o => {
+    const amt = Number(o.amount_charged || 0);
+    if (o.origin_type === 'agent_bulk_buy') {
+       bulkRevenue += amt;
+    } else {
+       storefrontRevenue += amt;
+    }
+    const dayStr = o.created_at.substring(0, 10);
+    dailyMap.set(dayStr, (dailyMap.get(dayStr) || 0) + amt);
+  });
+
+  const dailyTrend = Array.from(dailyMap.entries())
+    .map(([day, rev]) => ({ day, revenue: rev }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+
   // Top bundles
   const bundleMap = new Map<string, { name: string; network: string; qty: number; revenue: number }>();
   orderRows.forEach((o) => {
@@ -141,5 +174,10 @@ export async function fetchAgentAnalytics(agentProfileId: string, range: Analyti
     topBundles,
     recentOrders: orderRows.slice(0, 10),
     recentEarnings: earningRows.slice(0, 10),
+    storefrontRevenue,
+    bulkRevenue,
+    dailyTrend,
+    prevRevenue: 0,
+    prevProfit: 0
   };
 }
