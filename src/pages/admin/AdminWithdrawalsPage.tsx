@@ -104,9 +104,9 @@ export default function AdminWithdrawalsPage() {
       const userIds = [...new Set(fetchedRows.map(r => r.user_id))];
       if (userIds.length > 0) {
         const { data: profiles } = await db.from("agent_profiles").select("user_id, store_name").in("user_id", userIds);
-        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p.store_name]));
+        const profileMap = new Map<string, string | null>((profiles || []).map((p: any) => [p.user_id as string, (p.store_name as string) ?? null]));
         fetchedRows.forEach(r => {
-          r.agent_profiles = { store_name: profileMap.get(r.user_id) || null };
+          r.agent_profiles = { store_name: profileMap.get(r.user_id) ?? null };
         });
       }
       

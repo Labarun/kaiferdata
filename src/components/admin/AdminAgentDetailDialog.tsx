@@ -327,7 +327,7 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
                           <div className="text-muted-foreground">{o.network}</div>
                           <div className="font-medium">GH₵{Number(o.amount_charged).toFixed(2)}</div>
                           <div className="text-right">
-                            <Badge variant={o.status === 'delivered' ? 'success' : o.status === 'failed' ? 'destructive' : 'outline'} className="text-[10px]">
+                            <Badge variant={o.status === 'delivered' ? 'default' : o.status === 'failed' ? 'destructive' : 'outline'} className="text-[10px]">
                               {o.status}
                             </Badge>
                           </div>
