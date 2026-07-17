@@ -6,6 +6,8 @@ export interface AgentCustomer {
   orders: number;
   total_spend: number;
   last_order_at: string;
+  first_order_at?: string;
+  avg_order_value: number;
   name?: string;
   is_saved?: boolean;
 }
@@ -48,7 +50,9 @@ export async function fetchAgentCustomers(agentProfileId: string): Promise<Agent
       is_saved: true,
       orders: 0,
       total_spend: 0,
-      last_order_at: c.created_at
+      avg_order_value: 0,
+      last_order_at: c.created_at,
+      first_order_at: c.created_at,
     });
   });
 
@@ -60,9 +64,11 @@ export async function fetchAgentCustomers(agentProfileId: string): Promise<Agent
     if (cur) {
       cur.orders += 1;
       cur.total_spend += Number(o.amount_charged || 0);
-      // keep most recent order date if no orders were previously counted
       if (cur.orders === 1 || new Date(o.created_at) > new Date(cur.last_order_at)) {
         cur.last_order_at = o.created_at;
+      }
+      if (!cur.first_order_at || new Date(o.created_at) < new Date(cur.first_order_at)) {
+        cur.first_order_at = o.created_at;
       }
     } else {
       map.set(key, {
@@ -70,10 +76,17 @@ export async function fetchAgentCustomers(agentProfileId: string): Promise<Agent
         network: o.network,
         orders: 1,
         total_spend: Number(o.amount_charged || 0),
+        avg_order_value: 0,
         last_order_at: o.created_at,
-        is_saved: false
+        first_order_at: o.created_at,
+        is_saved: false,
       });
     }
+  });
+
+  // Compute averages
+  map.forEach((c) => {
+    c.avg_order_value = c.orders > 0 ? c.total_spend / c.orders : 0;
   });
 
   return Array.from(map.values()).sort((a, b) => {

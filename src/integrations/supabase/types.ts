@@ -697,6 +697,78 @@ export type Database = {
         }
         Relationships: []
       }
+      express_data_packages: {
+        Row: {
+          agent_price_ghs: number
+          created_at: string
+          id: string
+          is_active: boolean
+          regular_price_ghs: number
+          size_gb: string
+          updated_at: string
+          validity_days: string
+        }
+        Insert: {
+          agent_price_ghs: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          regular_price_ghs: number
+          size_gb: string
+          updated_at?: string
+          validity_days: string
+        }
+        Update: {
+          agent_price_ghs?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          regular_price_ghs?: number
+          size_gb?: string
+          updated_at?: string
+          validity_days?: string
+        }
+        Relationships: []
+      }
+      express_orders: {
+        Row: {
+          created_at: string
+          data_size: string
+          id: string
+          order_id: string
+          phone_number: string
+          price_paid_ghs: number
+          status: string
+          updated_at: string
+          user_id: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string
+          data_size: string
+          id?: string
+          order_id: string
+          phone_number: string
+          price_paid_ghs: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_role: string
+        }
+        Update: {
+          created_at?: string
+          data_size?: string
+          id?: string
+          order_id?: string
+          phone_number?: string
+          price_paid_ghs?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
       notices: {
         Row: {
           audience: Database["public"]["Enums"]["notice_audience"]
@@ -2078,6 +2150,14 @@ export type Database = {
           status: Database["public"]["Enums"]["intent_status"]
           total_amount: number
         }[]
+      }
+      process_express_order: {
+        Args: {
+          p_package_id: string
+          p_phone_number: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       purchase_bulk_with_wallet_atomic: {
         Args: {
