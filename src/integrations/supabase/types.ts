@@ -2346,6 +2346,7 @@ export type Database = {
         | "failed"
         | "cancelled"
         | "refunded"
+        | "on_hold"
       payment_status: "pending" | "verified" | "failed" | "reversed"
       transaction_direction: "inflow" | "outflow"
       transaction_status: "pending" | "completed" | "failed" | "reversed"
@@ -2522,6 +2523,7 @@ export const Constants = {
         "failed",
         "cancelled",
         "refunded",
+        "on_hold",
       ],
       payment_status: ["pending", "verified", "failed", "reversed"],
       transaction_direction: ["inflow", "outflow"],
