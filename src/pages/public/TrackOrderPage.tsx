@@ -40,6 +40,7 @@ const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; color: string }>
   failed: { icon: XCircle, color: "text-destructive" },
   cancelled: { icon: XCircle, color: "text-muted-foreground" },
   refunded: { icon: RotateCcw, color: "text-muted-foreground" },
+  on_hold: { icon: Clock, color: "text-amber-500" },
 };
 
 export default function TrackOrderPage() {

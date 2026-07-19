@@ -180,8 +180,8 @@ export default function UserDashboardHome() {
         </Link>
       </div>
 
-      {/* Special offer promo */}
-      <SpecialOfferPromo to="/dashboard/special" />
+      {/* Special offer promo
+      <SpecialOfferPromo to="/dashboard/special" /> */}
 
       {/* Recent Orders */}
       <div className="animate-fade-in animate-stagger-3">
@@ -303,9 +303,8 @@ export default function UserDashboardHome() {
                         </p>
                       </div>
                     </div>
-                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${
-                      isInflow ? "text-primary" : "text-foreground"
-                    }`}>
+                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${isInflow ? "text-primary" : "text-foreground"
+                      }`}>
                       {isInflow ? "+" : "−"}GH₵{Number(t.amount).toFixed(2)}
                     </span>
                   </Link>

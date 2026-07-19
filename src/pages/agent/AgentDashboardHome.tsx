@@ -169,7 +169,7 @@ export default function AgentDashboardHome() {
         .from("agent_profiles")
         .update({ storefront_enabled: checked })
         .eq("user_id", user.id);
-      
+
       if (error) throw error;
       setStorefrontEnabled(checked);
       toast({ title: "Success", description: `Storefront is now ${checked ? 'open' : 'closed'}.` });
@@ -214,8 +214,8 @@ export default function AgentDashboardHome() {
         </Card>
       )}
 
-      {/* Special offer promo (agent panel — near Buy Data, not on storefront) */}
-      <SpecialOfferPromo to="/agent/special" />
+      {/* Special offer promo (agent panel — near Buy Data, not on storefront)
+      <SpecialOfferPromo to="/agent/special" /> */}
 
       <Tabs defaultValue="overview" className="space-y-5">
         <TabsList className="w-full grid grid-cols-3 bg-muted/50 p-1 rounded-xl h-11">
@@ -268,7 +268,7 @@ export default function AgentDashboardHome() {
                 <p className="text-lg font-bold tracking-tight tabular-nums text-foreground/90">
                   {fmt(spendingBalance ?? 0)}
                 </p>
-                <button 
+                <button
                   onClick={() => {
                     setDepositAmount("");
                     setDepositing(false);
@@ -332,69 +332,69 @@ export default function AgentDashboardHome() {
 
           {/* Storefront share */}
           {storeSlug && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex items-center gap-1.5">
-                <Store className="h-3 w-3" /> Your storefront
-              </p>
-              <Badge variant="outline" className="text-[9px] capitalize">{storeStatus ?? "—"}</Badge>
-            </div>
-            <code className="block text-[12px] bg-muted/50 rounded-lg px-3 py-2 truncate font-mono mb-2">
-              {storeUrl}
-            </code>
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <Button size="sm" variant="outline" onClick={handleCopy} className="text-xs">
-                {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleShareWhatsApp} className="text-xs">
-                <Share2 className="h-3.5 w-3.5 mr-1" /> Share
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <Button size="sm" variant="outline" asChild className="text-xs">
-                <Link to="/agent/store">
-                  <Store className="h-3.5 w-3.5 mr-1" /> Edit Store
-                </Link>
-              </Button>
-              <Button size="sm" variant="outline" asChild className="text-xs">
-                <a href={storeUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                </a>
-              </Button>
-            </div>
-
-            <div className="pt-3 mt-3 border-t border-border/40 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-foreground">Storefront Status</p>
-                  <p className="text-[10px] text-muted-foreground">{storefrontEnabled ? "Accepting new orders" : "Not accepting orders"}</p>
-                </div>
-                <Switch 
-                  checked={storefrontEnabled && masterEnabled}
-                  disabled={!masterEnabled || savingToggle}
-                  onCheckedChange={handleToggleStorefront}
-                />
-              </div>
-              {!masterEnabled && (
-                <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 flex items-start gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-warning font-medium leading-relaxed">
-                    The platform administrator has temporarily disabled storefront orders globally.
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex items-center gap-1.5">
+                    <Store className="h-3 w-3" /> Your storefront
                   </p>
+                  <Badge variant="outline" className="text-[9px] capitalize">{storeStatus ?? "—"}</Badge>
                 </div>
-              )}
-            </div>
-            
-            <Button size="sm" asChild className="w-full text-xs font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all border border-primary/20 mt-1">
-              <Link to="/agent/pricing">
-                <Tag className="h-3.5 w-3.5 mr-1.5" /> Set store front pricing
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                <code className="block text-[12px] bg-muted/50 rounded-lg px-3 py-2 truncate font-mono mb-2">
+                  {storeUrl}
+                </code>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <Button size="sm" variant="outline" onClick={handleCopy} className="text-xs">
+                    {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleShareWhatsApp} className="text-xs">
+                    <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <Button size="sm" variant="outline" asChild className="text-xs">
+                    <Link to="/agent/store">
+                      <Store className="h-3.5 w-3.5 mr-1" /> Edit Store
+                    </Link>
+                  </Button>
+                  <Button size="sm" variant="outline" asChild className="text-xs">
+                    <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
+                    </a>
+                  </Button>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-border/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">Storefront Status</p>
+                      <p className="text-[10px] text-muted-foreground">{storefrontEnabled ? "Accepting new orders" : "Not accepting orders"}</p>
+                    </div>
+                    <Switch
+                      checked={storefrontEnabled && masterEnabled}
+                      disabled={!masterEnabled || savingToggle}
+                      onCheckedChange={handleToggleStorefront}
+                    />
+                  </div>
+                  {!masterEnabled && (
+                    <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 flex items-start gap-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-warning font-medium leading-relaxed">
+                        The platform administrator has temporarily disabled storefront orders globally.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <Button size="sm" asChild className="w-full text-xs font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all border border-primary/20 mt-1">
+                  <Link to="/agent/pricing">
+                    <Tag className="h-3.5 w-3.5 mr-1.5" /> Set store front pricing
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           {/* Latest orders */}
           <Card className="glass-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-muted/20">
@@ -441,8 +441,8 @@ export default function AgentDashboardHome() {
         <TabsContent value="orders" className="space-y-5 outline-none">
           {loadingAnalytics ? (
             <div className="py-12 text-center text-xs text-muted-foreground flex flex-col items-center">
-               <Loader2 className="h-6 w-6 animate-spin text-primary/50 mb-3" />
-               Loading orders...
+              <Loader2 className="h-6 w-6 animate-spin text-primary/50 mb-3" />
+              Loading orders...
             </div>
           ) : (!analytics?.recentOrders || analytics.recentOrders.length === 0) ? (
             <div className="py-16 text-center glass-card rounded-2xl flex flex-col items-center border border-border/40">
@@ -499,7 +499,7 @@ export default function AgentDashboardHome() {
               </CardContent>
             </Card>
           )}
-          
+
           <div className="flex justify-center pt-2">
             <Button asChild variant="outline" size="sm" className="rounded-xl glass-card h-9">
               <Link to="/agent/orders">View All Orders & Commissions</Link>
@@ -530,24 +530,24 @@ export default function AgentDashboardHome() {
               const revDelta = prevRev > 0 ? ((analytics!.revenue - prevRev) / prevRev) * 100 : 0;
               const prevProf = analytics?.prevProfit || 0;
               const profDelta = prevProf > 0 ? ((analytics!.profit - prevProf) / prevProf) * 100 : 0;
-              
+
               return (
                 <>
                   <StatCard icon={ShoppingCart} title="Orders" value={String(analytics?.ordersCount ?? 0)} variant="primary" size="sm" />
-                  <StatCard 
-                    icon={TrendingUp} 
-                    title="Revenue" 
-                    value={fmt(analytics?.revenue ?? 0)} 
-                    size="sm" 
-                    trend={prevRev > 0 ? { value: revDelta } : undefined} 
+                  <StatCard
+                    icon={TrendingUp}
+                    title="Revenue"
+                    value={fmt(analytics?.revenue ?? 0)}
+                    size="sm"
+                    trend={prevRev > 0 ? { value: revDelta } : undefined}
                   />
-                  <StatCard 
-                    icon={DollarSign} 
-                    title="Profit" 
-                    value={fmt(analytics?.profit ?? 0)} 
-                    variant="success" 
-                    size="sm" 
-                    trend={prevProf > 0 ? { value: profDelta } : undefined} 
+                  <StatCard
+                    icon={DollarSign}
+                    title="Profit"
+                    value={fmt(analytics?.profit ?? 0)}
+                    variant="success"
+                    size="sm"
+                    trend={prevProf > 0 ? { value: profDelta } : undefined}
                   />
                   <StatCard icon={Users} title="Customers" value={String(analytics?.activeCustomers ?? 0)} variant="primary" size="sm" />
                 </>
@@ -558,7 +558,7 @@ export default function AgentDashboardHome() {
           {/* New: Sales Channel Split & Daily Trend Chart */}
           {analytics && !loadingAnalytics && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              
+
               {/* Daily Trend Chart (takes 2 columns on large screens) */}
               <Card className="lg:col-span-2">
                 <CardContent className="p-4 space-y-4">
@@ -569,26 +569,26 @@ export default function AgentDashboardHome() {
                     {(analytics.dailyTrend?.length || 0) > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={analytics.dailyTrend || []} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-                          <XAxis 
-                            dataKey="day" 
+                          <XAxis
+                            dataKey="day"
                             tickFormatter={(tick) => {
                               const d = new Date(tick);
                               return `${d.getDate()}/${d.getMonth() + 1}`;
-                            }} 
-                            axisLine={false} 
-                            tickLine={false} 
-                            fontSize={10} 
-                            tickMargin={8} 
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                            fontSize={10}
+                            tickMargin={8}
                             stroke="hsl(var(--muted-foreground))"
                           />
-                          <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
                             fontSize={10}
                             tickFormatter={(val) => `GH₵${val}`}
                             stroke="hsl(var(--muted-foreground))"
                           />
-                          <Tooltip 
+                          <Tooltip
                             cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
                             contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))', fontSize: '12px' }}
                             labelFormatter={(label) => new Date(label).toLocaleDateString()}
@@ -612,7 +612,7 @@ export default function AgentDashboardHome() {
                   <p className="text-sm font-semibold flex items-center gap-1.5">
                     <Store className="h-4 w-4 text-primary" /> Sales Channel
                   </p>
-                  
+
                   <div className="space-y-4 pt-2">
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center text-sm">
@@ -620,21 +620,21 @@ export default function AgentDashboardHome() {
                         <span className="font-semibold">{fmt(analytics.storefrontRevenue || 0)}</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary" 
+                        <div
+                          className="h-full bg-primary"
                           style={{ width: `${analytics.revenue > 0 ? ((analytics.storefrontRevenue || 0) / analytics.revenue) * 100 : 0}%` }}
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground flex items-center gap-1.5"><ShoppingCart className="h-3.5 w-3.5" /> Self-Buy (Bulk)</span>
                         <span className="font-semibold">{fmt(analytics.bulkRevenue || 0)}</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-amber-500" 
+                        <div
+                          className="h-full bg-amber-500"
                           style={{ width: `${analytics.revenue > 0 ? ((analytics.bulkRevenue || 0) / analytics.revenue) * 100 : 0}%` }}
                         />
                       </div>
@@ -676,21 +676,21 @@ export default function AgentDashboardHome() {
 
       {/* ── Deposit Bottom Sheet ── */}
       <Drawer open={depositOpen} onOpenChange={(v) => { if (!depositing) setDepositOpen(v); }}>
-          <DrawerContent
-            className={cn(
-              "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
-              "flex flex-col",
-              "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
-              "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
-              "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
-            )}
-          >
-            <div className="flex justify-center pt-3.5 pb-2 shrink-0">
-              <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)] dark:bg-[hsl(213_25%_40%/0.35)]" />
-            </div>
+        <DrawerContent
+          className={cn(
+            "border-0 rounded-t-[28px] overflow-hidden max-h-[94vh] supports-[height:100dvh]:max-h-[100dvh]",
+            "flex flex-col",
+            "bg-[hsl(214_42%_97%/0.92)] dark:bg-[hsl(213_40%_12%/0.92)] backdrop-blur-[44px] saturate-[1.9]",
+            "shadow-[0_-4px_40px_-8px_hsl(213_40%_40%/0.12),0_-1px_6px_-1px_hsl(213_35%_50%/0.06),inset_0_1px_0_0_hsl(0_0%_100%/0.7)]",
+            "dark:shadow-[0_-4px_40px_-8px_hsl(0_0%_0%/0.5),0_-1px_6px_-1px_hsl(0_0%_0%/0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.05)]",
+          )}
+        >
+          <div className="flex justify-center pt-3.5 pb-2 shrink-0">
+            <div className="h-[5px] w-10 rounded-full bg-[hsl(213_25%_78%/0.35)] dark:bg-[hsl(213_25%_40%/0.35)]" />
+          </div>
 
-            <div className="px-5 pb-8 pt-2 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
-              {depositing ? (
+          <div className="px-5 pb-8 pt-2 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
+            {depositing ? (
               <div className="py-10 text-center space-y-5 animate-fade-in">
                 <div className="h-16 w-16 rounded-2xl glass-premium flex items-center justify-center mx-auto">
                   <Loader2 className="h-7 w-7 text-primary animate-spin" />
