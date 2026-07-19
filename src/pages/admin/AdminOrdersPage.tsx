@@ -26,7 +26,7 @@ import { triggerStatusSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 
-const STATUSES = ["all", "paid", "queued", "processing", "delivered", "failed", "cancelled", "refunded"];
+const STATUSES = ["all", "paid", "queued", "processing", "on_hold", "delivered", "failed", "cancelled", "refunded"];
 const NETWORKS = ["all", "MTN", "Telecel", "AirtelTigo"];
 
 type Order = Record<string, any>;
@@ -61,7 +61,7 @@ export default function AdminOrdersPage() {
       const [t, d, p, f] = await Promise.all([
         supabase.from("orders").select("id", C),
         supabase.from("orders").select("id", C).eq("status", "delivered"),
-        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing"]),
+        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing", "on_hold"]),
         supabase.from("orders").select("id", C).eq("status", "failed"),
       ]);
       setStats({ total: t.count || 0, delivered: d.count || 0, pending: p.count || 0, failed: f.count || 0 });

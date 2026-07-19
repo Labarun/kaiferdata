@@ -13,7 +13,8 @@ export type CustomerStatusKey =
   | "delivered"
   | "failed"
   | "cancelled"
-  | "refunded";
+  | "refunded"
+  | "on_hold";
 
 const STATUS_MAP: Record<string, CustomerStatusKey> = {
   // Orders
@@ -33,6 +34,7 @@ const STATUS_MAP: Record<string, CustomerStatusKey> = {
   supplier_failed: "failed",
   cancelled: "cancelled",
   refunded: "refunded",
+  on_hold: "on_hold",
 };
 
 const LABELS: Record<CustomerStatusKey, string> = {
@@ -42,6 +44,7 @@ const LABELS: Record<CustomerStatusKey, string> = {
   failed: "Failed",
   cancelled: "Cancelled",
   refunded: "Refunded",
+  on_hold: "Pending verification",
 };
 
 const HELPERS: Record<CustomerStatusKey, string> = {
@@ -51,6 +54,7 @@ const HELPERS: Record<CustomerStatusKey, string> = {
   failed: "Do not worry, the team has been alerted and your order will be reprocessed shortly.",
   cancelled: "This order was cancelled.",
   refunded: "This order has been refunded.",
+  on_hold: "Recipient number is being verified on the MTN portal. The order will be delivered once verification is completed.",
 };
 
 /** Map any raw status string to a customer-safe key. */
@@ -103,7 +107,7 @@ export function sanitizeCustomerMessage(
   // If what remains is empty or pure noise, drop it.
   if (!text || /^[\s\-—:]+$/.test(text)) return null;
   // Also drop if it's just a status word we already show separately.
-  if (/^(paid|queued|processing|delivered|failed|cancelled|refunded|completed)$/i.test(text)) return null;
+  if (/^(paid|queued|processing|delivered|failed|cancelled|refunded|completed|on_hold)$/i.test(text)) return null;
 
   // Drop stale "still processing" phrasing once the order has actually
   // moved past processing — otherwise a Delivered order shows

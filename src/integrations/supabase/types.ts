@@ -2339,13 +2339,14 @@ export type Database = {
         | "info_notice"
         | "warning_notice"
       order_status:
-        | "paid"
-        | "queued"
-        | "processing"
-        | "delivered"
-        | "failed"
-        | "cancelled"
-        | "refunded"
+      | "paid"
+      | "queued"
+      | "processing"
+      | "delivered"
+      | "failed"
+      | "cancelled"
+      | "refunded"
+      | "on_hold"
       payment_status: "pending" | "verified" | "failed" | "reversed"
       transaction_direction: "inflow" | "outflow"
       transaction_status: "pending" | "completed" | "failed" | "reversed"
@@ -2522,6 +2523,7 @@ export const Constants = {
         "failed",
         "cancelled",
         "refunded",
+        "on_hold",
       ],
       payment_status: ["pending", "verified", "failed", "reversed"],
       transaction_direction: ["inflow", "outflow"],
