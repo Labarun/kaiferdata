@@ -15,7 +15,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { bulkUpdateOrderStatus } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 
-const STATUS_OPTIONS = ["paid", "queued", "processing", "delivered", "failed", "cancelled", "refunded"];
+const STATUS_OPTIONS = ["paid", "queued", "processing", "on_hold", "delivered", "failed", "cancelled", "refunded"];
 
 interface BulkStatusDialogProps {
   open: boolean;
