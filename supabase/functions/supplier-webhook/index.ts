@@ -29,6 +29,7 @@ function normalizeStatus(rawStatus: string, statusMapping: Record<string, string
   if (lower.includes("deliver") || lower.includes("success") || lower.includes("complet")) return "delivered";
   if (lower.includes("fail") || lower.includes("error") || lower.includes("reject")) return "failed";
   if (lower.includes("cancel")) return "cancelled";
+  if (lower.includes("hold")) return "on_hold";
   if (lower.includes("process") || lower.includes("pend") || lower.includes("initiat")) return "processing";
   if (lower.includes("queue") || lower.includes("accept")) return "queued";
   return "processing";
