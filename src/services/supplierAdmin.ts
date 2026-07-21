@@ -203,7 +203,7 @@ export async function updateOrderStatus(
   // Log status change
   await supabase.from("order_status_history").insert({
     order_id: orderId,
-    old_status: oldStatus,
+    old_status: order?.status,
     new_status: newStatus,
     source: "admin_manual_update",
     note: note || `Manually changed by admin`,
@@ -215,7 +215,7 @@ export async function updateOrderStatus(
     action: "order_status_manual_update",
     targetType: "order",
     targetId: orderId,
-    metadata: { old_status: oldStatus, new_status: newStatus, note },
+    metadata: { old_status: order?.status, new_status: newStatus, note },
   });
 }
 
