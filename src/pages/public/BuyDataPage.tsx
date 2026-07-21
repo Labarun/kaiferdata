@@ -7,6 +7,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { AlertTriangle, Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone, Truck, SendHorizonal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
@@ -319,7 +320,7 @@ export default function BuyDataPage() {
               </section>
 
               {network && (
-                <section key={plansKey} className="animate-plans-enter mb-7">
+                <section key={plansKey} className="relative animate-plans-enter mb-7">
                   <div className={`absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b ${networkTint} rounded-3xl opacity-60`} />
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-2">
@@ -364,6 +365,18 @@ export default function BuyDataPage() {
                           <ServicePaused variant="network" network={network} />
                         </div>
                       )}
+
+                      {activeCategory === "express" && (
+                        <Alert className="mb-4 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+                          <div className="flex items-start gap-2.5">
+                            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                            <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
+                              Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+                            </AlertDescription>
+                          </div>
+                        </Alert>
+                      )}
+
                       <PlanSelector plans={displayedPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
                     </>
                   )}

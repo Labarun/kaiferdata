@@ -10,10 +10,11 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 
-import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle, AlertTriangle } from "lucide-react";
+import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle, AlertTriangle, Sparkles, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
@@ -64,7 +65,9 @@ function packageToPlan(pkg: DataPackage): DataPlan {
     metadata: null,
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
+    updated_at: pkg.updated_at,
     buying_enabled: pkg.buying_enabled,
+    category: pkg.category,
   };
 }
 
@@ -78,6 +81,7 @@ export default function AgentStorefrontPage() {
   const [loadingPackages, setLoadingPackages] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(null);
+  const [category, setCategory] = useState<"regular" | "express">("regular");
   const [plan, setPlan] = useState<DataPlan | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -169,10 +173,34 @@ export default function AgentStorefrontPage() {
     if (!network && networks.length > 0 && !loadingPackages) setNetwork(networks[0]);
   }, [networks, loadingPackages, network]);
 
-  const filteredPlans = useMemo(
-    () => (network ? filterPackagesByNetwork(packages, network).map(packageToPlan) : []),
-    [packages, network]
-  );
+  const availableCategories = useMemo(() => {
+    if (!network) return { hasRegular: false, hasExpress: false };
+    const networkPkgs = filterPackagesByNetwork(packages, network);
+    const hasReg = networkPkgs.some(p => p.category !== "express");
+    const hasExp = networkPkgs.some(p => p.category === "express");
+    return { hasRegular: hasReg, hasExpress: hasExp };
+  }, [packages, network]);
+
+  useEffect(() => {
+    if (availableCategories.hasRegular && !availableCategories.hasExpress) {
+      setCategory("regular");
+    } else if (!availableCategories.hasRegular && availableCategories.hasExpress) {
+      setCategory("express");
+    } else if (availableCategories.hasRegular) {
+      setCategory("regular");
+    }
+  }, [network, availableCategories]);
+
+  const filteredPlans = useMemo(() => {
+    if (!network) return [];
+    let list = filterPackagesByNetwork(packages, network);
+    if (category === "express") {
+      list = list.filter(p => p.category === "express");
+    } else {
+      list = list.filter(p => p.category !== "express");
+    }
+    return list.map(packageToPlan);
+  }, [packages, network, category]);
 
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
@@ -393,6 +421,43 @@ export default function AgentStorefrontPage() {
                           {filteredPlans.length} available
                         </span>
                       </div>
+                      
+                      {availableCategories.hasRegular && availableCategories.hasExpress && (
+                        <div className="flex items-center gap-2 mb-4 bg-muted/40 p-1.5 rounded-xl border border-border/40 w-fit mx-auto sm:mx-0">
+                          <button
+                            onClick={() => setCategory("regular")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                              category === "regular" 
+                                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <Phone className="h-3.5 w-3.5" /> Regular Data
+                          </button>
+                          <button
+                            onClick={() => setCategory("express")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                              category === "express" 
+                                ? "bg-background text-success shadow-sm ring-1 ring-border/50" 
+                                : "text-muted-foreground hover:text-success hover:bg-muted/50"
+                            }`}
+                          >
+                            <Sparkles className="h-3.5 w-3.5" /> Express Data
+                          </button>
+                        </div>
+                      )}
+
+                      {category === "express" && (
+                        <Alert className="mb-4 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+                          <div className="flex items-start gap-2.5">
+                            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                            <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
+                              Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+                            </AlertDescription>
+                          </div>
+                        </Alert>
+                      )}
+
                       <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
                     </section>
                   )}
