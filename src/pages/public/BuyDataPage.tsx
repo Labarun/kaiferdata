@@ -26,6 +26,7 @@ import {
 } from "@/services/purchaseIntent";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { cn } from "@/lib/utils";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
