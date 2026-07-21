@@ -2117,6 +2117,7 @@ export type Database = {
         Returns: {
           agent_base_price: number
           buying_enabled: boolean
+          category: string
           currency: string
           display_order: number
           id: string
