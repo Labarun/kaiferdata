@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Users, CreditCard, Wallet, AlertCircle, Sparkles, Phone, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Users, CreditCard, Wallet, AlertCircle, Sparkles, Phone, CheckCircle2, AlertTriangle, Zap, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SubscriptionGate } from "@/components/agent/SubscriptionGate";
 import { cn } from "@/lib/utils";
@@ -262,36 +262,63 @@ function BulkOrderFlow() {
         </div>
         
         {availableCategories.hasRegular && availableCategories.hasExpress && (
-          <div className="flex items-center gap-2 mb-2 bg-muted/40 p-1.5 rounded-xl border border-border/40 w-fit mx-auto sm:mx-0">
+          <div className="flex bg-muted/30 p-1 rounded-xl mb-4 w-full sm:w-fit relative">
             <button
               onClick={() => { setCategory("regular"); setSelectedPkg(null); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                category === "regular" 
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+              className={cn(
+                "flex-1 sm:px-6 text-xs py-2 rounded-lg font-medium transition-all duration-200",
+                category === "regular" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <Phone className="h-3.5 w-3.5" /> Regular Data
+              Regular Data
             </button>
-              <button
-                onClick={() => { setCategory("express"); setSelectedPkg(null); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  category === "express" 
-                    ? "bg-background text-success shadow-sm ring-1 ring-border/50" 
-                    : "text-muted-foreground hover:text-success hover:bg-muted/50"
-                }`}
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Express Data
-              </button>
+            <button
+              onClick={() => { setCategory("express"); setSelectedPkg(null); }}
+              className={cn(
+                "relative flex-1 sm:px-6 text-xs py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1.5 overflow-hidden",
+                category === "express" ? "bg-background shadow text-success ring-1 ring-success/20" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {category === "express" && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-success/10 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite]" />
+              )}
+              <Zap className="h-3 w-3" /> Express Data
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm animate-pulse">
+                Hot
+              </div>
+            </button>
           </div>
         )}
 
         {category === "express" && (
-          <Alert className="mb-2 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+          <>
+            <p className="text-[10px] font-bold text-success/80 flex items-center gap-1.5 mb-2 ml-1 animate-fade-in">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+              </span>
+              System Status: Express Delivery is operating at peak speed.
+            </p>
+            <Alert className="mb-4 border-success/30 bg-success/5 py-2.5 px-3.5 shadow-[0_4px_14px_-6px_hsl(var(--success)/0.3)]">
+              <div className="flex items-start gap-2.5">
+                <Zap className="h-4 w-4 text-success mt-0.5 shrink-0 fill-success/20" />
+                <AlertDescription className="text-[11px] text-success/90 font-medium leading-[1.4]">
+                  <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in seconds. Ensure your MTN number is verified. <span className="opacity-80">(Instant 24hr refunds for failed orders).</span>
+                </AlertDescription>
+              </div>
+            </Alert>
+          </>
+        )}
+
+        {category === "regular" && availableCategories.hasExpress && (
+          <Alert className="mb-4 border-border/50 bg-muted/30 py-2.5 px-3.5 shadow-sm">
             <div className="flex items-start gap-2.5">
-              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-              <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
-                Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+              <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <AlertDescription className="text-[11px] text-muted-foreground font-medium leading-[1.4]">
+                Regular fulfillment may take longer than usual (5-15 mins). Need it instantly?{" "}
+                <button onClick={() => { setCategory("express"); setSelectedPkg(null); }} className="text-foreground underline font-bold hover:text-success transition-colors">
+                  Switch to Express
+                </button>
               </AlertDescription>
             </div>
           </Alert>
@@ -307,24 +334,30 @@ function BulkOrderFlow() {
               const isSelected = selectedPkg?.id === pkg.id;
               const netBrand = getNetworkBrand(pkg.network);
               const isBuyingPaused = pkg.buying_enabled === false;
+              const isExpress = category === "express";
               return (
                 <button
                   key={pkg.id}
                   onClick={() => !isBuyingPaused && setSelectedPkg(pkg)}
                   disabled={isBuyingPaused}
                   className={cn(
-                    "relative text-left p-4 rounded-2xl border transition-all duration-200 overflow-hidden group",
+                    "relative text-left p-4 rounded-2xl border transition-[transform,box-shadow,border-color,background] duration-200 overflow-hidden group",
                     isBuyingPaused
                       ? "opacity-60 cursor-not-allowed bg-muted/20 border-border/40"
                       : isSelected
-                        ? "border-transparent bg-[hsl(var(--card))] shadow-[0_0_0_2px_hsl(var(--primary)),0_8px_20px_-8px_hsl(var(--primary)/0.25)]"
-                        : "border-border/40 bg-card hover:border-primary/30 hover:bg-muted/30"
+                        ? "border-transparent bg-[hsl(var(--card))] -translate-y-[1px]"
+                        : "border-border/40 bg-card hover:border-primary/30 hover:bg-muted/30 hover:glass-elevated hover:-translate-y-[1px] active:scale-[0.97]"
                   )}
+                  style={(isSelected && !isBuyingPaused) ? {
+                    boxShadow: isExpress 
+                      ? `0 0 24px -2px hsl(150 100% 40% / 0.3), 0 6px 20px -6px hsl(150 100% 40% / 0.2), 0 0 0 1px hsl(150 100% 40% / 0.5)`
+                      : `0 0 0 2px hsl(var(--primary)), 0 8px 20px -8px hsl(var(--primary)/0.25)`
+                  } : {}}
                 >
                   {(isSelected && !isBuyingPaused) && (
                     <div 
                       className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                      style={{ background: `linear-gradient(45deg, hsl(${netBrand.hsl}), transparent)` }}
+                      style={{ background: isExpress ? `linear-gradient(45deg, hsl(150 100% 45%), transparent)` : `linear-gradient(45deg, hsl(${netBrand.hsl}), transparent)` }}
                     />
                   )}
                   <div className="relative flex justify-between items-start mb-2">
@@ -336,7 +369,9 @@ function BulkOrderFlow() {
                         Paused
                       </span>
                     ) : (
-                      <span className="font-bold text-[15px] tracking-tight">GH₵{formatGHS(getAgentPrice(pkg))}</span>
+                      <span className={cn("font-bold text-[15px] tracking-tight mt-[14px]", isSelected && isExpress ? "text-emerald-500" : "")}>
+                        GH₵{formatGHS(getAgentPrice(pkg))}
+                      </span>
                     )}
                   </div>
                   <div className="relative">

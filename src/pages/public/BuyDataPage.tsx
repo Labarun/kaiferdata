@@ -8,6 +8,7 @@ import { AlertTriangle, Loader2, Zap, Shield, Clock, Search, Wifi, Smartphone, T
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
@@ -333,7 +334,7 @@ export default function BuyDataPage() {
                   </div>
 
                   {hasExpress && (
-                    <div className="flex bg-muted/30 p-1 rounded-xl mb-4 w-full">
+                    <div className="flex bg-muted/30 p-1 rounded-xl mb-4 w-full relative">
                       <button
                         onClick={() => setActiveCategory("regular")}
                         className={cn(
@@ -346,12 +347,18 @@ export default function BuyDataPage() {
                       <button
                         onClick={() => setActiveCategory("express")}
                         className={cn(
-                          "flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
-                          activeCategory === "express" ? "bg-background shadow text-success" : "text-muted-foreground hover:text-foreground"
+                          "relative flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1.5 overflow-hidden",
+                          activeCategory === "express" ? "bg-background shadow text-success ring-1 ring-success/20" : "text-muted-foreground hover:text-foreground"
                         )}
                       >
+                        {activeCategory === "express" && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-success/10 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite]" />
+                        )}
                         <Zap className="h-3 w-3" />
                         Express Data
+                        <div className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm animate-pulse">
+                          Hot
+                        </div>
                       </button>
                     </div>
                   )}
@@ -367,17 +374,40 @@ export default function BuyDataPage() {
                       )}
 
                       {activeCategory === "express" && (
-                        <Alert className="mb-4 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+                        <>
+                          <p className="text-[10px] font-bold text-success/80 flex items-center gap-1.5 mb-2 ml-1 animate-fade-in">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                            </span>
+                            System Status: Express Delivery is operating at peak speed.
+                          </p>
+                          <Alert className="mb-4 border-success/30 bg-success/5 py-2.5 px-3.5 shadow-[0_4px_14px_-6px_hsl(var(--success)/0.3)]">
+                            <div className="flex items-start gap-2.5">
+                              <Zap className="h-4 w-4 text-success mt-0.5 shrink-0 fill-success/20" />
+                              <AlertDescription className="text-[11px] text-success/90 font-medium leading-[1.4]">
+                                <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in seconds. Ensure your MTN number is verified. <span className="opacity-80">(Instant 24hr refunds for failed orders).</span>
+                              </AlertDescription>
+                            </div>
+                          </Alert>
+                        </>
+                      )}
+
+                      {activeCategory === "regular" && hasExpress && (
+                        <Alert className="mb-4 border-border/50 bg-muted/30 py-2.5 px-3.5 shadow-sm">
                           <div className="flex items-start gap-2.5">
-                            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-                            <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
-                              Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+                            <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <AlertDescription className="text-[11px] text-muted-foreground font-medium leading-[1.4]">
+                              Regular fulfillment may take longer than usual (5-15 mins). Need it instantly?{" "}
+                              <button onClick={() => setActiveCategory("express")} className="text-foreground underline font-bold hover:text-success transition-colors">
+                                Switch to Express
+                              </button>
                             </AlertDescription>
                           </div>
                         </Alert>
                       )}
 
-                      <PlanSelector plans={displayedPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                      <PlanSelector plans={displayedPlans} selected={plan} onSelect={handlePlanSelect} network={network} isExpress={activeCategory === 'express'} />
                     </>
                   )}
                 </section>

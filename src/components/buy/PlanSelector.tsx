@@ -5,7 +5,7 @@
 import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { DataPlan } from "@/services/purchaseIntent";
-import { Check, ChevronRight, AlertTriangle } from "lucide-react";
+import { Check, ChevronRight, AlertTriangle, Zap } from "lucide-react";
 import { getNetworkBrand } from "@/config/networkBrands";
 
 /** Inline WhatsApp glyph (lucide has no brand icon). */
@@ -28,6 +28,7 @@ interface PlanSelectorProps {
   selected: DataPlan | null;
   onSelect: (plan: DataPlan) => void;
   network?: string | null;
+  isExpress?: boolean;
 }
 
 const PlanCard = memo(function PlanCard({
@@ -35,12 +36,14 @@ const PlanCard = memo(function PlanCard({
   isActive,
   index,
   brandHsl,
+  isExpress,
   onSelect,
 }: {
   plan: DataPlan;
   isActive: boolean;
   index: number;
   brandHsl: string;
+  isExpress?: boolean;
   onSelect: (plan: DataPlan) => void;
 }) {
   const isBuyingPaused = plan.buying_enabled === false;
@@ -61,7 +64,9 @@ const PlanCard = memo(function PlanCard({
       style={{
         animationDelay: `${index * 50}ms`,
         ...((isActive && !isBuyingPaused) ? {
-          boxShadow: `0 0 24px -4px hsl(${brandHsl} / 0.22), 0 6px 20px -6px hsl(${brandHsl} / 0.15), 0 1px 3px 0 hsl(213 35% 50% / 0.06)`,
+          boxShadow: isExpress 
+            ? `0 0 24px -2px hsl(150 100% 40% / 0.3), 0 6px 20px -6px hsl(150 100% 40% / 0.2), 0 0 0 1px hsl(150 100% 40% / 0.5)`
+            : `0 0 24px -4px hsl(${brandHsl} / 0.22), 0 6px 20px -6px hsl(${brandHsl} / 0.15), 0 1px 3px 0 hsl(213 35% 50% / 0.06)`,
         } : {}),
       }}
     >
@@ -69,7 +74,9 @@ const PlanCard = memo(function PlanCard({
       <div
         className="h-[2px] transition-[background] duration-300"
         style={(isActive && !isBuyingPaused) ? {
-          background: `linear-gradient(90deg, transparent, hsl(${brandHsl} / 0.7), transparent)`,
+          background: isExpress 
+            ? `linear-gradient(90deg, transparent, hsl(150 100% 45% / 0.9), transparent)`
+            : `linear-gradient(90deg, transparent, hsl(${brandHsl} / 0.7), transparent)`,
         } : {
           background: `linear-gradient(90deg, transparent, hsl(0 0% 50% / 0.06), transparent)`,
         }}
@@ -95,7 +102,7 @@ const PlanCard = memo(function PlanCard({
                   ? "text-foreground/90"
                   : "text-foreground/75"
             )}
-            style={(isActive && !isBuyingPaused) ? { color: `hsl(${brandHsl})` } : undefined}
+            style={(isActive && !isBuyingPaused && !isExpress) ? { color: `hsl(${brandHsl})` } : (isActive && !isBuyingPaused && isExpress) ? { color: 'hsl(150 100% 40%)' } : undefined}
           >
             {plan.volume}
           </span>
@@ -109,8 +116,8 @@ const PlanCard = memo(function PlanCard({
                 !isActive && "border border-border/40 bg-secondary/40 group-hover:border-border/60"
               )}
               style={isActive ? {
-                background: `hsl(${brandHsl})`,
-                boxShadow: `0 0 14px -2px hsl(${brandHsl} / 0.4)`,
+                background: isExpress ? `hsl(150 100% 40%)` : `hsl(${brandHsl})`,
+                boxShadow: isExpress ? `0 0 14px -2px hsl(150 100% 40% / 0.5)` : `0 0 14px -2px hsl(${brandHsl} / 0.4)`,
               } : undefined}
             >
               {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
@@ -172,7 +179,7 @@ const PlanCard = memo(function PlanCard({
   );
 });
 
-export const PlanSelector = memo(function PlanSelector({ plans, selected, onSelect, network }: PlanSelectorProps) {
+export const PlanSelector = memo(function PlanSelector({ plans, selected, onSelect, network, isExpress }: PlanSelectorProps) {
   const brand = useMemo(() => getNetworkBrand(network || ""), [network]);
 
   if (plans.length === 0) {
@@ -192,6 +199,7 @@ export const PlanSelector = memo(function PlanSelector({ plans, selected, onSele
           isActive={selected?.id === plan.id}
           index={i}
           brandHsl={brand.hsl}
+          isExpress={isExpress}
           onSelect={onSelect}
         />
       ))}
