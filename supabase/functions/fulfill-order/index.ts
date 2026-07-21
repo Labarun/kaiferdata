@@ -134,6 +134,7 @@ async function submitToSupplierApi(
   const orderRequestMapping = (endpointConfig.order_request_mapping || {}) as Record<string, string>;
   const orderResponseMapping = (endpointConfig.order_response_mapping || {}) as Record<string, string>;
   const reverseNetworkMapping = (endpointConfig.reverse_network_mapping || {}) as Record<string, string>;
+  const networkMapping = (endpointConfig.network_mapping || {}) as Record<string, string>;
 
   const submitPath = (submitEndpoint.path as string) || "/v1/orders";
   const submitMethod = (submitEndpoint.method as string) || "POST";
@@ -210,19 +211,25 @@ async function submitToSupplierApi(
       }
 
       if (!isUuid(supplierNetworkId)) {
-        const networkCarrier = supplierPackages.find((p: Record<string, unknown>) => {
-          const meta = (p.source_metadata || {}) as Record<string, unknown>;
-          const networkObj = meta.network as Record<string, unknown> | undefined;
-          return Boolean(networkObj?.id || meta.network_id || meta.networkId || isUuid(meta.network));
-        });
+        if (networkMapping[mappedNetwork]) {
+          supplierNetworkId = String(networkMapping[mappedNetwork]);
+        } else if (networkMapping[mappedNetwork.toLowerCase()]) {
+          supplierNetworkId = String(networkMapping[mappedNetwork.toLowerCase()]);
+        } else {
+          const networkCarrier = supplierPackages.find((p: Record<string, unknown>) => {
+            const meta = (p.source_metadata || {}) as Record<string, unknown>;
+            const networkObj = meta.network as Record<string, unknown> | undefined;
+            return Boolean(networkObj?.id || meta.network_id || meta.networkId || isUuid(meta.network));
+          });
 
-        if (networkCarrier) {
-          const meta = (networkCarrier.source_metadata || {}) as Record<string, unknown>;
-          const networkObj = meta.network as Record<string, unknown> | undefined;
-          if (networkObj?.id) supplierNetworkId = String(networkObj.id);
-          else if (meta.network_id) supplierNetworkId = String(meta.network_id);
-          else if (meta.networkId) supplierNetworkId = String(meta.networkId);
-          else if (isUuid(meta.network)) supplierNetworkId = String(meta.network);
+          if (networkCarrier) {
+            const meta = (networkCarrier.source_metadata || {}) as Record<string, unknown>;
+            const networkObj = meta.network as Record<string, unknown> | undefined;
+            if (networkObj?.id) supplierNetworkId = String(networkObj.id);
+            else if (meta.network_id) supplierNetworkId = String(meta.network_id);
+            else if (meta.networkId) supplierNetworkId = String(meta.networkId);
+            else if (isUuid(meta.network)) supplierNetworkId = String(meta.network);
+          }
         }
       }
     }
@@ -237,14 +244,14 @@ async function submitToSupplierApi(
   const amountField = orderRequestMapping.amount || "amount";
   const referenceField = orderRequestMapping.reference || "reference";
 
-  const expectsPlanUuid = /_id$/i.test(productCodeField);
-  const expectsNetworkUuid = /_id$/i.test(networkField);
+  const expectsPlanId = /_id$/i.test(productCodeField);
+  const expectsNetworkId = /_id$/i.test(networkField);
 
-  if (expectsPlanUuid && !isUuid(supplierPlanId)) {
-    throw new Error(`Unable to resolve supplier plan UUID for ${order.bundle_code}`);
+  if (expectsPlanId && !supplierPlanId) {
+    throw new Error(`Unable to resolve supplier plan ID for ${order.bundle_code}`);
   }
-  if (expectsNetworkUuid && !isUuid(supplierNetworkId)) {
-    throw new Error(`Unable to resolve supplier network UUID for ${order.network}`);
+  if (expectsNetworkId && !supplierNetworkId) {
+    throw new Error(`Unable to resolve supplier network ID for ${order.network}`);
   }
 
   requestBody[phoneField] = order.beneficiary_number;
