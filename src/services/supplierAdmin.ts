@@ -181,6 +181,8 @@ export async function updateOrderStatus(
   newStatus: string,
   note?: string
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Get current order status
   const { data: order } = await supabase
     .from("orders")
@@ -188,17 +190,17 @@ export async function updateOrderStatus(
     .eq("id", orderId)
     .single();
 
-  const oldStatus = order?.status || null;
-
   // Update order
   const { error: updateErr } = await supabase
     .from("orders")
-    .update({ status: newStatus as any })
+    .update({ 
+      status: newStatus as any,
+      ...(note ? { delivery_message: note } : {}) 
+    })
     .eq("id", orderId);
   if (updateErr) throw updateErr;
 
   // Log status change
-  const { data: { user } } = await supabase.auth.getUser();
   await supabase.from("order_status_history").insert({
     order_id: orderId,
     old_status: oldStatus,
@@ -214,6 +216,62 @@ export async function updateOrderStatus(
     targetType: "order",
     targetId: orderId,
     metadata: { old_status: oldStatus, new_status: newStatus, note },
+  });
+}
+
+/** Admin explicit wallet refund for a single order */
+export async function refundOrder(
+  orderId: string,
+  note?: string
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .single();
+
+  const oldStatus = order?.status || null;
+
+  const { data: refundResult, error: refundErr } = await supabase.rpc(
+    "refund_wallet_purchase_atomic",
+    {
+      _order_id: orderId,
+      _reason: note || "Admin manual refund",
+      _actor_id: user?.id || null,
+    }
+  );
+  if (refundErr) throw refundErr;
+  
+  const res = Array.isArray(refundResult) ? refundResult[0] : refundResult;
+  if (!res?.refunded) {
+    const { error: updateErr } = await supabase
+      .from("orders")
+      .update({ 
+        status: "refunded" as any,
+        ...(note ? { delivery_message: note } : {}) 
+      })
+      .eq("id", orderId);
+    if (updateErr) throw updateErr;
+  } else if (note) {
+    await supabase.from("orders").update({ delivery_message: note }).eq("id", orderId);
+  }
+
+  await supabase.from("order_status_history").insert({
+    order_id: orderId,
+    old_status: oldStatus,
+    new_status: "refunded",
+    source: "admin_manual_refund",
+    note: note || `Manual explicit refund by admin`,
+    metadata: { admin_user_id: user?.id, wallet_refund_attempted: true, wallet_refund_success: !!res?.refunded },
+  } as any);
+
+  await writeAuditLog({
+    action: "order_manual_refund",
+    targetType: "order",
+    targetId: orderId,
+    metadata: { old_status: oldStatus, note, refund_result: res },
   });
 }
 
@@ -243,10 +301,13 @@ export async function bulkUpdateOrderStatus(
 
       const oldStatus = order.status;
 
-      // Update
+      // Normal update
       const { error: updateErr } = await supabase
         .from("orders")
-        .update({ status: newStatus as any })
+        .update({ 
+          status: newStatus as any,
+          ...(note ? { delivery_message: note } : {}) 
+        })
         .eq("id", orderId);
 
       if (updateErr) {
@@ -276,6 +337,82 @@ export async function bulkUpdateOrderStatus(
     targetType: "order",
     targetId: orderIds[0],
     metadata: { order_count: orderIds.length, new_status: newStatus, updated, errors_count: errors.length, note },
+  });
+
+  return { updated, errors };
+}
+
+/** Admin explicit wallet refund for multiple orders */
+export async function bulkRefundOrders(
+  orderIds: string[],
+  note?: string
+): Promise<{ updated: number; errors: string[] }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  let updated = 0;
+  const errors: string[] = [];
+
+  for (const orderId of orderIds) {
+    try {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("status, public_order_id")
+        .eq("id", orderId)
+        .single();
+
+      if (!order) {
+        errors.push(`Order ${orderId} not found`);
+        continue;
+      }
+
+      const oldStatus = order.status;
+
+      const { data: refundResult, error: refundErr } = await supabase.rpc(
+        "refund_wallet_purchase_atomic",
+        {
+          _order_id: orderId,
+          _reason: note || "Bulk admin manual refund",
+          _actor_id: user?.id || null,
+        }
+      );
+      if (refundErr) throw refundErr;
+      
+      const res = Array.isArray(refundResult) ? refundResult[0] : refundResult;
+      if (!res?.refunded) {
+        const { error: updateErr } = await supabase
+          .from("orders")
+          .update({ 
+            status: "refunded" as any,
+            ...(note ? { delivery_message: note } : {}) 
+          })
+          .eq("id", orderId);
+        if (updateErr) {
+          errors.push(`${order.public_order_id}: ${updateErr.message}`);
+          continue;
+        }
+      } else if (note) {
+        await supabase.from("orders").update({ delivery_message: note }).eq("id", orderId);
+      }
+
+      await supabase.from("order_status_history").insert({
+        order_id: orderId,
+        old_status: oldStatus,
+        new_status: "refunded",
+        source: "admin_bulk_refund",
+        note: note || `Bulk manual explicit refund by admin`,
+        metadata: { admin_user_id: user?.id, bulk: true, wallet_refund_attempted: true, wallet_refund_success: !!res?.refunded },
+      } as any);
+
+      updated++;
+    } catch (err) {
+      errors.push(`${orderId}: ${String(err)}`);
+    }
+  }
+
+  await writeAuditLog({
+    action: "order_bulk_manual_refund",
+    targetType: "order",
+    targetId: orderIds[0],
+    metadata: { order_count: orderIds.length, updated, errors_count: errors.length, note },
   });
 
   return { updated, errors };

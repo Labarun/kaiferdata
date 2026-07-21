@@ -94,6 +94,7 @@ export function sanitizeCustomerMessage(
 
   // Normalize payment confirmation text from webhook plumbing.
   text = text.replace(/payment confirmed\s*(via\s*paystack\s*webhook)?/gi, "Payment Confirmed.");
+  text = text.replace(/order paid via paystack.*/gi, "Payment Confirmed.");
 
   // Remove explicit supplier id / reference fragments like "(supplier ref: XYZ)" or "supplier ref XYZ".
   text = text.replace(/\(?\s*supplier\s*(ref(?:erence)?|id|status)\s*[:\-=]?\s*[a-z0-9_\-]+\s*\)?/gi, "");
