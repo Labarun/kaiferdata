@@ -109,6 +109,10 @@ export default function AdminOrdersPage() {
 
   const openBulk = (ids: string[]) => { setBulkIds(ids); setBulkOpen(true); };
   const copy = (text: string) => { navigator.clipboard.writeText(text); toast({ title: "Copied", description: text }); };
+  const formatOrderForCopy = (o: Order) => {
+    const volume = (o.bundle_snapshot as any)?.volume || o.bundle_name || "";
+    return `${o.beneficiary_number} ${volume}`.trim();
+  };
 
   const syncOne = async (id: string) => {
     try { await triggerStatusSync(id); toast({ title: "Sync triggered" }); refresh(); }
@@ -207,6 +211,7 @@ export default function AdminOrdersPage() {
         <DropdownMenuItem onClick={() => syncOne(o.id)}><RefreshCw className="h-4 w-4 mr-2" /> Sync status</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => copy(o.public_order_id)}><Copy className="h-4 w-4 mr-2" /> Copy ID</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => copy(formatOrderForCopy(o))}><Copy className="h-4 w-4 mr-2" /> Copy Details</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -255,6 +260,9 @@ export default function AdminOrdersPage() {
           )}
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copy(orders.filter((o) => selected.has(o.id)).map((o) => o.public_order_id).join("\n"))}>
             <Copy className="h-3.5 w-3.5" /> Copy IDs
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copy(orders.filter((o) => selected.has(o.id)).map(formatOrderForCopy).join("\n"))}>
+            <Copy className="h-3.5 w-3.5" /> Copy Details
           </Button>
         </div>
       )}
