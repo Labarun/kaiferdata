@@ -52,8 +52,8 @@ INSERT INTO suppliers (
       "reference": "reference"
     },
     "order_response_mapping": {
-      "status": "status",
-      "reference": "order_id",
+      "status": "data.status",
+      "reference": "data.order_id",
       "message": "message"
     },
     "check_status": {
@@ -65,6 +65,7 @@ INSERT INTO suppliers (
       "processing": "processing",
       "successful": "delivered",
       "success": "delivered",
+      "completed": "delivered",
       "delivered": "delivered",
       "failed": "failed",
       "cancelled": "cancelled"
