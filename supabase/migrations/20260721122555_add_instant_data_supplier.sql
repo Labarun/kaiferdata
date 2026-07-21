@@ -46,9 +46,9 @@ INSERT INTO suppliers (
       "method": "POST"
     },
     "order_request_mapping": {
-      "phone": "phoneNumber",
+      "phone": "phone_number",
       "network": "network",
-      "amount": "dataAmount",
+      "product_code": "data_amount",
       "reference": "reference"
     },
     "order_response_mapping": {

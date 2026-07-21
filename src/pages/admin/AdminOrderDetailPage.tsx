@@ -290,6 +290,14 @@ export default function AdminOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <ManualStatusDialog
+        open={statusDialogOpen}
+        onOpenChange={setStatusDialogOpen}
+        orderId={orderId!}
+        currentStatus={order.status as string}
+        onSuccess={fetchAll}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 import { updateOrderStatus } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 
-const STATUS_OPTIONS = ["paid", "queued", "processing", "delivered", "failed", "cancelled", "refunded"];
+const STATUS_OPTIONS = ["paid", "queued", "processing", "on_hold", "delivered", "failed", "cancelled", "refunded"];
 
 interface ManualStatusDialogProps {
   open: boolean;
