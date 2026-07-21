@@ -578,16 +578,23 @@ Deno.serve(async (req) => {
     const snapshotForSupplier = (order.bundle_snapshot || {}) as Record<string, unknown>;
     let selectedSupplier = null;
     let actualSourceType = snapshotForSupplier.source_type;
+    let linkedSupplierId = null;
 
-    if (!actualSourceType) {
-      const { data: pkgLookup } = await supabase
-        .from("data_packages")
-        .select("source_type")
-        .eq("network", order.network)
-        .eq("package_code", order.bundle_code)
-        .maybeSingle();
-      if (pkgLookup?.source_type) {
+    // Always fetch latest package routing data to ensure explicit supplier linking works
+    const { data: pkgLookup } = await supabase
+      .from("data_packages")
+      .select("source_type, source_metadata")
+      .eq("network", order.network)
+      .eq("package_code", order.bundle_code)
+      .maybeSingle();
+
+    if (pkgLookup) {
+      if (!actualSourceType && pkgLookup.source_type) {
         actualSourceType = pkgLookup.source_type;
+      }
+      if (pkgLookup.source_metadata) {
+        const meta = pkgLookup.source_metadata as Record<string, unknown>;
+        if (meta.supplier_id) linkedSupplierId = String(meta.supplier_id);
       }
     }
 
@@ -629,13 +636,22 @@ Deno.serve(async (req) => {
       .order("priority", { ascending: true });
 
     if (suppliers && suppliers.length > 0) {
-      for (const s of suppliers) {
-        const networks = (s.supported_networks as string[]) || [];
-        if (networks.length === 0 || networks.includes(order.network)) {
-          selectedSupplier = s;
-          break;
+      // 1. Explicitly linked supplier (e.g. from Admin manual selection)
+      if (linkedSupplierId) {
+        selectedSupplier = suppliers.find(s => String(s.id) === linkedSupplierId);
+      }
+
+      // 2. Fallback routing by network priority
+      if (!selectedSupplier) {
+        for (const s of suppliers) {
+          const networks = (s.supported_networks as string[]) || [];
+          if (networks.length === 0 || networks.includes(order.network)) {
+            selectedSupplier = s;
+            break;
+          }
         }
       }
+      
       if (!selectedSupplier) selectedSupplier = suppliers[0];
     }
 
