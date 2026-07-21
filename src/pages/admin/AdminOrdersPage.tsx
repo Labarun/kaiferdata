@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OperationsBadge } from "@/components/admin/OperationsBadge";
 import { BulkStatusDialog } from "@/components/admin/BulkStatusDialog";
+import { BulkRefundDialog } from "@/components/admin/BulkRefundDialog";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/admin/ResponsiveTable";
@@ -20,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  RefreshCw, ListChecks, MoreVertical, Eye, Edit3, Copy, RotateCcw, ShoppingCart, CheckCircle2, Clock, XCircle, Loader2,
+  RefreshCw, ListChecks, MoreVertical, Eye, Edit3, Copy, RotateCcw, ShoppingCart, CheckCircle2, Clock, XCircle, Loader2, Undo2,
 } from "lucide-react";
 import { triggerStatusSync } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +50,8 @@ export default function AdminOrdersPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkIds, setBulkIds] = useState<string[]>([]);
+  const [bulkRefundOpen, setBulkRefundOpen] = useState(false);
+  const [refundIds, setRefundIds] = useState<string[]>([]);
   const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, failed: 0 });
   const [retryAllOpen, setRetryAllOpen] = useState(false);
   const [retryingAll, setRetryingAll] = useState(false);
@@ -108,6 +111,7 @@ export default function AdminOrdersPage() {
   const toggleAll = () => setSelected((p) => (p.size === orders.length ? new Set() : new Set(orders.map((o) => o.id))));
 
   const openBulk = (ids: string[]) => { setBulkIds(ids); setBulkOpen(true); };
+  const openBulkRefund = (ids: string[]) => { setRefundIds(ids); setBulkRefundOpen(true); };
   const copy = (text: string) => { navigator.clipboard.writeText(text); toast({ title: "Copied", description: text }); };
   const formatOrderForCopy = (o: Order) => {
     const volume = (o.bundle_snapshot as any)?.volume || o.bundle_name || "";
@@ -212,6 +216,8 @@ export default function AdminOrdersPage() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => copy(o.public_order_id)}><Copy className="h-4 w-4 mr-2" /> Copy ID</DropdownMenuItem>
         <DropdownMenuItem onClick={() => copy(formatOrderForCopy(o))}><Copy className="h-4 w-4 mr-2" /> Copy Details</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => openBulkRefund([o.id])} className="text-destructive focus:text-destructive"><Undo2 className="h-4 w-4 mr-2" /> Refund Order</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -244,6 +250,9 @@ export default function AdminOrdersPage() {
           <span className="text-[12px] font-medium px-1">{selected.size} selected</span>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openBulk(Array.from(selected))}>
             <ListChecks className="h-3.5 w-3.5" /> Bulk status
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => openBulkRefund(Array.from(selected))}>
+            <Undo2 className="h-3.5 w-3.5" /> Refund
           </Button>
           {retriableSelected.length > 0 && (
             <Button
@@ -302,6 +311,7 @@ export default function AdminOrdersPage() {
       <DataPagination pagination={pg} rowsOnPage={orders.length} />
 
       <BulkStatusDialog open={bulkOpen} onOpenChange={setBulkOpen} orderIds={bulkIds} onSuccess={refresh} />
+      <BulkRefundDialog open={bulkRefundOpen} onOpenChange={setBulkRefundOpen} orderIds={refundIds} onSuccess={refresh} />
 
       <ConfirmActionDialog
         open={retryAllOpen}
