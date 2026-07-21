@@ -14,7 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Users, CreditCard, Wallet, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
+import { Users, CreditCard, Wallet, AlertCircle, Sparkles, Phone, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SubscriptionGate } from "@/components/agent/SubscriptionGate";
 import { cn } from "@/lib/utils";
 import { formatGHS } from "@/services/paystackFee";
@@ -41,6 +42,7 @@ function BulkOrderFlow() {
   const [loading, setLoading] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(null);
+  const [category, setCategory] = useState<"regular" | "express">("regular");
   const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "paystack">("wallet");
   
@@ -93,10 +95,34 @@ function BulkOrderFlow() {
     }
   }, [networks, loading]);
 
-  const filteredPackages = useMemo(
-    () => (network ? filterPackagesByNetwork(packages, network) : []),
-    [packages, network]
-  );
+  const availableCategories = useMemo(() => {
+    if (!network) return { hasRegular: false, hasExpress: false };
+    const networkPkgs = filterPackagesByNetwork(packages, network);
+    const hasReg = networkPkgs.some(p => p.category !== "express");
+    const hasExp = networkPkgs.some(p => p.category === "express");
+    return { hasRegular: hasReg, hasExpress: hasExp };
+  }, [packages, network]);
+
+  useEffect(() => {
+    if (availableCategories.hasRegular && !availableCategories.hasExpress) {
+      setCategory("regular");
+    } else if (!availableCategories.hasRegular && availableCategories.hasExpress) {
+      setCategory("express");
+    } else if (availableCategories.hasRegular) {
+      setCategory("regular");
+    }
+  }, [network, availableCategories]);
+
+  const filteredPackages = useMemo(() => {
+    if (!network) return [];
+    let list = filterPackagesByNetwork(packages, network);
+    if (category === "express") {
+      list = list.filter(p => p.category === "express");
+    } else {
+      list = list.filter(p => p.category !== "express");
+    }
+    return list;
+  }, [packages, network, category]);
 
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
@@ -235,6 +261,42 @@ function BulkOrderFlow() {
           <h3 className="font-semibold text-[15px]">Select Package</h3>
         </div>
         
+        {availableCategories.hasRegular && availableCategories.hasExpress && (
+          <div className="flex items-center gap-2 mb-2 bg-muted/40 p-1.5 rounded-xl border border-border/40 w-fit mx-auto sm:mx-0">
+            <button
+              onClick={() => { setCategory("regular"); setSelectedPkg(null); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                category === "regular" 
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Phone className="h-3.5 w-3.5" /> Regular Data
+            </button>
+              <button
+                onClick={() => { setCategory("express"); setSelectedPkg(null); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  category === "express" 
+                    ? "bg-background text-success shadow-sm ring-1 ring-border/50" 
+                    : "text-muted-foreground hover:text-success hover:bg-muted/50"
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Express Data
+              </button>
+          </div>
+        )}
+
+        {category === "express" && (
+          <Alert className="mb-2 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+              <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
+                Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
+
         {filteredPackages.length === 0 ? (
           <div className="px-4 py-3 rounded-xl glass-subtle border border-warning/20 text-warning text-[13px]">
             {`No active packages for ${network}.`}

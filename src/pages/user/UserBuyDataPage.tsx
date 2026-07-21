@@ -11,6 +11,8 @@ import { ServicePaused } from "@/components/buy/ServicePaused";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   fetchLoggedInPackages,
   getPackageNetworks,
@@ -465,10 +467,20 @@ export default function UserBuyDataPage() {
                   activeCategory === "express" ? "bg-background shadow text-success" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Zap className="h-3 w-3" />
-                Express Data
+                <Zap className="h-3 w-3" /> Express Data
               </button>
             </div>
+          )}
+
+          {activeCategory === "express" && (
+            <Alert className="mb-4 border-warning/30 bg-warning/5 py-2.5 px-3.5 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <AlertDescription className="text-[11px] text-warning/90 font-medium leading-[1.4]">
+                  Express orders are only for verified MTN numbers. If your order gets rejected and it fails a refund will be processed within 24 hours.
+                </AlertDescription>
+              </div>
+            </Alert>
           )}
 
           {displayedPackages.length === 0 ? (
