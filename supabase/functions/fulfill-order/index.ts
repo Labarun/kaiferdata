@@ -306,9 +306,23 @@ async function submitToSupplierApi(
   const respReferenceField = orderResponseMapping.reference || "reference";
   const respMessageField = orderResponseMapping.message || "message";
 
-  const rawStatus = String(getNestedValue(responseData, respStatusField) || "unknown");
-  const supplierRef = String(getNestedValue(responseData, respReferenceField) || "");
-  const supplierMsg = String(getNestedValue(responseData, respMessageField) || "");
+  let rawStatusVal = getNestedValue(responseData, respStatusField);
+  if (rawStatusVal === undefined || rawStatusVal === null || rawStatusVal === "") {
+    rawStatusVal = responseData.status || responseData.message || "unknown";
+  }
+  const rawStatus = String(rawStatusVal);
+
+  let rawRefVal = getNestedValue(responseData, respReferenceField);
+  if (rawRefVal === undefined || rawRefVal === null || rawRefVal === "") {
+    rawRefVal = responseData.reference || responseData.order_id || "";
+  }
+  const supplierRef = String(rawRefVal);
+
+  let rawMsgVal = getNestedValue(responseData, respMessageField);
+  if (rawMsgVal === undefined || rawMsgVal === null || rawMsgVal === "") {
+    rawMsgVal = responseData.message || responseData.details || "";
+  }
+  const supplierMsg = String(rawMsgVal);
 
   let outcome: SupplierOutcome;
   const mappedStatus = statusMapping[rawStatus] || statusMapping[rawStatus.toLowerCase()];
