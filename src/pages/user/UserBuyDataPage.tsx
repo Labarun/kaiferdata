@@ -68,6 +68,7 @@ export default function UserBuyDataPage() {
   const [loading, setLoading] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<"regular" | "express">("regular");
   const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
   const [userTouchedPayment, setUserTouchedPayment] = useState(false);
@@ -163,9 +164,17 @@ export default function UserBuyDataPage() {
     [packages, network]
   );
 
+  const hasExpress = useMemo(() => filteredPackages.some(p => p.category === "express"), [filteredPackages]);
+
+  const displayedPackages = useMemo(() => {
+    if (!hasExpress) return filteredPackages;
+    return filteredPackages.filter(p => (p.category || "regular") === activeCategory);
+  }, [filteredPackages, activeCategory, hasExpress]);
+
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
     setSelectedPkg(null);
+    setActiveCategory("regular");
   }, []);
 
   const handlePackageSelect = useCallback((pkg: DataPackage) => {
@@ -434,23 +443,47 @@ export default function UserBuyDataPage() {
               <p className="section-label">{network} Packages</p>
             </div>
             <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
-              {filteredPackages.length} available
+              {displayedPackages.length} available
             </span>
           </div>
 
-          {filteredPackages.length === 0 ? (
+          {hasExpress && (
+            <div className="flex bg-muted/30 p-1 rounded-xl mb-4 w-full">
+              <button
+                onClick={() => setActiveCategory("regular")}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200",
+                  activeCategory === "regular" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Regular Data
+              </button>
+              <button
+                onClick={() => setActiveCategory("express")}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
+                  activeCategory === "express" ? "bg-background shadow text-success" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Zap className="h-3 w-3" />
+                Express Data
+              </button>
+            </div>
+          )}
+
+          {displayedPackages.length === 0 ? (
             <div className="text-center py-12 rounded-2xl glass-card">
-              <p className="text-xs text-muted-foreground/60">No packages available for this network yet.</p>
+              <p className="text-xs text-muted-foreground/60">No packages available for this category yet.</p>
             </div>
           ) : (
             <>
-              {filteredPackages.every((p) => p.buying_enabled === false) && (
+              {displayedPackages.every((p) => p.buying_enabled === false) && (
                 <div className="mb-6">
                   <ServicePaused variant="network" network={network} />
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">
-              {filteredPackages.map((pkg, i) => {
+              {displayedPackages.map((pkg, i) => {
                 const isActive = selectedPkg?.id === pkg.id;
                 const brand = getNetworkBrand(network);
                 const isBuyingPaused = pkg.buying_enabled === false;

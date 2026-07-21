@@ -11,6 +11,7 @@ import { ensureUserScaffold } from "@/services/auth";
 
 export type DataPlan = Database["public"]["Tables"]["data_plans"]["Row"] & {
   buying_enabled?: boolean;
+  category?: string;
 };
 export type PurchaseIntent = Database["public"]["Tables"]["purchase_intents"]["Row"];
 

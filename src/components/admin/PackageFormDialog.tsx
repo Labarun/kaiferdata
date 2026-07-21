@@ -42,6 +42,7 @@ const emptyForm = {
   package_size_label: "",
   package_volume_value: "",
   package_type: "data_bundle",
+  category: "regular",
   validity_label: "",
   supplier_price: "",
   selling_price: "",
@@ -81,6 +82,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
         package_size_label: pkg.package_size_label,
         package_volume_value: pkg.package_volume_value || "",
         package_type: pkg.package_type,
+        category: pkg.category || "regular",
         validity_label: pkg.validity_label || "",
         supplier_price: String(pkg.supplier_price),
         selling_price: String(pkg.selling_price),
@@ -127,6 +129,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
         package_size_label: form.package_size_label.trim(),
         package_volume_value: form.package_volume_value.trim() || null,
         package_type: form.package_type,
+        category: form.category,
         validity_label: form.validity_label.trim() || null,
         supplier_price: supplierNum,
         selling_price: sellingNum,
@@ -189,6 +192,20 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSuccess, supplier
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Listing Category</Label>
+              <Select value={form.category} onValueChange={(v) => set("category", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular Data</SelectItem>
+                  <SelectItem value="express">Express Data</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"></div>
           </div>
 
           {/* Code + Name */}

@@ -12,6 +12,7 @@ export interface DataPackage {
   package_size_label: string;
   package_volume_value: string | null;
   package_type: string;
+  category: string;
   validity_label: string | null;
   supplier_price: number;
   selling_price: number;
@@ -114,6 +115,7 @@ export function buildPackageSnapshot(pkg: DataPackage) {
     network: pkg.network,
     validity_label: pkg.validity_label,
     source_type: pkg.source_type,
+    category: pkg.category,
   };
 }
 

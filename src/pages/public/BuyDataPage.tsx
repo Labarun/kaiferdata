@@ -51,6 +51,7 @@ function packageToPlan(pkg: DataPackage): DataPlan {
     created_at: pkg.created_at,
     updated_at: pkg.updated_at,
     buying_enabled: pkg.buying_enabled,
+    category: pkg.category,
   };
 }
 
@@ -62,6 +63,7 @@ export default function BuyDataPage() {
   const [loading, setLoading] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(searchParams.get("network"));
+  const [activeCategory, setActiveCategory] = useState<"regular" | "express">("regular");
   const [plan, setPlan] = useState<DataPlan | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -125,10 +127,18 @@ export default function BuyDataPage() {
     [packages, network]
   );
 
+  const hasExpress = useMemo(() => filteredPlans.some(p => p.category === "express"), [filteredPlans]);
+
+  const displayedPlans = useMemo(() => {
+    if (!hasExpress) return filteredPlans;
+    return filteredPlans.filter(p => (p.category || "regular") === activeCategory);
+  }, [filteredPlans, activeCategory, hasExpress]);
+
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
     setPlan(null);
     setPlansKey((k) => k + 1);
+    setActiveCategory("regular");
   }, []);
 
   const handlePlanSelect = useCallback((p: DataPlan) => {
@@ -317,19 +327,44 @@ export default function BuyDataPage() {
                       <p className="section-label">{network} Bundles</p>
                     </div>
                     <span className="text-[10px] text-muted-foreground/35 font-medium tabular-nums">
-                      {filteredPlans.length} available
+                      {displayedPlans.length} available
                     </span>
                   </div>
-                  {filteredPlans.length === 0 ? (
+
+                  {hasExpress && (
+                    <div className="flex bg-muted/30 p-1 rounded-xl mb-4 w-full">
+                      <button
+                        onClick={() => setActiveCategory("regular")}
+                        className={cn(
+                          "flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200",
+                          activeCategory === "regular" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        Regular Data
+                      </button>
+                      <button
+                        onClick={() => setActiveCategory("express")}
+                        className={cn(
+                          "flex-1 text-xs py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
+                          activeCategory === "express" ? "bg-background shadow text-success" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Zap className="h-3 w-3" />
+                        Express Data
+                      </button>
+                    </div>
+                  )}
+
+                  {displayedPlans.length === 0 ? (
                     <ServicePaused variant="network" network={network} />
                   ) : (
                     <>
-                      {filteredPlans.every((p) => p.buying_enabled === false) && (
+                      {displayedPlans.every((p) => p.buying_enabled === false) && (
                         <div className="mb-6">
                           <ServicePaused variant="network" network={network} />
                         </div>
                       )}
-                      <PlanSelector plans={filteredPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
+                      <PlanSelector plans={displayedPlans} selected={plan} onSelect={handlePlanSelect} network={network} />
                     </>
                   )}
                 </section>
