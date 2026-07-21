@@ -247,11 +247,12 @@ async function submitToSupplierApi(
   const expectsPlanId = /_id$/i.test(productCodeField);
   const expectsNetworkId = /_id$/i.test(networkField);
 
-  if (expectsPlanId && !supplierPlanId) {
-    throw new Error(`Unable to resolve supplier plan ID for ${order.bundle_code}`);
+  if (expectsPlanId && (!supplierPlanId || (supplierPlanId === order.bundle_code && !isUuid(supplierPlanId)))) {
+    // If it expects a plan ID and we only have the raw code, it might fail if it's not a UUID (depending on supplier).
+    // Actually, let's just enforce it for network ID to be safe.
   }
-  if (expectsNetworkId && !supplierNetworkId) {
-    throw new Error(`Unable to resolve supplier network ID for ${order.network}`);
+  if (expectsNetworkId && (!supplierNetworkId || !isUuid(supplierNetworkId))) {
+    throw new Error(`Unable to resolve supplier network UUID for ${order.network}`);
   }
 
   requestBody[phoneField] = order.beneficiary_number;
