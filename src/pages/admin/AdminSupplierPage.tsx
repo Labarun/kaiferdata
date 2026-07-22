@@ -464,6 +464,16 @@ function SupplierFormDialog({
       return;
     }
 
+    const productsEndpoint = endpointConfig.products as Record<string, unknown> | undefined;
+    if (!productsEndpoint || typeof productsEndpoint !== "object" || typeof productsEndpoint.path !== "string") {
+      toast({
+        title: "Invalid endpoint config",
+        description: "The endpoint config must include a products object with a valid path and response_data_field.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -586,6 +596,7 @@ function SupplierFormDialog({
             />
             <p className="text-[10px] text-muted-foreground">
               Configure API paths, field mappings, network mappings, and status mappings.
+              The supplier response must expose an array of products. Use <code>response_data_field</code> for the array path, e.g. <code>data</code>, <code>response.data</code>, or <code>result.items</code>.
             </p>
           </div>
 

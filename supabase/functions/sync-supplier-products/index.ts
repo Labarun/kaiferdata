@@ -44,6 +44,29 @@ function buildAuthHeaders(authConfig: Record<string, unknown>): Record<string, s
   }
 }
 
+function findFirstArrayValue(obj: unknown): { array: unknown[]; path: string } | null {
+  if (Array.isArray(obj)) {
+    return { array: obj, path: "" };
+  }
+
+  if (obj && typeof obj === "object") {
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (Array.isArray(value)) {
+        return { array: value, path: key };
+      }
+    }
+
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const nested = findFirstArrayValue(value);
+      if (nested) {
+        return { array: nested.array, path: `${key}.${nested.path}`.replace(/\.$/, "") };
+      }
+    }
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -177,12 +200,27 @@ Deno.serve(async (req) => {
         }
 
         const apiData = await apiRes.json();
-        const productsArray = (responseDataField
-          ? getNestedValue(apiData, responseDataField)
-          : apiData) as Record<string, unknown>[];
+        const rawProductData = responseDataField ? getNestedValue(apiData, responseDataField) : apiData;
 
-        if (!Array.isArray(productsArray)) {
-          throw new Error(`Expected array at '${responseDataField}', got ${typeof productsArray}`);
+        let productsArray: unknown[] | null = null;
+        let detectedPath = responseDataField;
+
+        if (Array.isArray(rawProductData)) {
+          productsArray = rawProductData;
+        } else if (rawProductData && typeof rawProductData === "object") {
+          const discovered = findFirstArrayValue(rawProductData);
+          if (discovered) {
+            productsArray = discovered.array;
+            detectedPath = discovered.path;
+          }
+        }
+
+        if (!productsArray) {
+          throw new Error(`Expected array at '${responseDataField ?? "root"}', got ${typeof rawProductData}`);
+        }
+
+        if (detectedPath !== responseDataField) {
+          console.warn(`Response data field mismatch: expected '${responseDataField}', discovered '${detectedPath}'. Using discovered path.`);
         }
 
         // ── Map and upsert packages ──
