@@ -76,6 +76,23 @@ function normalizeSize(value: unknown): string {
   return normalizeToken(value).replace(/(\d)(gb|mb|tb)/g, "$1$2");
 }
 
+function extractNumericValue(value: unknown): string | null {
+  const normalized = String(value || "").trim();
+  const match = normalized.match(/(\d+(?:\.\d+)?)/);
+  return match ? match[1] : null;
+}
+
+function resolveDataAmountValue(order: Record<string, unknown>, supplierPlanId: string): string {
+  const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
+  return (
+    extractNumericValue(snapshot.volume) ||
+    extractNumericValue(snapshot.package_size_label) ||
+    extractNumericValue(snapshot.package_volume_value) ||
+    extractNumericValue(order.bundle_code) ||
+    supplierPlanId
+  );
+}
+
 function isUuid(value: unknown): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
 }
@@ -256,10 +273,14 @@ async function submitToSupplierApi(
   }
 
   requestBody[phoneField] = order.beneficiary_number;
-  requestBody[productCodeField] = supplierPlanId;
+  requestBody[productCodeField] = productCodeField === "data_amount"
+    ? resolveDataAmountValue(order, supplierPlanId)
+    : supplierPlanId;
   requestBody[networkField] = supplierNetworkId;
 
-  const amountValue = amountField === "data_amount" ? supplierPlanId : order.amount_charged;
+  const amountValue = amountField === "data_amount"
+    ? resolveDataAmountValue(order, supplierPlanId)
+    : order.amount_charged;
   if (amountField !== productCodeField) {
     requestBody[amountField] = amountValue;
   }

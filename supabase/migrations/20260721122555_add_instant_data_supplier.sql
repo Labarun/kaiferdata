@@ -34,12 +34,12 @@ INSERT INTO suppliers (
       "response_data_field": "data"
     },
     "product_field_mapping": {
-      "id": "id",
-      "name": "name",
-      "code": "id",
-      "price": "price",
+      "id": "data_amount",
+      "name": "data_amount",
+      "code": "data_amount",
+      "price": "price_raw",
       "network": "network",
-      "volume": "dataAmount"
+      "volume": "data_amount"
     },
     "submit_order": {
       "path": "/api.php/orders",

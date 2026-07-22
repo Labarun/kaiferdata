@@ -67,6 +67,31 @@ function findFirstArrayValue(obj: unknown): { array: unknown[]; path: string } |
   return null;
 }
 
+function flattenNetworkKeyedArrayResponse(obj: unknown): { array: unknown[]; path: string } | null {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+    return null;
+  }
+
+  const entries = Object.entries(obj as Record<string, unknown>);
+  const networkArrays = entries.filter(([, value]) => Array.isArray(value));
+
+  if (networkArrays.length === 0) {
+    return null;
+  }
+
+  const flattened = networkArrays.flatMap(([networkKey, value]) => {
+    const items = value as unknown[];
+    return items.map((item) => {
+      if (item && typeof item === "object") {
+        return { ...(item as Record<string, unknown>), network: networkKey };
+      }
+      return { network: networkKey, value: item };
+    });
+  });
+
+  return { array: flattened, path: "data.networks" };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -208,10 +233,16 @@ Deno.serve(async (req) => {
         if (Array.isArray(rawProductData)) {
           productsArray = rawProductData;
         } else if (rawProductData && typeof rawProductData === "object") {
-          const discovered = findFirstArrayValue(rawProductData);
-          if (discovered) {
-            productsArray = discovered.array;
-            detectedPath = discovered.path;
+          const flattened = flattenNetworkKeyedArrayResponse(rawProductData);
+          if (flattened) {
+            productsArray = flattened.array;
+            detectedPath = flattened.path;
+          } else {
+            const discovered = findFirstArrayValue(rawProductData);
+            if (discovered) {
+              productsArray = discovered.array;
+              detectedPath = discovered.path;
+            }
           }
         }
 
