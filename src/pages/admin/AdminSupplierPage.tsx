@@ -598,6 +598,10 @@ function SupplierFormDialog({
               Configure API paths, field mappings, network mappings, and status mappings.
               The supplier response must expose an array of products. Use <code>response_data_field</code> for the array path, e.g. <code>data</code>, <code>response.data</code>, or <code>result.items</code>.
             </p>
+            <p className="text-[10px] text-muted-foreground">
+              For Instant Data GH, set the order mapping to use <code>phone_number</code>, <code>network</code>, and <code>data_amount</code>.
+              Example: <code>{`{ phone: "phone_number", product_code: "data_amount", network: "network", amount: "data_amount", reference: "reference" }`}</code>
+            </p>
           </div>
 
           <div className="flex gap-2 pt-2">

@@ -258,7 +258,12 @@ async function submitToSupplierApi(
   requestBody[phoneField] = order.beneficiary_number;
   requestBody[productCodeField] = supplierPlanId;
   requestBody[networkField] = supplierNetworkId;
-  requestBody[amountField] = order.amount_charged;
+
+  const amountValue = amountField === "data_amount" ? supplierPlanId : order.amount_charged;
+  if (amountField !== productCodeField) {
+    requestBody[amountField] = amountValue;
+  }
+
   requestBody[referenceField] = order.public_order_id;
 
   const extraFields = (submitEndpoint.extra_fields || {}) as Record<string, unknown>;
