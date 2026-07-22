@@ -129,12 +129,29 @@ export default function BuyDataPage() {
     [packages, network]
   );
 
-  const hasExpress = useMemo(() => filteredPlans.some(p => p.category === "express"), [filteredPlans]);
+  const regularPlans = useMemo(
+    () => filteredPlans.filter((p) => (p.category || "regular") === "regular"),
+    [filteredPlans]
+  );
+
+  const expressPlans = useMemo(
+    () => filteredPlans.filter((p) => p.category === "express"),
+    [filteredPlans]
+  );
+
+  const hasExpress = expressPlans.length > 0;
 
   const displayedPlans = useMemo(() => {
     if (!hasExpress) return filteredPlans;
-    return filteredPlans.filter(p => (p.category || "regular") === activeCategory);
-  }, [filteredPlans, activeCategory, hasExpress]);
+    if (activeCategory === "express") return expressPlans;
+    return regularPlans;
+  }, [filteredPlans, activeCategory, hasExpress, regularPlans, expressPlans]);
+
+  useEffect(() => {
+    if (hasExpress && activeCategory === "regular" && regularPlans.length === 0) {
+      setActiveCategory("express");
+    }
+  }, [hasExpress, activeCategory, regularPlans.length]);
 
   const handleNetworkSelect = useCallback((n: string) => {
     setNetwork(n);
@@ -363,11 +380,11 @@ export default function BuyDataPage() {
                     </div>
                   )}
 
-                  {displayedPlans.length === 0 ? (
+                  {filteredPlans.length === 0 ? (
                     <ServicePaused variant="network" network={network} />
                   ) : (
                     <>
-                      {displayedPlans.every((p) => p.buying_enabled === false) && (
+                      {displayedPlans.length > 0 && displayedPlans.every((p) => p.buying_enabled === false) && (
                         <div className="mb-6">
                           <ServicePaused variant="network" network={network} />
                         </div>
