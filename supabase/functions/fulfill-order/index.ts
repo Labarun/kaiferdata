@@ -102,6 +102,26 @@ function looksLikeMachineId(value: string): boolean {
   return isUuid(v) || /^ORD-[A-Z0-9-]+$/i.test(v);
 }
 
+function extractCustomerFacingFailureMessage(responseData: Record<string, unknown>): string | null {
+  const details = (responseData.details || {}) as Record<string, unknown>;
+  const detailMessage = String(details.message || responseData.message || "").trim();
+  const skipped = Array.isArray(details.skipped) ? details.skipped as Record<string, unknown>[] : [];
+
+  const hasBeneficiaryVerificationFailure =
+    /all numbers were skipped|beneficiary verification failed|not approved/i.test(detailMessage) ||
+    skipped.some((entry) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
+
+  if (hasBeneficiaryVerificationFailure) {
+    return "Nuumber not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
+  }
+
+  if (/no verified numbers to process/i.test(detailMessage)) {
+    return "Number not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
+  }
+
+  return null;
+}
+
 // ── Simple in-memory rate limiter ──
 const recentRequests = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -374,13 +394,14 @@ async function submitToSupplierApi(
     else outcome = "processing";
   }
 
+  const dedicatedFailureMessage = extractCustomerFacingFailureMessage(responseData);
   const safeMessage = looksLikeMachineId(supplierMsg) ? null : supplierMsg;
 
   return {
     outcome,
     supplier_reference: supplierRef || null,
-    delivery_message: safeMessage || null,
-    error_message: outcome === "failed" ? (safeMessage || rawStatus) : null,
+    delivery_message: dedicatedFailureMessage || safeMessage || null,
+    error_message: outcome === "failed" ? (dedicatedFailureMessage || safeMessage || rawStatus) : null,
     raw_response: responseData,
   };
 }
