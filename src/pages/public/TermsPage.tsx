@@ -31,7 +31,7 @@ const sections = [
   },
   {
     title: "7. Agent Program",
-    content: `Registered users may apply to become agents (resellers) on the Platform. Agents gain access to wholesale pricing and can sell data bundles through their personalized storefront. Agent applications are subject to review and approval. Agents must maintain a valid subscription to keep their storefront active. Commission earnings are calculated server-side and credited to the agent's wallet balance. Kaiferdata reserves the right to suspend or terminate any agent account for violation of these terms.`,
+    content: `Registered users may apply to become agents (resellers) on the Platform. Agents gain access to wholesale pricing and can sell data bundles through their personalized storefront. Agent applications are subject to review and approval. Agents must maintain a valid subscription to keep their storefront active. Storefront profit earnings are calculated server-side and credited to the agent's wallet balance. Kaiferdata reserves the right to suspend or terminate any agent account for violation of these terms.`,
   },
   {
     title: "8. Wallet System",
@@ -39,7 +39,7 @@ const sections = [
   },
   {
     title: "9. Prohibited Activities",
-    content: `You agree not to: (a) use the Platform for any unlawful purpose; (b) attempt to gain unauthorized access to the Platform or other users' accounts; (c) manipulate pricing, commission calculations, or any system mechanisms; (d) use automated scripts or bots to interact with the Platform; (e) resell or redistribute Platform services outside of the authorized agent program.`,
+    content: `You agree not to: (a) use the Platform for any unlawful purpose; (b) attempt to gain unauthorized access to the Platform or other users' accounts; (c) manipulate pricing, profit calculations, or any system mechanisms; (d) use automated scripts or bots to interact with the Platform; (e) resell or redistribute Platform services outside of the authorized agent program.`,
   },
   {
     title: "10. Limitation of Liability",

@@ -33,7 +33,7 @@ function CustomerStatusBadge({ status, className }: { status: string; className?
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border",
+        "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border whitespace-normal max-w-full",
         conf.tone,
         className,
       )}
@@ -118,7 +118,7 @@ export default function UserOrderDetailPage() {
         <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Status</p>
           <CustomerStatusBadge status={rawStatus} className="text-xs px-3 py-1" />
-          <p className="text-[10.5px] text-muted-foreground/70 mt-2 max-w-[200px] leading-relaxed break-words whitespace-normal">
+          <p className="text-[10.5px] text-muted-foreground/70 mt-2 max-w-full sm:max-w-[280px] leading-relaxed break-words whitespace-normal">
             {safeDeliveryMsg}
           </p>
         </div>
@@ -180,9 +180,9 @@ export default function UserOrderDetailPage() {
 
 function DetailRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`text-sm text-foreground font-medium ${mono ? "font-mono text-[12px]" : ""}`}>{value}</span>
+      <span className={`text-sm text-foreground font-medium break-words whitespace-normal sm:text-right ${mono ? "font-mono text-[12px]" : ""}`}>{value}</span>
     </div>
   );
 }

@@ -15,7 +15,6 @@ import { fetchEarningsWallet, type AgentEarningsWallet } from "@/services/agentE
 import {
   fetchAgentEarnings,
   fetchAgentSummary,
-  fetchCommissionRate,
   type AgentEarning,
   type AgentEarningsSummary,
 } from "@/services/agentEarnings";
@@ -27,7 +26,6 @@ export default function AgentEarningsPage() {
   const [earnings, setEarnings] = useState<AgentEarning[]>([]);
   const [summary, setSummary] = useState<AgentEarningsSummary | null>(null);
   const [wallet, setWallet] = useState<AgentEarningsWallet | null>(null);
-  const [rate, setRate] = useState<number>(8);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,16 +33,14 @@ export default function AgentEarningsPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [e, s, r, w] = await Promise.all([
+      const [e, s, w] = await Promise.all([
         fetchAgentEarnings(user.id),
         fetchAgentSummary(user.id),
-        fetchCommissionRate(),
         fetchEarningsWallet(user.id),
       ]);
       if (cancelled) return;
       setEarnings(e);
       setSummary(s);
-      setRate(r);
       setWallet(w);
       setLoading(false);
     })();
@@ -59,7 +55,7 @@ export default function AgentEarningsPage() {
     <div className="animate-fade-in pb-8">
       <PageHeader
         title="Earnings"
-        description={`You earn ${rate}% commission on every delivered order from your store.`}
+        description="Your store earnings are based on the profit margin you set on your storefront packages."
       />
 
       {/* Stat tiles */}
@@ -94,7 +90,7 @@ export default function AgentEarningsPage() {
       <Card>
         <CardContent className="p-0">
           <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between">
-            <p className="text-sm font-semibold text-foreground">Recent commissions</p>
+            <p className="text-sm font-semibold text-foreground">Recent earnings</p>
             <Link to="/dashboard/wallet" className="text-[11px] text-primary inline-flex items-center gap-0.5 font-medium">
               Wallet <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -107,36 +103,40 @@ export default function AgentEarningsPage() {
               <DollarSign className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
               <p className="text-sm text-muted-foreground">No commissions yet</p>
               <p className="text-[11px] text-muted-foreground/60 mt-1">
-                Commissions appear here as soon as orders from your store are delivered.
+                Earnings appear here as soon as orders from your store are delivered.
               </p>
             </div>
           ) : (
             <ul className="divide-y divide-border/40">
-              {earnings.map((e) => (
-                <li key={e.id} className="px-4 py-3 flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold text-foreground truncate">
-                        {e.order_network} · {e.order_bundle_name || "Bundle"}
+              {earnings.map((e) => {
+                const isReversed = e.status === "reversed";
+                const signedAmount = isReversed ? -Number(e.commission_amount) : Number(e.commission_amount);
+                return (
+                  <li key={e.id} className="px-4 py-3 flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] font-semibold text-foreground truncate">
+                          {e.order_network} · {e.order_bundle_name || "Bundle"}
+                        </p>
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                          {isReversed ? "Reversed" : "Profit"}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                        Order {e.order_public_id || e.order_id.slice(0, 8)} · {fmt(e.order_amount)}
                       </p>
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
-                        {e.commission_rate}%
-                      </Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-                      Order {e.order_public_id || e.order_id.slice(0, 8)} · {fmt(e.order_amount)}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0 ml-3">
-                    <p className="text-[14px] font-bold text-success tabular-nums">
-                      +{fmt(e.commission_amount)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/60">
-                      {new Date(e.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </li>
-              ))}
+                    <div className="text-right shrink-0 ml-3">
+                      <p className={`text-[14px] font-bold tabular-nums ${isReversed ? "text-destructive" : "text-success"}`}>
+                        {isReversed ? "-" : "+"}{fmt(Math.abs(signedAmount))}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60">
+                        {new Date(e.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

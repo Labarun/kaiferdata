@@ -23,7 +23,7 @@ const sections = [
   },
   {
     title: "5. Agent Data",
-    content: `If you participate in the Kaiferdata Agent Program, additional data may be collected including your storefront name, agent slug, subscription status, and commission earnings. Customer orders placed through your storefront are associated with your agent account for commission tracking. Agent performance metrics are visible to Kaiferdata administrators for program management.`,
+    content: `If you participate in the Kaiferdata Agent Program, additional data may be collected including your storefront name, agent slug, subscription status, and profit earnings. Customer orders placed through your storefront are associated with your agent account for profit tracking. Agent performance metrics are visible to Kaiferdata administrators for program management.`,
   },
   {
     title: "6. Cookies & Local Storage",
