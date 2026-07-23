@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Copy, Package, Clock, CheckCircle2, XCircle, Truck, RotateCcw } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Package, Clock, CheckCircle2, XCircle, Truck, RotateCcw, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   customerStatusLabel,
@@ -25,6 +25,7 @@ const STATUS_ICONS: Record<string, { icon: typeof Clock; color: string; tone: st
   failed: { icon: XCircle, color: "text-destructive", tone: "bg-red-50 text-red-700 border-red-200" },
   cancelled: { icon: XCircle, color: "text-muted-foreground", tone: "bg-gray-50 text-gray-600 border-gray-200" },
   refunded: { icon: RotateCcw, color: "text-muted-foreground", tone: "bg-purple-50 text-purple-700 border-purple-200" },
+  on_hold: { icon: AlertCircle, color: "text-orange-500", tone: "bg-orange-50 text-orange-700 border-orange-200" },
 };
 
 function CustomerStatusBadge({ status, className }: { status: string; className?: string }) {
