@@ -115,10 +115,10 @@ export default function UserOrderDetailPage() {
 
       {/* Status hero */}
       <div className="glass-wallet-hero rounded-2xl p-5 flex items-center justify-between animate-fade-in animate-stagger-1">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Status</p>
           <CustomerStatusBadge status={rawStatus} className="text-xs px-3 py-1" />
-          <p className="text-[10.5px] text-muted-foreground/70 mt-2 max-w-[200px] leading-relaxed">
+          <p className="text-[10.5px] text-muted-foreground/70 mt-2 max-w-[200px] leading-relaxed break-words whitespace-normal">
             {safeDeliveryMsg}
           </p>
         </div>
@@ -153,15 +153,19 @@ export default function UserOrderDetailPage() {
               const Icon = conf.icon;
               return (
                 <div key={entry.id} className="flex items-start gap-3">
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <div className="h-7 w-7 rounded-lg bg-muted/60 flex items-center justify-center">
                       <Icon className={cn("h-3.5 w-3.5", conf.color)} />
                     </div>
                     {i < cleanedTimeline.length - 1 && <div className="absolute top-7 left-1/2 -translate-x-1/2 w-px h-5 bg-border/30" />}
                   </div>
-                  <div className="flex-1 pt-0.5">
+                  <div className="flex-1 min-w-0 pt-0.5">
                     <CustomerStatusBadge status={entry.key} />
-                    {entry.note && <p className="text-[11px] text-muted-foreground mt-0.5">{entry.note}</p>}
+                    {entry.note && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed break-words whitespace-normal">
+                        {entry.note}
+                      </p>
+                    )}
                     <p className="text-[10px] text-muted-foreground/40 mt-0.5">{new Date(entry.at).toLocaleString()}</p>
                   </div>
                 </div>
