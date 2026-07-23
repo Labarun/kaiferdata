@@ -164,7 +164,7 @@ export default function LandingPage() {
             {
               icon: Store,
               title: "Kaifer Agent Program",
-              desc: " At Kaifer Data, we provide an affiliate program for agents and any registered user can sign up and start earning commissions off every sales they make.",
+              desc: "At Kaifer Data, we provide an affiliate-style reseller program for agents. Any registered user can sign up and start earning profit from every sale made through their storefront.",
               color: "text-primary",
               link: "/agent-perks",
               linkText: "Learn More About Kaifer Agents →"

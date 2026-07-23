@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     question: "What is the Kaiferdata Wallet?",
-    answer: "The Kaiferdata Wallet is a feature available to registered users. You can fund your wallet and use it to make instant purchases without going through the payment gateway each time. Wallet funds can only be used for purchases on the platform. For agents, commission earnings are credited directly to your wallet balance and can be withdrawn subject to minimum thresholds."
+    answer: "The Kaiferdata Wallet is a feature available to registered users. You can fund your wallet and use it to make instant purchases without going through the payment gateway each time. Wallet funds can only be used for purchases on the platform. For agents, storefront profit earnings are credited directly to your wallet balance and can be withdrawn subject to minimum thresholds."
   },
   {
     question: "Can I become a reseller or agent?",
@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     question: "What perks do I enjoy as an Agent?",
-    answer: "As an agent, you get access to exclusive wholesale pricing on all data packages, the ability to earn commissions on every sale (calculated and tracked server-side), and a dedicated dashboard to manage your sales, customers, and earnings. You also get your own branded storefront URL where your customers can buy directly from you — we handle the backend, order fulfillment, and commission payouts automatically. Agents must maintain a valid subscription to keep their storefront active."
+    answer: "As an agent, you get access to exclusive wholesale pricing on all data packages, the ability to earn profit from the prices you set on your storefront, and a dedicated dashboard to manage your sales, customers, and earnings. You also get your own branded storefront URL where your customers can buy directly from you — we handle the backend, order fulfillment, and payout tracking automatically. Agents must maintain a valid subscription to keep their storefront active."
   },
   {
     question: "Why do my orders not go through sometimes even after payment?",

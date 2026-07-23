@@ -67,7 +67,7 @@ export default function AgentPerksPage() {
     <div className="min-h-screen bg-background pb-20">
       <SEOHead
         title="Become a Data Reseller Agent"
-        description="Join the Kaiferdata Agent Program and start earning by reselling data bundles in Ghana. Get wholesale prices, your own storefront, and automated commission tracking."
+        description="Join the Kaiferdata Agent Program and start earning by reselling data bundles in Ghana. Get wholesale prices, your own storefront, and automated profit tracking."
       />
       {/* ── Hero Section ── */}
       <section className="relative pt-20 pb-16 overflow-hidden">
