@@ -20,7 +20,7 @@ const corsHeaders = {
 };
 
 /** ── Normalized supplier outcomes ── */
-type SupplierOutcome = "delivered" | "processing" | "accepted" | "failed" | "unknown";
+type SupplierOutcome = "delivered" | "processing" | "accepted" | "failed" | "on_hold" | "unknown";
 
 interface SupplierResult {
   outcome: SupplierOutcome;
@@ -37,6 +37,7 @@ function outcomeToOrderStatus(outcome: SupplierOutcome): string {
     case "processing": return "processing";
     case "accepted": return "queued";
     case "failed": return "failed";
+    case "on_hold": return "on_hold";
     default: return "processing";
   }
 }
@@ -52,6 +53,8 @@ function outcomeToMessage(outcome: SupplierOutcome, network: string, volume: str
       return `Your order has been accepted and is queued for delivery.`;
     case "failed":
       return `We couldn't deliver your bundle at this time. Our team has been notified and will resolve this.`;
+    case "on_hold":
+      return `Recipient number is being verified. The order will be delivered once verification is completed.`;
     default:
       return `Your order is being reviewed. Please check back shortly.`;
   }
@@ -112,7 +115,7 @@ function extractCustomerFacingFailureMessage(responseData: Record<string, unknow
     skipped.some((entry) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
 
   if (hasBeneficiaryVerificationFailure) {
-    return "Nuumber not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
+    return "Number not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
   }
 
   if (/no verified numbers to process/i.test(detailMessage)) {
@@ -397,11 +400,15 @@ async function submitToSupplierApi(
   const dedicatedFailureMessage = extractCustomerFacingFailureMessage(responseData);
   const safeMessage = looksLikeMachineId(supplierMsg) ? null : supplierMsg;
 
+  if (dedicatedFailureMessage) {
+    outcome = "on_hold";
+  }
+
   return {
     outcome,
     supplier_reference: supplierRef || null,
     delivery_message: dedicatedFailureMessage || safeMessage || null,
-    error_message: outcome === "failed" ? (dedicatedFailureMessage || safeMessage || rawStatus) : null,
+    error_message: (outcome === "failed" || outcome === "on_hold") ? (dedicatedFailureMessage || safeMessage || rawStatus) : null,
     raw_response: responseData,
   };
 }
