@@ -99,6 +99,9 @@ export function sanitizeCustomerMessage(
   // Remove explicit supplier id / reference fragments like "(supplier ref: XYZ)" or "supplier ref XYZ".
   text = text.replace(/\(?\s*supplier\s*(ref(?:erence)?|id|status)\s*[:\-=]?\s*[a-z0-9_\-]+\s*\)?/gi, "");
 
+  // Remove internal admin notes about manual status updates
+  text = text.replace(/\b(bulk\s+)?status update by admin\b/gi, "");
+
   // Replace any remaining "supplier"/"provider" word with "system" so nothing leaks.
   text = text.replace(/\bsuppliers?\b/gi, "system").replace(/\bproviders?\b/gi, "system");
 
@@ -110,12 +113,24 @@ export function sanitizeCustomerMessage(
   // Also drop if it's just a status word we already show separately.
   if (/^(paid|queued|processing|delivered|failed|cancelled|refunded|completed|on_hold)$/i.test(text)) return null;
 
+  // Drop obvious JSON or highly technical error signatures.
+  if (/[{}\[\]]/.test(text) || /error\s*\d{3}/i.test(text) || /\bexception\b/i.test(text) || /\btimeout\b/i.test(text)) {
+    return null;
+  }
+
   // Drop stale "still processing" phrasing once the order has actually
   // moved past processing — otherwise a Delivered order shows
   // "Your bundle is being processed. It will arrive shortly." which
   // contradicts the badge above it.
   if (currentStatus) {
     const key = toCustomerStatusKey(currentStatus);
+    
+    // Completely drop raw messages for negative statuses to prevent leaking supplier errors.
+    // This forces the UI to fall back to the safe, reassuring customerStatusHelper messages.
+    if (key === "failed" || key === "cancelled" || key === "refunded") {
+      return null;
+    }
+
     if (key !== "processing" && key !== "placed") {
       const stale = /(being processed|is processing|will arrive shortly|arriving shortly|in progress|currently processing)/i;
       if (stale.test(text)) return null;

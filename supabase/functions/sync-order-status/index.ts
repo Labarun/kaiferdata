@@ -212,7 +212,18 @@ Deno.serve(async (req) => {
 
         if (!rawStatus) continue; // No status info, skip
 
-        const normalizedStatus = normalizeStatus(rawStatus, statusMapping);
+        let normalizedStatus = normalizeStatus(rawStatus, statusMapping);
+
+        // Check for specific beneficiary verification failure to mark as on_hold
+        const detailMessage = String(apiData.message || apiData.details?.message || "").trim();
+        const skipped = Array.isArray(apiData.details?.skipped) ? apiData.details.skipped : [];
+        const hasBeneficiaryVerificationFailure =
+          /all numbers were skipped|beneficiary verification failed|not approved/i.test(detailMessage) ||
+          skipped.some((entry: any) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
+
+        if (hasBeneficiaryVerificationFailure || /no verified numbers to process/i.test(detailMessage)) {
+          normalizedStatus = "on_hold";
+        }
 
         // Only update if status actually changed
         if (normalizedStatus !== order.status || rawStatus !== order.supplier_status) {
