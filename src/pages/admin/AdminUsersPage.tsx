@@ -252,16 +252,16 @@ function UserDetailDialog({ row, adminId, onClose, onChanged }: {
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-full max-w-xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{row.full_name || row.email}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="overview">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="wallet">Wallet</TabsTrigger>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsList className="flex overflow-x-auto w-full h-auto p-1 hide-scrollbar">
+            <TabsTrigger value="overview" className="flex-1 text-[11px] sm:text-sm px-2 py-1.5 whitespace-nowrap">Overview</TabsTrigger>
+            <TabsTrigger value="wallet" className="flex-1 text-[11px] sm:text-sm px-2 py-1.5 whitespace-nowrap">Wallet</TabsTrigger>
+            <TabsTrigger value="roles" className="flex-1 text-[11px] sm:text-sm px-2 py-1.5 whitespace-nowrap">Roles</TabsTrigger>
+            <TabsTrigger value="notes" className="flex-1 text-[11px] sm:text-sm px-2 py-1.5 whitespace-nowrap">Notes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-3 mt-3">
@@ -308,7 +308,7 @@ function UserDetailDialog({ row, adminId, onClose, onChanged }: {
                         <p className="font-medium truncate">{t.narration || t.transaction_type}</p>
                         <p className="text-muted-foreground">{new Date(t.created_at).toLocaleString()}</p>
                       </div>
-                      <span className={`tabular-nums font-semibold ${t.direction === "inflow" ? "text-success" : "text-destructive"}`}>
+                      <span className={`tabular-nums shrink-0 font-semibold ml-2 ${t.direction === "inflow" ? "text-success" : "text-destructive"}`}>
                         {t.direction === "inflow" ? "+" : "−"}GH₵ {Number(t.amount).toFixed(2)}
                       </span>
                     </div>
@@ -327,11 +327,11 @@ function UserDetailDialog({ row, adminId, onClose, onChanged }: {
                 const has = roles.includes(r);
                 return (
                   <div key={r} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <RoleBadge role={r} />
                       {has && <Badge variant="secondary" className="text-[10px]">Granted</Badge>}
                     </div>
-                    <Button size="sm" variant={has ? "destructive" : "default"} onClick={() => toggleRole(r)}>
+                    <Button size="sm" variant={has ? "destructive" : "default"} onClick={() => toggleRole(r)} className="shrink-0 ml-2">
                       {has ? "Revoke" : "Grant"}
                     </Button>
                   </div>

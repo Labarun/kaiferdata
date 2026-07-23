@@ -220,7 +220,19 @@ async function processUpdate(
     statusMapping = (cfg.status_mapping || {}) as Record<string, string>;
   }
 
-  const normalizedStatus = normalizeStatus(rawStatus, statusMapping);
+  let normalizedStatus = normalizeStatus(rawStatus, statusMapping);
+
+  // Check for specific beneficiary verification failure to mark as on_hold
+  const detailMessage = String(rawMessage || (payload as Record<string, unknown>)?.message || "").trim();
+  const skipped = Array.isArray((payload as any)?.details?.skipped) ? (payload as any).details.skipped : [];
+  const hasBeneficiaryVerificationFailure =
+    /all numbers were skipped|beneficiary verification failed|not approved/i.test(detailMessage) ||
+    skipped.some((entry: any) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
+
+  if (hasBeneficiaryVerificationFailure || /no verified numbers to process/i.test(detailMessage)) {
+    normalizedStatus = "on_hold";
+  }
+
   const currentStatus = order.status as string;
 
   // Don't downgrade final statuses

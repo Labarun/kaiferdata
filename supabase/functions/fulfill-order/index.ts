@@ -350,6 +350,17 @@ async function submitToSupplierApi(
   }
 
   if (!apiRes.ok) {
+    const dedicatedFailureMessage = extractCustomerFacingFailureMessage(responseData);
+    if (dedicatedFailureMessage) {
+      return {
+        outcome: "on_hold",
+        supplier_reference: null,
+        delivery_message: dedicatedFailureMessage,
+        error_message: dedicatedFailureMessage,
+        raw_response: responseData,
+      };
+    }
+
     return {
       outcome: "failed",
       supplier_reference: null,

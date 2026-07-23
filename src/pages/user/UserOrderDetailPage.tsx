@@ -82,11 +82,16 @@ export default function UserOrderDetailPage() {
     const k = toCustomerStatusKey(raw);
     if (k === lastKey) continue;
     lastKey = k;
+    let finalNote = sanitizeCustomerMessage(entry.note as string | null, raw);
+    if (k === "on_hold") {
+      finalNote = "This number is currently pending verification in the MTNUP2U portal. Delivery will be delayed.";
+    }
+
     cleanedTimeline.push({
       id: entry.id as string,
       key: k,
       label: customerStatusLabel(raw),
-      note: sanitizeCustomerMessage(entry.note as string | null, raw),
+      note: finalNote,
       at: entry.changed_at as string,
     });
   }

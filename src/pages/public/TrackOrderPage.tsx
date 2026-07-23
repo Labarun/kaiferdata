@@ -252,11 +252,17 @@ export default function TrackOrderPage() {
                   // Collapse consecutive duplicates (e.g. supplier_submitted -> supplier_processing -> processing).
                   if (key === lastKey) continue;
                   lastKey = key;
+                  
+                  let finalNote = sanitizeCustomerMessage(entry.note as string | null, rawEntryStatus);
+                  if (key === "on_hold") {
+                    finalNote = "This number is currently pending verification in the MTNUP2U portal. Delivery will be delayed.";
+                  }
+
                   cleaned.push({
                     id: entry.id as string,
                     key,
                     label: customerStatusLabel(rawEntryStatus),
-                    note: sanitizeCustomerMessage(entry.note as string | null, rawEntryStatus),
+                    note: finalNote,
                     at: entry.changed_at as string,
                   });
                 }
