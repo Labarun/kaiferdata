@@ -724,7 +724,7 @@ Deno.serve(async (req) => {
           }
         }
       }
-      
+
       if (!selectedSupplier) selectedSupplier = suppliers[0];
     }
 
@@ -838,9 +838,7 @@ Deno.serve(async (req) => {
           "refund_wallet_purchase_atomic",
           {
             _order_id: order_id,
-            _reason: result.error_message
-              ? `Order failed before supplier delivery: ${String(result.error_message).slice(0, 200)}`
-              : "Order failed before supplier delivery",
+            _reason: "Order failed because recipient number is not verified",
             _actor_id: null,
           }
         );

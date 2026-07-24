@@ -25,7 +25,7 @@ const STATUS_ICONS: Record<string, { icon: typeof Clock; color: string; tone: st
   failed: { icon: XCircle, color: "text-destructive", tone: "bg-red-50 text-red-700 border-red-200" },
   cancelled: { icon: XCircle, color: "text-muted-foreground", tone: "bg-gray-50 text-gray-600 border-gray-200" },
   refunded: { icon: RotateCcw, color: "text-muted-foreground", tone: "bg-purple-50 text-purple-700 border-purple-200" },
-  on_hold: { icon: AlertCircle, color: "text-orange-500", tone: "bg-orange-50 text-orange-700 border-orange-200" },
+  on_hold: { icon: AlertCircle, color: "text-purple-500", tone: "bg-purple-50 text-purple-700 border-purple-200" },
 };
 
 function CustomerStatusBadge({ status, className }: { status: string; className?: string }) {
