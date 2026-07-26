@@ -72,6 +72,7 @@ const SystemControlsPage = lazy(() => import("@/pages/admin/SystemControlsPage")
 const SecurityCenterPage = lazy(() => import("@/pages/admin/SecurityCenterPage"));
 const AdminNoticesPage = lazy(() => import("@/pages/admin/AdminNoticesPage"));
 const AdminOrdersPage = lazy(() => import("@/pages/admin/AdminOrdersPage"));
+const AdminFinancialsPage = lazy(() => import("@/pages/admin/AdminFinancialsPage"));
 const AdminOrderDetailPage = lazy(() => import("@/pages/admin/AdminOrderDetailPage"));
 const AdminTransactionsPage = lazy(() => import("@/pages/admin/AdminTransactionsPage"));
 const AdminTransactionDetailPage = lazy(() => import("@/pages/admin/AdminTransactionDetailPage"));
@@ -210,6 +211,7 @@ const App = () => (
                     <Route path="/admin/supplier" element={<AdminSupplierPage />} />
                     <Route path="/admin/packages" element={<AdminPackagesPage />} />
                     <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                    <Route path="/admin/financials" element={<AdminFinancialsPage />} />
                     <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
                     <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
                     <Route path="/admin/transactions/:transactionId" element={<AdminTransactionDetailPage />} />
