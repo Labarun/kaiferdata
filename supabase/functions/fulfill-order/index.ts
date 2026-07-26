@@ -115,11 +115,11 @@ function extractCustomerFacingFailureMessage(responseData: Record<string, unknow
     skipped.some((entry) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
 
   if (hasBeneficiaryVerificationFailure) {
-    return "Number not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
+    return "Number not verified for MTNUp2U service. Delivery will delay as it will take sometime to verify.";
   }
 
   if (/no verified numbers to process/i.test(detailMessage)) {
-    return "Number not verified for MTNUp2U service. Order will be retried and a refund will be sent if failure persists.";
+    return "Number not verified for MTNUp2U service. Delivery will delay as it will take sometime to verify.";
   }
 
   return null;
@@ -748,7 +748,7 @@ Deno.serve(async (req) => {
         if (
           result.outcome === "on_hold" &&
           result.error_message &&
-          result.error_message.toLowerCase().includes("verification") &&
+          result.error_message.toLowerCase().includes("verif") &&
           providerCode !== "afrohub"
         ) {
           console.log(`[fulfill-order] Verification failed on ${providerCode}, attempting Afrohub fallback for ${order_id}`);
