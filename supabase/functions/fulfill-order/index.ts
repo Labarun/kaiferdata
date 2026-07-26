@@ -747,8 +747,6 @@ Deno.serve(async (req) => {
         // --- AFROHUB AUTOMATED FALLBACK ---
         if (
           result.outcome === "on_hold" &&
-          result.error_message &&
-          result.error_message.toLowerCase().includes("verif") &&
           providerCode !== "afrohub"
         ) {
           console.log(`[fulfill-order] Verification failed on ${providerCode}, attempting Afrohub fallback for ${order_id}`);
