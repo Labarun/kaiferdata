@@ -2037,6 +2037,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_profit_metrics: {
+        Args: { end_date: string; start_date: string }
+        Returns: Json
+      }
       get_public_agent_store: {
         Args: { _slug: string }
         Returns: {
