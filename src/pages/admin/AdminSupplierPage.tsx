@@ -15,6 +15,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   fetchSuppliers, updateSupplier, createSupplier, fetchSyncLogs,
   triggerProductSync, triggerStatusSync, triggerHealthCheck, deleteSupplier,
   type Supplier, type SupplierSyncLog,
@@ -31,6 +34,7 @@ export default function AdminSupplierPage() {
   const [syncLogs, setSyncLogs] = useState<SupplierSyncLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [syncNetwork, setSyncNetwork] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
@@ -54,8 +58,9 @@ export default function AdminSupplierPage() {
   const handleSync = async (type: "product" | "status", supplierId?: string) => {
     setSyncing(type);
     try {
+      const networkParam = syncNetwork !== "all" ? syncNetwork : undefined;
       const result = type === "product"
-        ? await triggerProductSync(supplierId)
+        ? await triggerProductSync(supplierId, networkParam)
         : await triggerStatusSync();
       toast({ title: "Sync Complete", description: JSON.stringify(result.results || result, null, 2).slice(0, 200) });
       load();
@@ -202,18 +207,34 @@ export default function AdminSupplierPage() {
                     <p className="font-medium">{s.last_product_sync_at ? new Date(s.last_product_sync_at).toLocaleString() : "Never"}</p>
                   </div>
                 </div>
+                
                 {s.supports_product_sync && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 mr-2"
-                    disabled={syncing === "product"}
-                    onClick={() => handleSync("product", s.id)}
-                  >
-                    {syncing === "product" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />}
-                    Sync This Supplier
-                  </Button>
+                  <div className="mt-3 bg-muted/30 p-2 rounded-md border border-border/50 flex flex-wrap items-center gap-2">
+                    <Select value={syncNetwork} onValueChange={setSyncNetwork}>
+                      <SelectTrigger className="w-[120px] h-8 text-xs">
+                        <SelectValue placeholder="Network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Networks</SelectItem>
+                        <SelectItem value="MTN">MTN</SelectItem>
+                        <SelectItem value="Telecel">Telecel</SelectItem>
+                        <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      disabled={syncing === "product"}
+                      onClick={() => handleSync("product", s.id)}
+                    >
+                      {syncing === "product" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />}
+                      Sync Packages
+                    </Button>
+                  </div>
                 )}
+                
                 <Button
                   variant="outline"
                   size="sm"

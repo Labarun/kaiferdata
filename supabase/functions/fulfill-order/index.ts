@@ -743,6 +743,76 @@ Deno.serve(async (req) => {
 
       if (supportsSubmission && hasApiUrl && providerCode !== "stub") {
         result = await submitToSupplierApi(order, selectedSupplier as Record<string, unknown>, supabase);
+
+        // --- AFROHUB AUTOMATED FALLBACK ---
+        if (
+          result.outcome === "on_hold" &&
+          result.error_message &&
+          result.error_message.toLowerCase().includes("verification") &&
+          providerCode !== "afrohub"
+        ) {
+          console.log(`[fulfill-order] Verification failed on ${providerCode}, attempting Afrohub fallback for ${order_id}`);
+          
+          const { data: afrohubSuppliers } = await supabase
+            .from("external_suppliers")
+            .select("*")
+            .eq("provider_code", "afrohub")
+            .eq("is_active", true)
+            .limit(1);
+            
+          const afrohubSupplier = afrohubSuppliers?.[0];
+          
+          if (afrohubSupplier) {
+            const { data: originalPkg } = await supabase
+              .from("data_packages")
+              .select("package_size_label")
+              .eq("package_code", order.bundle_code as string)
+              .limit(1);
+              
+            const sizeLabel = originalPkg?.[0]?.package_size_label;
+            
+            if (sizeLabel) {
+              const { data: afrohubPkgs } = await supabase
+                .from("data_packages")
+                .select("package_code, source_metadata")
+                .eq("network", order.network as string)
+                .eq("package_size_label", sizeLabel)
+                .eq("source_type", "supplier_api")
+                .not("supplier_source_id", "is", null);
+                
+              const afrohubPkg = afrohubPkgs?.find(p => {
+                 const sm = p.source_metadata as Record<string, unknown>;
+                 return sm?.supplier_id === afrohubSupplier.id;
+              });
+              
+              if (afrohubPkg) {
+                console.log(`[fulfill-order] Found Afrohub equivalent package: ${afrohubPkg.package_code}`);
+                
+                const fallbackOrder = { ...order, bundle_code: afrohubPkg.package_code };
+                const snapshot = (order.bundle_snapshot || {}) as Record<string, unknown>;
+                
+                // Log the failed Instant Data request
+                await supabase.from("supplier_request_logs").insert({
+                  supplier_id: (selectedSupplier as Record<string, unknown>).id as string | null,
+                  order_id: order_id,
+                  request_payload: { network: order.network, phone: order.beneficiary_number, plan_code: order.bundle_code, volume: snapshot.volume },
+                  response_payload: result.raw_response,
+                  normalized_result: result.outcome,
+                  is_success: false,
+                  error_message: result.error_message,
+                  request_started_at: requestStarted,
+                  response_received_at: new Date().toISOString(),
+                  metadata: { note: "Failed verification, falling back to Afrohub" }
+                });
+                
+                // Execute fallback
+                result = await submitToSupplierApi(fallbackOrder, afrohubSupplier, supabase);
+                selectedSupplier = afrohubSupplier;
+              }
+            }
+          }
+        }
+        // --- END FALLBACK ---
       } else {
         result = await submitToStubSupplier(order, selectedSupplier as Record<string, unknown>);
       }

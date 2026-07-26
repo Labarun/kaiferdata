@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const targetSupplierId = (body as Record<string, unknown>).supplier_id as string | undefined;
+    const targetNetwork = (body as Record<string, unknown>).network as string | undefined;
 
     // ── Fetch suppliers ──
     let query = supabase
@@ -278,6 +279,9 @@ Deno.serve(async (req) => {
           // Only sync Ghana networks
           if (!["MTN", "Telecel", "AirtelTigo"].includes(mappedNetwork)) continue;
 
+          // Filter by requested network if present
+          if (targetNetwork && mappedNetwork.toLowerCase() !== targetNetwork.toLowerCase()) continue;
+
           const supplierPrice = Number(getNestedValue(product, priceField) || 0);
           const packageCode = String(getNestedValue(product, codeField) || supplierId);
           let packageName = String(getNestedValue(product, nameField) || packageCode);
@@ -290,13 +294,21 @@ Deno.serve(async (req) => {
 
           supplierSourceIds.push(supplierId);
 
+          // Construct our source_metadata with the supplier ID injected
+          const safeSourceMetadata = { ...(product as Record<string, unknown>), supplier_id: supplier.id };
+
           // Check if package already exists
-          const { data: existing } = await supabase
+          const { data: potentialMatches } = await supabase
             .from("data_packages")
-            .select("id, selling_price, visible_on_public, visible_for_logged_in, display_order, is_active")
+            .select("id, selling_price, visible_on_public, visible_for_logged_in, display_order, is_active, source_metadata")
             .eq("supplier_source_id", supplierId)
-            .eq("source_type", "supplier_api")
-            .maybeSingle();
+            .eq("source_type", "supplier_api");
+
+          // Find the one that actually belongs to THIS supplier
+          const existing = potentialMatches?.find(p => {
+            const sm = p.source_metadata as Record<string, unknown> | null;
+            return sm?.supplier_id === supplier.id;
+          });
 
           if (existing) {
             // Update: preserve admin selling_price and visibility settings
@@ -312,7 +324,7 @@ Deno.serve(async (req) => {
                 supplier_price: supplierPrice,
                 // Preserve selling_price — only set if currently 0 (never configured)
                 ...(Number(existing.selling_price) === 0 ? { selling_price: supplierPrice } : {}),
-                source_metadata: product,
+                source_metadata: safeSourceMetadata,
                 is_active: true,
               })
               .eq("id", existing.id);
@@ -333,7 +345,7 @@ Deno.serve(async (req) => {
                 selling_price: supplierPrice, // Admin should set markup later
                 source_type: "supplier_api",
                 supplier_source_id: supplierId,
-                source_metadata: product,
+                source_metadata: safeSourceMetadata,
                 is_active: true,
                 visible_on_public: true,
                 visible_for_logged_in: true,
@@ -343,17 +355,26 @@ Deno.serve(async (req) => {
           }
         }
 
-        // ── Deactivate packages no longer in API (only supplier_api sourced) ──
-        let deactivated = 0;
-        if (supplierSourceIds.length > 0) {
-          const { data: stalePackages } = await supabase
-            .from("data_packages")
-            .select("id")
-            .eq("source_type", "supplier_api")
-            .eq("is_active", true)
-            .not("supplier_source_id", "in", `(${supplierSourceIds.map(s => `"${s}"`).join(",")})`);
+          // ── Deactivate packages no longer in API (only supplier_api sourced) ──
+          let deactivated = 0;
+          if (supplierSourceIds.length > 0) {
+            let staleQuery = supabase
+              .from("data_packages")
+              .select("id")
+              .eq("source_type", "supplier_api")
+              .eq("is_active", true)
+              .contains("source_metadata", { supplier_id: supplier.id })
+              .not("supplier_source_id", "in", `(${supplierSourceIds.map(s => `"${s}"`).join(",")})`);
+              
+            if (targetNetwork) {
+               // We need to match case-insensitively, or just rely on mappedNetwork convention
+               // Since mappedNetwork normalizes to uppercase/proper case, we can use ilike
+               staleQuery = staleQuery.ilike("network", targetNetwork);
+            }
 
-          if (stalePackages && stalePackages.length > 0) {
+            const { data: stalePackages } = await staleQuery;
+
+            if (stalePackages && stalePackages.length > 0) {
             for (const stale of stalePackages) {
               await supabase
                 .from("data_packages")
