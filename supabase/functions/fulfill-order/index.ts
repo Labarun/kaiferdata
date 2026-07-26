@@ -752,7 +752,7 @@ Deno.serve(async (req) => {
           console.log(`[fulfill-order] Verification failed on ${providerCode}, attempting Afrohub fallback for ${order_id}`);
           
           const { data: afrohubSuppliers } = await supabase
-            .from("external_suppliers")
+            .from("suppliers")
             .select("*")
             .eq("provider_code", "afrohub")
             .eq("is_active", true)
