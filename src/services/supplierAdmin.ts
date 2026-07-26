@@ -88,7 +88,7 @@ export async function fetchSyncLogs(limit = 20): Promise<SupplierSyncLog[]> {
 }
 
 /** Trigger product sync via edge function */
-export async function triggerProductSync(supplierId?: string): Promise<Record<string, unknown>> {
+export async function triggerProductSync(supplierId?: string, network?: string): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
 
@@ -101,7 +101,7 @@ export async function triggerProductSync(supplierId?: string): Promise<Record<st
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ supplier_id: supplierId }),
+      body: JSON.stringify({ supplier_id: supplierId, network }),
     }
   );
   const data = await res.json();
