@@ -770,11 +770,14 @@ Deno.serve(async (req) => {
             const sizeLabel = originalPkg?.[0]?.package_size_label;
             
             if (sizeLabel) {
+              // Remove the "(Supplier Name)" suffix to match against other suppliers
+              const baseSizeLabel = sizeLabel.replace(/\s*\([^)]*\)$/, "").trim();
+
               const { data: afrohubPkgs } = await supabase
                 .from("data_packages")
                 .select("package_code, source_metadata")
                 .eq("network", order.network as string)
-                .eq("package_size_label", sizeLabel)
+                .ilike("package_size_label", `${baseSizeLabel}%`)
                 .eq("source_type", "supplier_api")
                 .not("supplier_source_id", "is", null);
                 
