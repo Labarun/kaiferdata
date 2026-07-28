@@ -777,13 +777,16 @@ Deno.serve(async (req) => {
               const { data: afrohubPkgs } = await supabase
                 .from("data_packages")
                 .select("package_code, package_size_label, source_metadata")
-                .eq("network", order.network as string)
+                .ilike("network", order.network as string)
                 .eq("source_type", "supplier_api")
                 .not("supplier_source_id", "is", null);
                 
               const extractSize = (s: string) => {
-                 const match = s.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(gb|mb)/);
-                 return match ? match[0].replace(/\s+/g, "") : null;
+                 const sLower = s.toLowerCase();
+                 const match = sLower.match(/(\d+(?:\.\d+)?)\s*(gb|mb|g|m)/);
+                 if (match) return match[0].replace(/\s+/g, "");
+                 const fallbackMatch = sLower.match(/(\d+(?:\.\d+)?)/);
+                 return fallbackMatch ? fallbackMatch[0] : null;
               };
               const baseSize = extractSize(sizeLabel);
               
@@ -791,7 +794,7 @@ Deno.serve(async (req) => {
               if (baseSize) {
                 afrohubPkg = afrohubPkgs?.find(p => {
                    const sm = p.source_metadata as Record<string, unknown>;
-                   if (sm?.supplier_id !== afrohubSupplier.id) return false;
+                   if (String(sm?.supplier_id) !== String(afrohubSupplier.id)) return false;
                    const pSize = extractSize(p.package_size_label || "");
                    return pSize === baseSize;
                 });
@@ -820,8 +823,37 @@ Deno.serve(async (req) => {
                 // Execute fallback
                 result = await submitToSupplierApi(fallbackOrder, afrohubSupplier, supabase);
                 selectedSupplier = afrohubSupplier;
+                
+                // If Afrohub also failed verification or was placed on hold
+                if (result.outcome === "on_hold") {
+                  result.delivery_message = "Both Instant Data and Afrohub failed verification. Please contact support.";
+                }
+              } else {
+                await supabase.from("audit_logs").insert({
+                  action: "fallback_skipped_no_pkg",
+                  actor_role: "system",
+                  target_type: "order",
+                  target_id: order_id,
+                  metadata: { baseSize, sizeLabel, reason: "No matching Afrohub package found" }
+                });
               }
+            } else {
+              await supabase.from("audit_logs").insert({
+                action: "fallback_skipped_no_size",
+                actor_role: "system",
+                target_type: "order",
+                target_id: order_id,
+                metadata: { reason: "Original package had no size label" }
+              });
             }
+          } else {
+             await supabase.from("audit_logs").insert({
+                action: "fallback_skipped_no_supplier",
+                actor_role: "system",
+                target_type: "order",
+                target_id: order_id,
+                metadata: { reason: "Afrohub supplier not found in DB" }
+             });
           }
         }
         // --- END FALLBACK ---
