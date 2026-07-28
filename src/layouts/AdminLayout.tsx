@@ -23,6 +23,7 @@ import type { LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useCloseOnRouteChange } from "@/hooks/useCloseOnRouteChange";
 import { AdminGlobalNotifications } from "@/components/admin/AdminGlobalNotifications";
+import { AdminPushSubscription } from "@/components/admin/AdminPushSubscription";
 
 export interface AdminNavItem {
   label: string;
@@ -151,6 +152,8 @@ export function AdminLayout({ navGroups, quickDock = [], title, audienceFilter }
             <Search className="h-4 w-4" />
             <span className="text-xs">Search...</span>
           </Button>
+
+          <AdminPushSubscription />
 
           <ThemeToggle />
 
