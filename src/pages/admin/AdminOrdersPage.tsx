@@ -52,7 +52,7 @@ export default function AdminOrdersPage() {
   const [bulkIds, setBulkIds] = useState<string[]>([]);
   const [bulkRefundOpen, setBulkRefundOpen] = useState(false);
   const [refundIds, setRefundIds] = useState<string[]>([]);
-  const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, failed: 0 });
+  const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, failed: 0, onHold: 0 });
   const [retryAllOpen, setRetryAllOpen] = useState(false);
   const [retryingAll, setRetryingAll] = useState(false);
   const [retryProgress, setRetryProgress] = useState({ done: 0, total: 0 });
@@ -61,13 +61,14 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     (async () => {
       const C = { count: "exact" as const, head: true };
-      const [t, d, p, f] = await Promise.all([
+      const [t, d, p, f, h] = await Promise.all([
         supabase.from("orders").select("id", C),
         supabase.from("orders").select("id", C).eq("status", "delivered"),
-        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing", "on_hold"]),
+        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing"]),
         supabase.from("orders").select("id", C).eq("status", "failed"),
+        supabase.from("orders").select("id", C).eq("status", "on_hold"),
       ]);
-      setStats({ total: t.count || 0, delivered: d.count || 0, pending: p.count || 0, failed: f.count || 0 });
+      setStats({ total: t.count || 0, delivered: d.count || 0, pending: p.count || 0, failed: f.count || 0, onHold: h.count || 0 });
     })();
   }, [reloadKey]);
 
@@ -181,6 +182,7 @@ export default function AdminOrdersPage() {
     { label: "Total", value: stats.total.toLocaleString(), icon: ShoppingCart, tone: "primary" },
     { label: "Delivered", value: stats.delivered.toLocaleString(), icon: CheckCircle2, tone: "success" },
     { label: "In Progress", value: stats.pending.toLocaleString(), icon: Clock, tone: stats.pending > 0 ? "warning" : "default" },
+    { label: "On Hold", value: stats.onHold.toLocaleString(), icon: Clock, tone: stats.onHold > 0 ? "warning" : "default" },
     { label: "Failed", value: stats.failed.toLocaleString(), icon: XCircle, tone: stats.failed > 0 ? "destructive" : "default" },
   ];
 
@@ -243,7 +245,7 @@ export default function AdminOrdersPage() {
         </div>
       } />
 
-      <AdminStatStrip stats={statStrip} />
+      <AdminStatStrip stats={statStrip} cols={5} />
 
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">

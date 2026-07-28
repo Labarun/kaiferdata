@@ -35,8 +35,8 @@ const toneGlow: Record<string, string> = {
   destructive: "bg-destructive/15",
 };
 
-export function AdminStatStrip({ stats, cols = 4 }: { stats: AdminStat[]; cols?: 2 | 3 | 4 }) {
-  const gridCols = cols === 2 ? "sm:grid-cols-2" : cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4";
+export function AdminStatStrip({ stats, cols = 4 }: { stats: AdminStat[]; cols?: 2 | 3 | 4 | 5 }) {
+  const gridCols = cols === 2 ? "sm:grid-cols-2" : cols === 3 ? "sm:grid-cols-3" : cols === 5 ? "sm:grid-cols-5" : "sm:grid-cols-4";
   return (
     <div className={cn("grid grid-cols-2 gap-2.5 animate-fade-in", gridCols)}>
       {stats.map((s) => {
