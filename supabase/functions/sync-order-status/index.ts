@@ -142,11 +142,31 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     for (const order of orders) {
-      // Find matching supplier for this order's network
-      let supplier = suppliers.find((s) => {
-        const networks = (s.supported_networks as string[]) || [];
-        return networks.length === 0 || networks.includes(order.network);
-      });
+      // Try to find the actual supplier used for this order from request logs
+      let matchedSupplierId = null;
+      const { data: requestLogs } = await supabase
+        .from("supplier_request_logs")
+        .select("supplier_id")
+        .eq("order_id", order.id)
+        .eq("is_success", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (requestLogs?.supplier_id) {
+        matchedSupplierId = requestLogs.supplier_id;
+      }
+
+      let supplier = suppliers.find((s) => s.id === matchedSupplierId);
+
+      // Fallback to matching by network if no logs exist
+      if (!supplier) {
+        supplier = suppliers.find((s) => {
+          const networks = (s.supported_networks as string[]) || [];
+          return networks.length === 0 || networks.includes(order.network);
+        });
+      }
+      
       if (!supplier) supplier = suppliers[0];
 
       const endpointConfig = (supplier.endpoint_config || {}) as Record<string, unknown>;
