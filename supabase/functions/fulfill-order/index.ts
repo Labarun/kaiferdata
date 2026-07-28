@@ -824,8 +824,13 @@ Deno.serve(async (req) => {
                 result = await submitToSupplierApi(fallbackOrder, afrohubSupplier, supabase);
                 selectedSupplier = afrohubSupplier;
                 
-                // If Afrohub also failed verification or was placed on hold
-                if (result.outcome === "on_hold") {
+                // If Afrohub accepts it for processing, we force it back to 'on_hold' 
+                // so the user immediately sees the verification message on their timeline.
+                // Afrohub's webhook will update it to delivered later.
+                if (result.outcome === "processing" || result.outcome === "accepted") {
+                  result.outcome = "on_hold";
+                  result.delivery_message = "Number not verified for MTNUp2U service. Delivery will delay as it will take sometime to verify.";
+                } else if (result.outcome === "on_hold") {
                   result.delivery_message = "Both Instant Data and Afrohub failed verification. Please contact support.";
                 }
               } else {
