@@ -56,6 +56,9 @@ export default function AdminOrdersPage() {
   const [retryAllOpen, setRetryAllOpen] = useState(false);
   const [retryingAll, setRetryingAll] = useState(false);
   const [retryProgress, setRetryProgress] = useState({ done: 0, total: 0 });
+  const [syncAllOpen, setSyncAllOpen] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0 });
 
   // global stat strip (once)
   useEffect(() => {
@@ -173,6 +176,53 @@ export default function AdminOrdersPage() {
     await retryOrders((data || []).map((o: any) => o.id as string));
   };
 
+  // Sync ALL processing orders across the platform (chunked concurrency)
+  const syncAllProcessingOrders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    
+    // Fetch all processing orders from the last month or so
+    const { data: processingOrders } = await supabase
+       .from("orders")
+       .select("id")
+       .in("status", ["processing", "queued"])
+       .limit(2000);
+       
+    if (!processingOrders || processingOrders.length === 0) {
+      toast({ title: "Nothing to sync" });
+      setSyncAllOpen(false);
+      return;
+    }
+    
+    setSyncingAll(true);
+    setSyncProgress({ done: 0, total: processingOrders.length });
+    
+    let ok = 0;
+    const CHUNK_SIZE = 10; // 10 concurrent requests
+    
+    for (let i = 0; i < processingOrders.length; i += CHUNK_SIZE) {
+       const batch = processingOrders.slice(i, i + CHUNK_SIZE);
+       await Promise.all(batch.map(async (order) => {
+         try {
+           const res = await fetch(`https://${projectId}.supabase.co/functions/v1/sync-order-status`, {
+             method: "POST",
+             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+             body: JSON.stringify({ order_id: order.id }),
+           });
+           if (res.ok) ok++;
+         } catch (e) {
+           console.error("Sync error for order", order.id, e);
+         }
+       }));
+       setSyncProgress({ done: Math.min(i + CHUNK_SIZE, processingOrders.length), total: processingOrders.length });
+    }
+    
+    setSyncingAll(false);
+    setSyncAllOpen(false);
+    toast({ title: `Synced ${ok}/${processingOrders.length} orders` });
+    refresh();
+  };
+
   // Only the retriable orders among the current selection.
   const RETRIABLE = ["failed", "paid", "queued"];
   const retriableSelected = orders.filter((o) => selected.has(o.id) && RETRIABLE.includes(o.status));
@@ -239,6 +289,19 @@ export default function AdminOrdersPage() {
               {retryingAll
                 ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying {retryProgress.done}/{retryProgress.total}</>
                 : <><RotateCcw className="h-3.5 w-3.5" /> Retry all failed ({stats.failed})</>}
+            </Button>
+          )}
+          {stats.pending > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={syncingAll}
+              onClick={() => setSyncAllOpen(true)}
+              className="gap-1.5 border-blue-500/40 text-blue-600 hover:bg-blue-500/5"
+            >
+              {syncingAll
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing {syncProgress.done}/{syncProgress.total}</>
+                : <><RefreshCw className="h-3.5 w-3.5" /> Sync all pending ({stats.pending})</>}
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
@@ -327,6 +390,19 @@ export default function AdminOrdersPage() {
         }
         confirmLabel="Retry all failed"
         onConfirm={retryAllFailed}
+      />
+      
+      <ConfirmActionDialog
+        open={syncAllOpen}
+        onOpenChange={setSyncAllOpen}
+        title={`Sync ${stats.pending} pending order(s)?`}
+        description={
+          <>
+            This will query Afrohub and other suppliers to check the status of <strong>{stats.pending}</strong> processing orders. It processes them in parallel chunks so it will take less than a minute.
+          </>
+        }
+        confirmLabel="Sync all pending"
+        onConfirm={syncAllProcessingOrders}
       />
     </div>
   );
