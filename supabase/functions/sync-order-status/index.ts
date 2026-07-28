@@ -143,12 +143,13 @@ Deno.serve(async (req) => {
 
     for (const order of orders) {
       // Try to find the actual supplier used for this order from request logs
+      // We take the most recent log regardless of is_success, because some successful fallbacks 
+      // are forced into 'on_hold' status for UX, which incorrectly marked their logs as is_success=false.
       let matchedSupplierId = null;
       const { data: requestLogs } = await supabase
         .from("supplier_request_logs")
         .select("supplier_id")
         .eq("order_id", order.id)
-        .eq("is_success", true)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
