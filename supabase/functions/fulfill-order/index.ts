@@ -754,8 +754,7 @@ Deno.serve(async (req) => {
           const { data: afrohubSuppliers } = await supabase
             .from("suppliers")
             .select("*")
-            .eq("provider_code", "afrohub")
-            .eq("is_active", true)
+            .ilike("provider_code", "afrohub")
             .limit(1);
             
           const afrohubSupplier = afrohubSuppliers?.[0];
@@ -770,21 +769,28 @@ Deno.serve(async (req) => {
             const sizeLabel = originalPkg?.[0]?.package_size_label;
             
             if (sizeLabel) {
-              // Remove the "(Supplier Name)" suffix to match against other suppliers
-              const baseSizeLabel = sizeLabel.replace(/\s*\([^)]*\)$/, "").trim();
-
               const { data: afrohubPkgs } = await supabase
                 .from("data_packages")
-                .select("package_code, source_metadata")
+                .select("package_code, package_size_label, source_metadata")
                 .eq("network", order.network as string)
-                .ilike("package_size_label", `${baseSizeLabel}%`)
                 .eq("source_type", "supplier_api")
                 .not("supplier_source_id", "is", null);
                 
-              const afrohubPkg = afrohubPkgs?.find(p => {
-                 const sm = p.source_metadata as Record<string, unknown>;
-                 return sm?.supplier_id === afrohubSupplier.id;
-              });
+              const extractSize = (s: string) => {
+                 const match = s.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(gb|mb)/);
+                 return match ? match[0].replace(/\s+/g, "") : null;
+              };
+              const baseSize = extractSize(sizeLabel);
+              
+              let afrohubPkg;
+              if (baseSize) {
+                afrohubPkg = afrohubPkgs?.find(p => {
+                   const sm = p.source_metadata as Record<string, unknown>;
+                   if (sm?.supplier_id !== afrohubSupplier.id) return false;
+                   const pSize = extractSize(p.package_size_label || "");
+                   return pSize === baseSize;
+                });
+              }
               
               if (afrohubPkg) {
                 console.log(`[fulfill-order] Found Afrohub equivalent package: ${afrohubPkg.package_code}`);
