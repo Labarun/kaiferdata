@@ -1139,6 +1139,33 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          p256dh_key: string
+          user_id: string | null
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          p256dh_key: string
+          user_id?: string | null
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          p256dh_key?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       special_bundle_orders: {
         Row: {
           admin_note: string | null
