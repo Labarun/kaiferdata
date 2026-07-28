@@ -237,24 +237,32 @@ async function processUpdate(
 
   // Don't downgrade final statuses
   if (FINAL_STATUSES.includes(currentStatus) && !FINAL_STATUSES.includes(normalizedStatus)) {
-    return json({ success: true, message: "Order already in final state", current_status: currentStatus });
-  }
-
-  // Only update if status changed
-  if (normalizedStatus === currentStatus && rawStatus === order.supplier_status) {
-    return json({ success: true, message: "Status unchanged" });
-  }
-
-  // Don't downgrade final statuses
-  if (FINAL_STATUSES.includes(currentStatus) && !FINAL_STATUSES.includes(normalizedStatus)) {
     await supabase.from("audit_logs").insert({
       action: "webhook_transition_blocked",
       actor_role: "system",
       target_type: "order",
       target_id: order.id as string,
-      metadata: { current: currentStatus, attempted: normalizedStatus, raw: rawStatus },
+      metadata: { current: currentStatus, attempted: normalizedStatus, raw: rawStatus, reason: "already_in_final_state" },
     });
     return json({ success: true, message: "Order already in final state", current_status: currentStatus });
+  }
+
+  // Shield 'on_hold' orders from being overwritten back to 'processing' or 'queued'.
+  // If an order is 'on_hold' (pending verification), the only valid progression is to 'delivered' or 'failed'.
+  if (currentStatus === "on_hold" && !FINAL_STATUSES.includes(normalizedStatus) && normalizedStatus !== "on_hold") {
+    await supabase.from("audit_logs").insert({
+      action: "webhook_transition_blocked",
+      actor_role: "system",
+      target_type: "order",
+      target_id: order.id as string,
+      metadata: { current: currentStatus, attempted: normalizedStatus, raw: rawStatus, reason: "prevent_on_hold_downgrade" },
+    });
+    return json({ success: true, message: "Order is on hold. Intermediate status ignored.", current_status: currentStatus });
+  }
+
+  // Only update if status changed
+  if (normalizedStatus === currentStatus && rawStatus === order.supplier_status) {
+    return json({ success: true, message: "Status unchanged" });
   }
 
   // Build delivery message
