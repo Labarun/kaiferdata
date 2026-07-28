@@ -294,7 +294,7 @@ export default function TrackOrderPage() {
                                 {entry.label}
                               </p>
                               {entry.note && (
-                                <p className="text-[10px] text-muted-foreground/45 mt-0.5 truncate">
+                                <p className="text-[10px] text-muted-foreground/45 mt-0.5 break-words">
                                   {entry.note}
                                 </p>
                               )}
