@@ -824,6 +824,42 @@ Deno.serve(async (req) => {
                 result = await submitToSupplierApi(fallbackOrder, afrohubSupplier, supabase);
                 selectedSupplier = afrohubSupplier;
                 
+                // Rate Limiting & Alerting for Fallbacks
+                try {
+                  const { data: alertSetting } = await supabase
+                    .from('system_settings')
+                    .select('setting_value')
+                    .eq('setting_key', 'last_fallback_alert_time')
+                    .maybeSingle();
+                    
+                  const lastAlertTime = alertSetting?.setting_value ? new Date(alertSetting.setting_value) : new Date(0);
+                  const now = new Date();
+                  
+                  // If we haven't alerted in the last 15 minutes
+                  if (now.getTime() - lastAlertTime.getTime() > 15 * 60 * 1000) {
+                    await supabase.from('system_settings').upsert({ 
+                      setting_key: 'last_fallback_alert_time', 
+                      setting_value: now.toISOString() 
+                    });
+                    
+                    // Fire and forget push notification
+                    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-admin-push`, {
+                       method: "POST",
+                       headers: {
+                          "Content-Type": "application/json",
+                          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+                       },
+                       body: JSON.stringify({
+                          title: "🚨 Supplier Alert: Instant Data",
+                          body: `Instant Data verification failed for ${order.beneficiary_number}. Order has been automatically re-routed to Afrohub.`,
+                          data: { url: `/admin/orders/${order_id}` }
+                       })
+                    }).catch(err => console.error("Failed to trigger push:", err));
+                  }
+                } catch (alertErr) {
+                  console.error("Failed to process fallback alert:", alertErr);
+                }
+                
                 // If Afrohub accepts it for processing, we force it back to 'on_hold' 
                 // so the user immediately sees the verification message on their timeline.
                 // Afrohub's webhook will update it to delivered later.
