@@ -760,13 +760,18 @@ Deno.serve(async (req) => {
           const afrohubSupplier = afrohubSuppliers?.[0];
           
           if (afrohubSupplier) {
-            const { data: originalPkg } = await supabase
+            const { data: originalPkgs } = await supabase
               .from("data_packages")
-              .select("package_size_label")
+              .select("package_size_label, source_metadata")
               .eq("package_code", order.bundle_code as string)
-              .limit(1);
+              .eq("network", order.network as string);
               
-            const sizeLabel = originalPkg?.[0]?.package_size_label;
+            const originalPkg = originalPkgs?.find(p => {
+               const sm = p.source_metadata as Record<string, unknown>;
+               return sm?.supplier_id === (selectedSupplier as Record<string, unknown>).id;
+            });
+            
+            const sizeLabel = originalPkg?.package_size_label;
             
             if (sizeLabel) {
               const { data: afrohubPkgs } = await supabase
