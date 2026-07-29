@@ -201,16 +201,53 @@ export default function AdminOrdersPage() {
       setSyncAllOpen(false);
       return;
     }
+
+    let finalOrdersToSync = processingOrders;
+
+    if (targetSyncSupplier) {
+      const orderIds = processingOrders.map(o => o.id);
+      const validOrderIds = new Set<string>();
+      
+      // Batch fetch logs to avoid URL length limits
+      for (let i = 0; i < orderIds.length; i += 200) {
+        const chunk = orderIds.slice(i, i + 200);
+        const { data: logs } = await supabase
+          .from("supplier_request_logs")
+          .select("order_id, supplier_id")
+          .in("order_id", chunk)
+          .order("created_at", { ascending: false });
+          
+        if (logs) {
+           const seen = new Set<string>();
+           for (const log of logs) {
+             if (!seen.has(log.order_id)) {
+               seen.add(log.order_id);
+               if (log.supplier_id === targetSyncSupplier.id) {
+                 validOrderIds.add(log.order_id);
+               }
+             }
+           }
+        }
+      }
+      
+      finalOrdersToSync = processingOrders.filter(o => validOrderIds.has(o.id));
+      
+      if (finalOrdersToSync.length === 0) {
+        toast({ title: `No processing orders found for ${targetSyncSupplier.name}` });
+        setSyncAllOpen(false);
+        return;
+      }
+    }
     
     setSyncingAll(true);
-    setSyncProgress({ done: 0, total: processingOrders.length });
+    setSyncProgress({ done: 0, total: finalOrdersToSync.length });
     
     let ok = 0;
     const CHUNK_SIZE = 2; // 2 concurrent requests (approx 120 req/min max)
     const DELAY_MS = 1000; // 1 second delay between chunks
     
-    for (let i = 0; i < processingOrders.length; i += CHUNK_SIZE) {
-       const batch = processingOrders.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < finalOrdersToSync.length; i += CHUNK_SIZE) {
+       const batch = finalOrdersToSync.slice(i, i + CHUNK_SIZE);
        await Promise.all(batch.map(async (order) => {
          try {
            const bodyPayload: any = { order_id: order.id };
@@ -229,12 +266,12 @@ export default function AdminOrdersPage() {
          }
        }));
        await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
-       setSyncProgress({ done: Math.min(i + CHUNK_SIZE, processingOrders.length), total: processingOrders.length });
+       setSyncProgress({ done: Math.min(i + CHUNK_SIZE, finalOrdersToSync.length), total: finalOrdersToSync.length });
     }
     
     setSyncingAll(false);
     setSyncAllOpen(false);
-    toast({ title: `Synced ${ok}/${processingOrders.length} orders` });
+    toast({ title: `Synced ${ok}/${finalOrdersToSync.length} orders` });
     refresh();
   };
 
