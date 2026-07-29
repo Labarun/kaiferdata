@@ -92,13 +92,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const targetOrderId = (body as Record<string, unknown>).order_id as string | undefined;
+    const forceSupplierId = (body as Record<string, unknown>).supplier_id as string | undefined;
 
-    // ── Fetch suppliers with status sync enabled ──
+    // ── Fetch suppliers (we fetch all active so we can force sync via UI) ──
     const { data: suppliers } = await supabase
       .from("suppliers")
       .select("*")
-      .eq("is_active", true)
-      .eq("supports_status_sync", true);
+      .eq("is_active", true);
 
     if (!suppliers || suppliers.length === 0) {
       return json({ message: "No suppliers configured for status sync", updated: 0 });
@@ -145,17 +145,20 @@ Deno.serve(async (req) => {
       // Try to find the actual supplier used for this order from request logs
       // We take the most recent log regardless of is_success, because some successful fallbacks 
       // are forced into 'on_hold' status for UX, which incorrectly marked their logs as is_success=false.
-      let matchedSupplierId = null;
-      const { data: requestLogs } = await supabase
-        .from("supplier_request_logs")
-        .select("supplier_id")
-        .eq("order_id", order.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      let matchedSupplierId = forceSupplierId || null;
+      
+      if (!matchedSupplierId) {
+        const { data: requestLogs } = await supabase
+          .from("supplier_request_logs")
+          .select("supplier_id")
+          .eq("order_id", order.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (requestLogs?.supplier_id) {
-        matchedSupplierId = requestLogs.supplier_id;
+        if (requestLogs?.supplier_id) {
+          matchedSupplierId = requestLogs.supplier_id;
+        }
       }
 
       let supplier = suppliers.find((s) => s.id === matchedSupplierId);

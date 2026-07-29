@@ -59,20 +59,28 @@ export default function AdminOrdersPage() {
   const [syncAllOpen, setSyncAllOpen] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0 });
+  
+  // Track active suppliers for targeted syncing
+  const [activeSuppliers, setActiveSuppliers] = useState<{id: string, name: string}[]>([]);
+  const [targetSyncSupplier, setTargetSyncSupplier] = useState<{id: string, name: string} | null>(null);
 
   // global stat strip (once)
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const C = { count: "exact" as const, head: true };
-      const [t, d, p, f, h] = await Promise.all([
-        supabase.from("orders").select("id", C),
-        supabase.from("orders").select("id", C).eq("status", "delivered"),
-        supabase.from("orders").select("id", C).in("status", ["paid", "queued", "processing"]),
-        supabase.from("orders").select("id", C).eq("status", "failed"),
-        supabase.from("orders").select("id", C).eq("status", "on_hold"),
+      const [{ count: c1 }, { count: c2 }, { count: c3 }, { count: c4 }] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "delivered"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["processing", "queued"]),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "failed"),
       ]);
-      setStats({ total: t.count || 0, delivered: d.count || 0, pending: p.count || 0, failed: f.count || 0, onHold: h.count || 0 });
+      const { count: c5 } = await supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "on_hold");
+      if (!cancelled) setStats({ total: c1 || 0, delivered: c2 || 0, pending: c3 || 0, failed: c4 || 0, onHold: c5 || 0 });
+      
+      const { data: supData } = await supabase.from("suppliers").select("id, name").eq("is_active", true);
+      if (supData && !cancelled) setActiveSuppliers(supData);
     })();
+    return () => { cancelled = true; };
   }, [reloadKey]);
 
   // paginated list
@@ -204,10 +212,15 @@ export default function AdminOrdersPage() {
        const batch = processingOrders.slice(i, i + CHUNK_SIZE);
        await Promise.all(batch.map(async (order) => {
          try {
+           const bodyPayload: any = { order_id: order.id };
+           if (targetSyncSupplier) {
+             bodyPayload.supplier_id = targetSyncSupplier.id;
+           }
+           
            const res = await fetch(`https://${projectId}.supabase.co/functions/v1/sync-order-status`, {
              method: "POST",
              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-             body: JSON.stringify({ order_id: order.id }),
+             body: JSON.stringify(bodyPayload),
            });
            if (res.ok) ok++;
          } catch (e) {
@@ -292,17 +305,30 @@ export default function AdminOrdersPage() {
             </Button>
           )}
           {stats.pending > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={syncingAll}
-              onClick={() => setSyncAllOpen(true)}
-              className="gap-1.5 border-blue-500/40 text-blue-600 hover:bg-blue-500/5"
-            >
-              {syncingAll
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing {syncProgress.done}/{syncProgress.total}</>
-                : <><RefreshCw className="h-3.5 w-3.5" /> Sync all pending ({stats.pending})</>}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={syncingAll}
+                  className="gap-1.5 border-blue-500/40 text-blue-600 hover:bg-blue-500/5"
+                >
+                  {syncingAll
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing {syncProgress.done}/{syncProgress.total}</>
+                    : <><RefreshCw className="h-3.5 w-3.5" /> Sync all pending ({stats.pending})</>}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setTargetSyncSupplier(null); setSyncAllOpen(true); }}>
+                  Sync All Suppliers
+                </DropdownMenuItem>
+                {activeSuppliers.map(sup => (
+                  <DropdownMenuItem key={sup.id} onClick={() => { setTargetSyncSupplier(sup); setSyncAllOpen(true); }}>
+                    Sync {sup.name} only
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button size="sm" variant="outline" onClick={refresh} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
         </div>
@@ -398,10 +424,10 @@ export default function AdminOrdersPage() {
         title={`Sync ${stats.pending} pending order(s)?`}
         description={
           <>
-            This will query Afrohub and other suppliers to check the status of <strong>{stats.pending}</strong> processing orders. It processes them in parallel chunks so it will take less than a minute.
+            This will query {targetSyncSupplier ? targetSyncSupplier.name : "all active suppliers"} to check the status of <strong>{stats.pending}</strong> processing orders. It processes them in parallel chunks so it will take less than a minute.
           </>
         }
-        confirmLabel="Sync all pending"
+        confirmLabel={`Sync ${targetSyncSupplier ? targetSyncSupplier.name : "All"}`}
         onConfirm={syncAllProcessingOrders}
       />
     </div>
