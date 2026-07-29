@@ -206,7 +206,8 @@ export default function AdminOrdersPage() {
     setSyncProgress({ done: 0, total: processingOrders.length });
     
     let ok = 0;
-    const CHUNK_SIZE = 10; // 10 concurrent requests
+    const CHUNK_SIZE = 2; // 2 concurrent requests (approx 120 req/min max)
+    const DELAY_MS = 1000; // 1 second delay between chunks
     
     for (let i = 0; i < processingOrders.length; i += CHUNK_SIZE) {
        const batch = processingOrders.slice(i, i + CHUNK_SIZE);
@@ -227,6 +228,7 @@ export default function AdminOrdersPage() {
            console.error("Sync error for order", order.id, e);
          }
        }));
+       await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
        setSyncProgress({ done: Math.min(i + CHUNK_SIZE, processingOrders.length), total: processingOrders.length });
     }
     
