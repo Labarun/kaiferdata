@@ -28,6 +28,7 @@ import {
 } from "@/services/purchaseIntent";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { StructuredData, buildProductSchema, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 
 const GHANA_NETWORKS = ["MTN", "Telecel", "AirtelTigo"];
 
@@ -210,6 +211,10 @@ export default function BuyDataPage() {
         title="Buy Data — MTN, Telecel & AirtelTigo Bundles"
         description="Buy cheap MTN, Telecel, and AirtelTigo data bundles in Ghana. No signup required, instant delivery via Paystack. Choose your network and bundle size."
       />
+      <StructuredData data={[
+        buildProductSchema("Data Bundles", "Affordable data bundles for MTN, Telecel, and AirtelTigo in Ghana.", undefined, 1.00),
+        buildBreadcrumbSchema([{ name: "Home", url: "https://kaiferdata.com/" }, { name: "Buy Data", url: "https://kaiferdata.com/buy" }])
+      ]} />
       {/* ─── Premium hero atmosphere ─── */}
       <section className="bg-hero-gradient relative overflow-hidden">
         {/* Layered ambient orbs — deeper, richer */}

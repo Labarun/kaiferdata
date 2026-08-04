@@ -79,3 +79,76 @@ export function buildFaqSchema(
     })),
   };
 }
+
+export function buildProductSchema(
+  name: string,
+  description: string,
+  image?: string,
+  price?: number,
+  currency: string = "GHS"
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name,
+    description,
+    image: image || "https://kaiferdata.com/icons/apple-touch-icon.png",
+    offers: {
+      "@type": "Offer",
+      price: price || 0,
+      priceCurrency: currency,
+      availability: "https://schema.org/InStock",
+      seller: {
+        "@type": "Organization",
+        name: "Kaiferdata",
+      }
+    },
+  };
+}
+
+export function buildArticleSchema(
+  title: string,
+  description: string,
+  image: string,
+  datePublished: string,
+  dateModified?: string,
+  authorName: string = "Kaiferdata Team"
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description,
+    image: image,
+    datePublished,
+    dateModified: dateModified || datePublished,
+    author: {
+      "@type": "Person",
+      name: authorName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Kaiferdata",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://kaiferdata.com/icons/apple-touch-icon.png",
+      }
+    },
+  };
+}
+
+export function buildBreadcrumbSchema(
+  crumbs: { name: string; url: string }[]
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: crumb.url,
+    })),
+  };
+}
+

@@ -12,7 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
-
 # Disallow private/dashboard areas from indexing
 Disallow: /dashboard
 Disallow: /agent
