@@ -70,7 +70,10 @@ async function run() {
   console.log(`Found ${allRoutes.length} routes to prerender.`);
   
   console.log('Launching browser...');
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
   const page = await browser.newPage();
   
   for (const route of allRoutes) {
