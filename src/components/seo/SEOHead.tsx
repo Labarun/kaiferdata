@@ -46,6 +46,17 @@ function setCanonical(href: string) {
   el.setAttribute("href", href);
 }
 
+function setHreflang(href: string, hreflang: string) {
+  let el = document.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`);
+  if (!el) {
+    el = document.createElement("link");
+    el.setAttribute("rel", "alternate");
+    el.setAttribute("hreflang", hreflang);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("href", href);
+}
+
 export function SEOHead({
   title,
   description,
@@ -67,6 +78,9 @@ export function SEOHead({
 
     // Canonical
     setCanonical(canonical);
+    
+    // Hreflang
+    setHreflang(canonical, "en-GH");
 
     // Open Graph
     setMetaTag("og:title", fullTitle);

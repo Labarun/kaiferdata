@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/shared/LoadingState";
 import { Helmet } from "react-helmet-async";
 import { marked } from "marked";
+import { StructuredData, buildArticleSchema, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 
 interface BlogPostDetail {
   id: string;
@@ -81,33 +82,18 @@ export default function BlogPostPage() {
   // Parse markdown content to safe HTML
   const htmlContent = marked.parse(post.content || "");
 
-  // Create JSON-LD schema string
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `https://kaiferdata.com/blog/${post.slug}`
-    },
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": post.cover_image_url || "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800",
-    "datePublished": post.published_at,
-    "dateModified": post.published_at,
-    "author": {
-      "@type": "Organization",
-      "name": "Kaifer Data",
-      "url": "https://kaiferdata.com"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Kaifer Data",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://kaiferdata.com/logo.png"
-      }
-    }
-  };
+  const articleSchema = buildArticleSchema(
+    post.title,
+    post.excerpt,
+    post.cover_image_url || "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800",
+    post.published_at
+  );
+  
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: "https://kaiferdata.com/" },
+    { name: "Blog Spot", url: "https://kaiferdata.com/blog" },
+    { name: post.title, url: `https://kaiferdata.com/blog/${post.slug}` }
+  ]);
 
   return (
     <div className="container max-w-6xl py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
@@ -120,10 +106,9 @@ export default function BlogPostPage() {
         <meta property="og:type" content="article" />
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:section" content={post.category} />
-        
-        {/* Structured Data injection */}
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
+      
+      <StructuredData data={[articleSchema, breadcrumbSchema]} />
 
       {/* Back link */}
       <Link
@@ -162,16 +147,15 @@ export default function BlogPostPage() {
           </div>
 
           {/* Cover Image */}
-          <div className="overflow-hidden rounded-3xl aspect-video relative border border-border/30 shadow-lg shadow-black/5">
-            <img
-              src={
-                post.cover_image_url ||
-                "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800"
-              }
-              alt={post.title}
-              className="h-full w-full object-cover"
-            />
-          </div>
+          {post.cover_image_url && (
+            <div className="overflow-hidden rounded-3xl aspect-video relative border border-border/30 shadow-lg shadow-black/5">
+              <img
+                src={post.cover_image_url}
+                alt={post.title}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
 
           {/* Markdown Content (Rendered using tailwind prose rules) */}
           <div
