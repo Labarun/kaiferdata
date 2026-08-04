@@ -147,16 +147,15 @@ export default function BlogPostPage() {
           </div>
 
           {/* Cover Image */}
-          <div className="overflow-hidden rounded-3xl aspect-video relative border border-border/30 shadow-lg shadow-black/5">
-            <img
-              src={
-                post.cover_image_url ||
-                "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800"
-              }
-              alt={post.title}
-              className="h-full w-full object-cover"
-            />
-          </div>
+          {post.cover_image_url && (
+            <div className="overflow-hidden rounded-3xl aspect-video relative border border-border/30 shadow-lg shadow-black/5">
+              <img
+                src={post.cover_image_url}
+                alt={post.title}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
 
           {/* Markdown Content (Rendered using tailwind prose rules) */}
           <div

@@ -130,20 +130,26 @@ export default function BlogPage() {
           {/* Featured Post */}
           {featuredPost && activeCategory === "All" && !searchQuery && (
             <div className="group relative grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 bg-card/30 border border-border/30 hover:border-primary/30 p-5 rounded-3xl transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
-              <div className="lg:col-span-7 overflow-hidden rounded-2xl aspect-video lg:aspect-auto lg:h-[380px] relative">
-                <img
-                  src={
-                    featuredPost.cover_image_url ||
-                    "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800"
-                  }
-                  alt={featuredPost.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm border-0 font-medium">
-                  {featuredPost.category}
-                </Badge>
-              </div>
+              {featuredPost.cover_image_url ? (
+                <div className="lg:col-span-7 overflow-hidden rounded-2xl aspect-video lg:aspect-auto lg:h-[380px] relative">
+                  <img
+                    src={featuredPost.cover_image_url}
+                    alt={featuredPost.title}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm border-0 font-medium">
+                    {featuredPost.category}
+                  </Badge>
+                </div>
+              ) : (
+                <div className="lg:col-span-7 overflow-hidden rounded-2xl aspect-video lg:aspect-auto lg:h-[380px] relative bg-muted/30 flex items-center justify-center">
+                  <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm border-0 font-medium">
+                    {featuredPost.category}
+                  </Badge>
+                  <BookOpen className="h-16 w-16 text-muted-foreground/20" />
+                </div>
+              )}
 
               <div className="lg:col-span-5 flex flex-col justify-center space-y-4">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -189,15 +195,16 @@ export default function BlogPage() {
                   key={post.id}
                   className="group flex flex-col bg-card/25 border border-border/20 hover:border-primary/20 rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
                 >
-                  <div className="relative aspect-video overflow-hidden bg-muted">
-                    <img
-                      src={
-                        post.cover_image_url ||
-                        "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800"
-                      }
-                      alt={post.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                  <div className="relative aspect-video overflow-hidden bg-muted flex items-center justify-center">
+                    {post.cover_image_url ? (
+                      <img
+                        src={post.cover_image_url}
+                        alt={post.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <BookOpen className="h-10 w-10 text-muted-foreground/20" />
+                    )}
                     <Badge className="absolute top-3 left-3 bg-background/80 hover:bg-background text-foreground backdrop-blur-sm border-0 text-[10px] font-semibold py-0.5 px-2">
                       {post.category}
                     </Badge>
