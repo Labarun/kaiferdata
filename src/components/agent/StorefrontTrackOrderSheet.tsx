@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { lookupOrder } from "@/services/purchaseIntent";
+import { Link } from "react-router-dom";
 
 import {
   Search,
@@ -185,6 +186,11 @@ export function StorefrontTrackOrderSheet({ open, onOpenChange, storeName, initi
                   <p className="text-[11.5px] text-muted-foreground/70 mt-1 leading-relaxed max-w-[280px] mx-auto">
                     {safeDeliveryMsg}
                   </p>
+                  {statusKey === "on_hold" && (
+                    <p className="text-[11px] text-muted-foreground/60 mt-1 max-w-[280px] mx-auto leading-relaxed animate-fade-in">
+                      <Link to="/blog/understanding-on-hold-verification-orders" className="text-primary hover:underline font-medium" onClick={() => onOpenChange(false)}>Learn more about verification delays &rarr;</Link>
+                    </p>
+                  )}
                 </div>
 
                 <div className="glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3">

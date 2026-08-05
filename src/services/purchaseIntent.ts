@@ -278,3 +278,15 @@ export async function lookupOrder(ref: string): Promise<Record<string, unknown> 
   const row = Array.isArray(data) ? data[0] : data;
   return (row as Record<string, unknown>) || null;
 }
+
+/** Public phone number tracking — uses SECURITY DEFINER RPC.
+ *  Returns a simplified list of recent orders (public_order_id, status, created_at)
+ *  to protect sensitive data. */
+export async function lookupOrdersByPhone(phone: string): Promise<Record<string, unknown>[]> {
+  const { data, error } = await supabase.rpc("track_orders_by_phone_public", {
+    _phone: phone.trim(),
+  });
+  if (error || !data) return [];
+  return data as Record<string, unknown>[];
+}
+
