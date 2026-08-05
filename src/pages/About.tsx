@@ -65,6 +65,22 @@ const faqs = [
     )
   },
   {
+    question: "Why is my order On Hold for verification?",
+    answer: (
+      <>
+        If your order is marked as <strong>On Hold</strong>, it means the recipient number is new to the MTN service and is going through a mandatory verification process on the MTN portal.
+        <br /><br />
+        <strong>Please note:</strong>
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          <li>This is not a failure — your order is safe. Once the verification completes, delivery will be processed immediately.</li>
+          <li>Because the number is new to the service, delivery will be delayed.</li>
+          <li>There is no fixed time frame for this network verification process to complete.</li>
+          <li>Since the order is securely submitted to the network and pending their release, <strong>no refunds can be made</strong>.</li>
+        </ul>
+      </>
+    )
+  },
+  {
     question: "Is my personal data safe?",
     answer: (
       <>
