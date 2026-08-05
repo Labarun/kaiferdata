@@ -56,6 +56,7 @@ export function AgentPromoModal() {
   useEffect(() => {
     if (loading) return;
     let cancelled = false;
+    let timeoutId: any;
 
     (async () => {
       const state = readState();
@@ -81,12 +82,15 @@ export function AgentPromoModal() {
 
       if (!cancelled) {
         // Small delay so it doesn't feel jarring
-        setTimeout(() => !cancelled && setOpen(true), 1400);
+        timeoutId = setTimeout(() => {
+          if (!cancelled) setOpen(true);
+        }, 1400);
       }
     })();
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [user, loading]);
 
@@ -166,6 +170,7 @@ export function AgentPromoModal() {
             <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
           <button
+            type="button"
             onClick={() => handleClose(false)}
             className="w-full mt-2 h-9 text-[11.5px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
           >
