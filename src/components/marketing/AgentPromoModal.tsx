@@ -123,12 +123,12 @@ export function AgentPromoModal() {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-[420px] p-0 overflow-hidden border-border/40 glass-premium rounded-3xl">
         {/* Ambient glow */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/15 blur-3xl" />
-          <div className="absolute -bottom-20 -left-10 w-52 h-52 rounded-full bg-info/10 blur-3xl" />
+        <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden>
+          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-10 w-52 h-52 rounded-full bg-info/10 blur-3xl pointer-events-none" />
         </div>
 
-        <div className="relative p-6 sm:p-7">
+        <div className="relative z-10 p-6 sm:p-7">
           {/* Badge */}
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <Sparkles className="h-3 w-3 text-primary" />
