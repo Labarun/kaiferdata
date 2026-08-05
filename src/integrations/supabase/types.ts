@@ -2315,6 +2315,16 @@ export type Database = {
           updated_at: string
         }[]
       }
+      track_orders_by_phone_public: {
+        Args: { _phone: string }
+        Returns: {
+          bundle_snapshot: Json
+          created_at: string
+          network: string
+          public_order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+        }[]
+      }
       upsert_agent_bundle_price: {
         Args: { _package_id: string; _selling_price: number }
         Returns: {
