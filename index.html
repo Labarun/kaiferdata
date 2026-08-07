@@ -10,6 +10,20 @@
   <link rel="canonical" href="https://kaiferdata.com/" />
   <meta name="author" content="Kaiferdata" />
 
+  <!-- Prevent FOUC (Flash of Unstyled Content) by setting theme immediately -->
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('kaifer-theme') || 'system';
+        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Theme + PWA -->
   <meta name="theme-color" content="#1A5FB4" />
   <link rel="manifest" href="/manifest.webmanifest" />
