@@ -244,10 +244,11 @@ Deno.serve(async (req) => {
       let resolvedPrice: number | null = null;
       let packageValid = false;
       let priceSource: "agent_storefront" | "data_packages" | "data_plans" = "data_packages";
+      let authoritativeSnapshot: Record<string, unknown> | null = null;
 
       const { data: pkg } = await supabase
         .from("data_packages")
-        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, is_agent_resaleable, agent_base_price, buying_enabled")
+        .select("id, selling_price, is_active, visible_on_public, visible_for_logged_in, package_name, package_code, package_size_label, network, validity_label, is_agent_resaleable, agent_base_price, buying_enabled")
         .eq("id", packageId)
         .single();
 
@@ -294,12 +295,22 @@ Deno.serve(async (req) => {
           priceSource = "data_packages";
         }
         packageValid = true;
+        authoritativeSnapshot = {
+          id: pkg.id,
+          package_code: pkg.package_code,
+          package_name: pkg.package_name,
+          volume: pkg.package_size_label,
+          package_size_label: pkg.package_size_label,
+          amount: resolvedPrice,
+          network: pkg.network,
+          description: pkg.validity_label,
+        };
       }
 
       if (!packageValid) {
         const { data: plan } = await supabase
           .from("data_plans")
-          .select("id, amount, is_active, plan_name")
+          .select("id, amount, is_active, plan_name, plan_code, volume, network, description")
           .eq("id", packageId)
           .single();
 
@@ -310,6 +321,15 @@ Deno.serve(async (req) => {
           resolvedPrice = Number(plan.amount);
           priceSource = "data_plans";
           packageValid = true;
+          authoritativeSnapshot = {
+            id: plan.id,
+            plan_code: plan.plan_code,
+            plan_name: plan.plan_name,
+            volume: plan.volume,
+            amount: resolvedPrice,
+            network: plan.network,
+            description: plan.description,
+          };
         }
       }
 
@@ -337,6 +357,9 @@ Deno.serve(async (req) => {
       const quantity = intent.intent_type === "agent_bulk_buy" && rawBulkNumbers.length > 0 ? rawBulkNumbers.length : 1;
       
       resolvedPrice = resolvedPrice * quantity;
+      if (authoritativeSnapshot) {
+        authoritativeSnapshot.amount = resolvedPrice;
+      }
 
       const frontendAmount = Number(intent.amount_expected);
       const priceDelta = Math.abs(frontendAmount - resolvedPrice);
@@ -407,10 +430,20 @@ Deno.serve(async (req) => {
 
       authoritative_base_amount = resolvedPrice;
 
-      // Persist the authoritative resolved price + refreshed agent snapshot
+      // Update the snapshot reference in memory so the Paystack metadata uses the cleansed values
+      if (authoritativeSnapshot) {
+        // We delete all keys from the old snapshot and replace them with the server's clean ones,
+        // so no stray forged properties (like `bundle_code` if someone injected it manually) slip through.
+        for (const key of Object.keys(snapshot)) delete snapshot[key];
+        Object.assign(snapshot, authoritativeSnapshot);
+      }
+
+      // Persist the authoritative resolved price + cleansed snapshot
       // back into the intent so all downstream stages (Paystack init,
-      // finalization, commission calc) see the same number.
-      const intentPatch: Record<string, unknown> = {};
+      // finalization, commission calc, fulfillment) see the TRUE database values.
+      const intentPatch: Record<string, unknown> = {
+        plan_snapshot: authoritativeSnapshot || intent.plan_snapshot
+      };
       if (priceDelta > 0) intentPatch.amount_expected = resolvedPrice;
       if (agentProfileIdForPrice) {
         const existingReferral = (existingCtx.referral || {}) as Record<string, unknown>;
