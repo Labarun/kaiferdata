@@ -31,15 +31,12 @@ export interface PricingRow {
   priceId: string | null;
 }
 
-/** Fetch all resaleable packages + this agent's existing prices, joined. */
+/** Fetch all resaleable packages + this agent's existing prices, joined.
+ *  Packages come from `list_agent_resaleable_packages` (agent-scoped RPC) which
+ *  exposes `agent_base_price` but never `supplier_price`. */
 export async function fetchAgentPricingMatrix(agentProfileId: string): Promise<PricingRow[]> {
   const [{ data: pkgs }, { data: prices }] = await Promise.all([
-    (supabase.from("data_packages") as any)
-      .select("*")
-      .eq("is_active", true)
-      .eq("is_agent_resaleable", true)
-      .order("network", { ascending: true })
-      .order("display_order", { ascending: true }),
+    (supabase as any).rpc("list_agent_resaleable_packages"),
     supabase
       .from("agent_bundle_prices" as any)
       .select("*")
@@ -92,36 +89,20 @@ export async function bulkSaveAgentBundlePrices(
   return { ok, failed };
 }
 
-/** Public storefront read: agent's published bundles with their prices. */
+/** Public storefront read: agent's published bundles with their prices.
+ *  Uses the anon-safe `get_public_agent_bundles` RPC, which joins the agent's
+ *  published prices to the catalog server-side and never returns cost columns
+ *  (supplier_price / agent_base_price). Commission base pricing is resolved
+ *  server-side by `handle_order_delivered_commission`. */
 export async function fetchPublishedAgentBundles(agentProfileId: string) {
-  const { data: prices } = await supabase
-    .from("agent_bundle_prices" as any)
-    .select("*")
-    .eq("agent_profile_id", agentProfileId)
-    .eq("is_published", true);
-  if (!prices || (prices as any[]).length === 0) return [];
-
-  const ids = (prices as any[]).map((p) => p.package_id);
-  const { data: pkgs } = await (supabase
-    .from("data_packages") as any)
-    .select("*")
-    .in("id", ids)
-    .eq("is_active", true)
-    .eq("is_agent_resaleable", true);
-
-  const priceMap = new Map<string, number>();
-  const baseMap = new Map<string, number>();
-  (prices as any[]).forEach((p) => priceMap.set(p.package_id, Number(p.selling_price)));
-
-  const result = ((pkgs as any[]) ?? []).map((pkg: any) => {
-    baseMap.set(pkg.id, Number(pkg.agent_base_price ?? 0));
-    return {
-      ...pkg,
-      // Override selling price with the agent's price for this storefront
-      selling_price: priceMap.get(pkg.id) ?? Number(pkg.selling_price),
-      _agent_base_price: baseMap.get(pkg.id) ?? 0,
-    } as DataPackage & { _agent_base_price: number };
+  const { data, error } = await (supabase as any).rpc("get_public_agent_bundles", {
+    _agent_profile_id: agentProfileId,
   });
+  if (error) throw error;
+  if (!data || (data as any[]).length === 0) return [];
 
-  return sortPackagesAutomatically(result, true);
+  return sortPackagesAutomatically(data as any[], true) as (DataPackage & {
+    _agent_base_price?: number;
+  })[];
 }
+

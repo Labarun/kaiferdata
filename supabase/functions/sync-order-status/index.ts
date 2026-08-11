@@ -78,16 +78,17 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // ── Auth ──
+    // ── Auth: REQUIRED. service-role key or admin JWT ──
     const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      if (token !== supabaseServiceKey) {
-        const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-        if (authErr || !user) return json({ error: "Unauthorized" }, 401);
-        const { data: hasAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-        if (!hasAdmin) return json({ error: "Admin access required" }, 403);
-      }
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (token !== supabaseServiceKey) {
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+      const { data: hasAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!hasAdmin) return json({ error: "Admin access required" }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
