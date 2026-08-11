@@ -208,8 +208,8 @@ export default function AdminOrdersPage() {
     setSyncProgress({ done: 0, total: finalOrdersToSync.length });
     
     let updatedCount = 0;
-    const CHUNK_SIZE = 1; // 1 concurrent request to prevent aggressive supplier rate limits
-    const DELAY_MS = 1000; // 1 second delay (60 req/min)
+    const CHUNK_SIZE = 4; // Process 4 at a time to speed up the loop while remaining safe
+    const DELAY_MS = 500; // Half-second delay between batches
     
     for (let i = 0; i < finalOrdersToSync.length; i += CHUNK_SIZE) {
        const batch = finalOrdersToSync.slice(i, i + CHUNK_SIZE);
