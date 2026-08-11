@@ -288,21 +288,21 @@ Deno.serve(async (req) => {
             metadata: { raw_response: apiData, supplier_id: supplier.id },
           });
 
-          // Log supplier request
-          await supabase.from("supplier_request_logs").insert({
-            supplier_id: supplier.id,
-            order_id: order.id,
-            request_payload: { path: resolvedPath, method: statusMethod },
-            response_payload: apiData,
-            normalized_result: normalizedStatus,
-            is_success: true,
-            supplier_reference: rawReference,
-            request_started_at: new Date().toISOString(),
-            response_received_at: new Date().toISOString(),
-          });
-
           updatedCount++;
         }
+
+        // Always log the supplier request so we can audit the raw responses
+        await supabase.from("supplier_request_logs").insert({
+          supplier_id: supplier.id,
+          order_id: order.id,
+          request_payload: { path: resolvedPath, method: statusMethod },
+          response_payload: apiData,
+          normalized_result: normalizedStatus,
+          is_success: true,
+          supplier_reference: rawReference,
+          request_started_at: new Date().toISOString(),
+          response_received_at: new Date().toISOString(),
+        });
       } catch (err) {
         const errMsg = `Order ${order.public_order_id}: ${String(err)}`;
         console.error("Status sync error:", errMsg);
