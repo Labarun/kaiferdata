@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
         .from("orders")
         .select("id, public_order_id, status, supplier_reference, supplier_status, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
         .eq("id", targetOrderId)
+        .not("supplier_reference", "is", null)
         .limit(1);
     }
 
