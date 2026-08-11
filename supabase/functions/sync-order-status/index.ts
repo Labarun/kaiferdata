@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
         .from("orders")
         .select("id, public_order_id, status, supplier_reference, supplier_status, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
         .eq("id", targetOrderId)
+        .not("supplier_reference", "is", null)
         .limit(1);
     }
 
@@ -220,19 +221,19 @@ Deno.serve(async (req) => {
         if (rawStatusVal === undefined || rawStatusVal === null || rawStatusVal === "") {
           rawStatusVal = apiData.status || apiData.message || "";
         }
-        const rawStatus = String(rawStatusVal);
+        const rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
 
         let rawMsgVal = getNestedValue(apiData, messageField);
         if (rawMsgVal === undefined || rawMsgVal === null || rawMsgVal === "") {
           rawMsgVal = apiData.message || apiData.details || "";
         }
-        const rawMessage = String(rawMsgVal);
+        const rawMessage = (rawMsgVal !== undefined && rawMsgVal !== null) ? String(rawMsgVal) : "";
 
         let rawRefVal = getNestedValue(apiData, referenceField);
         if (rawRefVal === undefined || rawRefVal === null || rawRefVal === "") {
           rawRefVal = apiData.reference || apiData.order_id || order.supplier_reference || "";
         }
-        const rawReference = String(rawRefVal);
+        const rawReference = (rawRefVal !== undefined && rawRefVal !== null) ? String(rawRefVal) : "";
 
         if (!rawStatus) continue; // No status info, skip
 

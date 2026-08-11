@@ -204,47 +204,12 @@ export default function AdminOrdersPage() {
 
     let finalOrdersToSync = processingOrders;
 
-    if (targetSyncSupplier) {
-      const orderIds = processingOrders.map(o => o.id);
-      const validOrderIds = new Set<string>();
-      
-      // Batch fetch logs to avoid URL length limits
-      for (let i = 0; i < orderIds.length; i += 200) {
-        const chunk = orderIds.slice(i, i + 200);
-        const { data: logs } = await supabase
-          .from("supplier_request_logs")
-          .select("order_id, supplier_id")
-          .in("order_id", chunk)
-          .order("created_at", { ascending: false });
-          
-        if (logs) {
-           const seen = new Set<string>();
-           for (const log of logs) {
-             if (!seen.has(log.order_id)) {
-               seen.add(log.order_id);
-               if (log.supplier_id === targetSyncSupplier.id) {
-                 validOrderIds.add(log.order_id);
-               }
-             }
-           }
-        }
-      }
-      
-      finalOrdersToSync = processingOrders.filter(o => validOrderIds.has(o.id));
-      
-      if (finalOrdersToSync.length === 0) {
-        toast({ title: `No processing orders found for ${targetSyncSupplier.name}` });
-        setSyncAllOpen(false);
-        return;
-      }
-    }
-    
     setSyncingAll(true);
     setSyncProgress({ done: 0, total: finalOrdersToSync.length });
     
-    let ok = 0;
-    const CHUNK_SIZE = 2; // 2 concurrent requests (approx 120 req/min max)
-    const DELAY_MS = 1000; // 1 second delay between chunks
+    let updatedCount = 0;
+    const CHUNK_SIZE = 1; // 1 concurrent request to prevent aggressive supplier rate limits
+    const DELAY_MS = 1000; // 1 second delay (60 req/min)
     
     for (let i = 0; i < finalOrdersToSync.length; i += CHUNK_SIZE) {
        const batch = finalOrdersToSync.slice(i, i + CHUNK_SIZE);
@@ -260,7 +225,13 @@ export default function AdminOrdersPage() {
              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
              body: JSON.stringify(bodyPayload),
            });
-           if (res.ok) ok++;
+           
+           if (res.ok) {
+             const data = await res.json();
+             if (data.orders_updated && data.orders_updated > 0) {
+               updatedCount++;
+             }
+           }
          } catch (e) {
            console.error("Sync error for order", order.id, e);
          }
@@ -271,7 +242,7 @@ export default function AdminOrdersPage() {
     
     setSyncingAll(false);
     setSyncAllOpen(false);
-    toast({ title: `Synced ${ok}/${finalOrdersToSync.length} orders` });
+    toast({ title: `Successfully updated ${updatedCount} orders out of ${finalOrdersToSync.length} checked` });
     refresh();
   };
 
