@@ -219,21 +219,55 @@ Deno.serve(async (req) => {
 
         let rawStatusVal = getNestedValue(apiData, statusField);
         if (rawStatusVal === undefined || rawStatusVal === null || rawStatusVal === "") {
-          rawStatusVal = apiData.status || apiData.message || "";
+          // Aggressively search for status in various common fields if the mapped one is missing
+          rawStatusVal = apiData.status || apiData.state || apiData.status_text || apiData.message || "";
         }
-        const rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
+        let rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
 
         let rawMsgVal = getNestedValue(apiData, messageField);
         if (rawMsgVal === undefined || rawMsgVal === null || rawMsgVal === "") {
-          rawMsgVal = apiData.message || apiData.details || "";
+          rawMsgVal = apiData.message || apiData.details || apiData.status_text || "";
         }
         const rawMessage = (rawMsgVal !== undefined && rawMsgVal !== null) ? String(rawMsgVal) : "";
 
         let rawRefVal = getNestedValue(apiData, referenceField);
         if (rawRefVal === undefined || rawRefVal === null || rawRefVal === "") {
-          rawRefVal = apiData.reference || apiData.order_id || order.supplier_reference || "";
+          rawRefVal = apiData.reference || apiData.order_id || apiData.id || order.supplier_reference || "";
         }
         const rawReference = (rawRefVal !== undefined && rawRefVal !== null) ? String(rawRefVal) : "";
+
+        // SELF-HEALING: If supplier says "Not Found" (404), and we suspect the reference was swapped
+        // (like with the old Afrohub mapping bug), we can check if delivery_message contains the real ID.
+        if (
+          apiRes.status === 404 || 
+          rawStatus.toLowerCase().includes("not found") || 
+          rawMessage.toLowerCase().includes("not found")
+        ) {
+          const possibleId = order.delivery_message;
+          if (possibleId && possibleId !== order.supplier_reference && possibleId.length > 3 && !possibleId.includes(" ")) {
+            console.log(`Order ${order.id}: 404 received. Attempting self-healing swap with delivery_message: ${possibleId}`);
+            const retryPath = statusPath
+              .replace("{reference}", encodeURIComponent(possibleId))
+              .replace("{order_id}", encodeURIComponent(order.id));
+            const retryUrl = `${supplier.api_base_url}${retryPath}`;
+            
+            try {
+              const retryRes = await fetch(retryUrl, { method: statusMethod, headers: authHeaders, body: statusBody });
+              if (retryRes.ok) {
+                apiData = await retryRes.json();
+                
+                rawStatusVal = getNestedValue(apiData, statusField) || apiData.status || apiData.state || apiData.status_text || apiData.message || "";
+                rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
+                
+                // Update the order in the DB to fix the reference permanently
+                await supabase.from("orders").update({ supplier_reference: possibleId, delivery_message: order.supplier_reference }).eq("id", order.id);
+                console.log(`Order ${order.id}: Self-healing successful!`);
+              }
+            } catch (retryErr) {
+              console.error(`Order ${order.id}: Self-healing failed`, retryErr);
+            }
+          }
+        }
 
         if (!rawStatus) continue; // No status info, skip
 
