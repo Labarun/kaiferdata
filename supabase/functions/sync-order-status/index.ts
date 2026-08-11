@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     // ── Fetch non-final orders with supplier references ──
     let ordersQuery = supabase
       .from("orders")
-      .select("id, public_order_id, status, supplier_reference, supplier_status, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
+      .select("id, public_order_id, status, supplier_reference, supplier_status, delivery_message, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
       .not("supplier_reference", "is", null)
       .not("status", "in", `(${FINAL_STATUSES.join(",")})`)
       .order("created_at", { ascending: true })
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     if (targetOrderId) {
       ordersQuery = supabase
         .from("orders")
-        .select("id, public_order_id, status, supplier_reference, supplier_status, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
+        .select("id, public_order_id, status, supplier_reference, supplier_status, delivery_message, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
         .eq("id", targetOrderId)
         .not("supplier_reference", "is", null)
         .limit(1);
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
           throw new Error(`API ${apiRes.status}: ${errText.slice(0, 200)}`);
         }
 
-        const apiData = await apiRes.json();
+        let apiData = await apiRes.json();
 
         // Extract status from response
         const statusField = orderResponseMapping.status || "status";
@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
             const retryUrl = `${supplier.api_base_url}${retryPath}`;
             
             try {
-              const retryRes = await fetch(retryUrl, { method: statusMethod, headers: authHeaders, body: statusBody });
+              const retryRes = await fetch(retryUrl, { method: statusMethod, headers });
               if (retryRes.ok) {
                 apiData = await retryRes.json();
                 
