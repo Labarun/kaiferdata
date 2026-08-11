@@ -31,15 +31,12 @@ export interface PricingRow {
   priceId: string | null;
 }
 
-/** Fetch all resaleable packages + this agent's existing prices, joined. */
+/** Fetch all resaleable packages + this agent's existing prices, joined.
+ *  Packages come from `list_agent_resaleable_packages` (agent-scoped RPC) which
+ *  exposes `agent_base_price` but never `supplier_price`. */
 export async function fetchAgentPricingMatrix(agentProfileId: string): Promise<PricingRow[]> {
   const [{ data: pkgs }, { data: prices }] = await Promise.all([
-    (supabase.from("data_packages") as any)
-      .select("*")
-      .eq("is_active", true)
-      .eq("is_agent_resaleable", true)
-      .order("network", { ascending: true })
-      .order("display_order", { ascending: true }),
+    (supabase as any).rpc("list_agent_resaleable_packages"),
     supabase
       .from("agent_bundle_prices" as any)
       .select("*")
