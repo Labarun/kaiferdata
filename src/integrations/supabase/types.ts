@@ -2185,6 +2185,19 @@ export type Database = {
           validity_label: string
         }[]
       }
+      list_express_packages: {
+        Args: never
+        Returns: {
+          agent_price_ghs: number
+          created_at: string
+          id: string
+          is_active: boolean
+          regular_price_ghs: number
+          size_gb: string
+          updated_at: string
+          validity_days: string
+        }[]
+      }
       list_public_packages: {
         Args: { _logged_in?: boolean }
         Returns: {
@@ -2206,6 +2219,25 @@ export type Database = {
           validity_label: string
           visible_for_logged_in: boolean
           visible_on_public: boolean
+        }[]
+      }
+      list_special_bundle_packages: {
+        Args: { _package_id?: string }
+        Returns: {
+          agent_price: number
+          bundle_type: string
+          created_at: string
+          currency: string
+          delivery_note: string
+          id: string
+          is_active: boolean
+          name: string
+          network: string
+          size_label: string
+          sort_order: number
+          supplier_price: number
+          updated_at: string
+          user_price: number
         }[]
       }
       lookup_intent_public: {
