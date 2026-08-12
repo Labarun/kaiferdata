@@ -94,8 +94,8 @@ export function AgentPromoModal() {
     };
   }, [user, loading]);
 
-  const handleClose = (next: boolean) => {
-    if (!next && open) {
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
       const s = readState();
       if (user) {
         writeState({ ...s, shownForUserId: user.id });
@@ -120,7 +120,7 @@ export function AgentPromoModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-[420px] p-0 overflow-hidden border-border/40 glass-premium rounded-3xl">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden>
@@ -184,7 +184,7 @@ export function AgentPromoModal() {
           </Button>
           <button
             type="button"
-            onClick={() => handleClose(false)}
+            onClick={() => handleOpenChange(false)}
             className="w-full mt-2 h-9 text-[11.5px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
           >
             Maybe later
