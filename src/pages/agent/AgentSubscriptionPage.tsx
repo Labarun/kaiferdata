@@ -30,6 +30,7 @@ import {
 import { useSubscriptionSnapshot } from "@/services/agentSubscriptionState";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { EarningsPotential } from "@/components/agent/EarningsPotential";
 
 export default function AgentSubscriptionPage() {
   const { user } = useAuth();
@@ -262,6 +263,8 @@ export default function AgentSubscriptionPage() {
             : "Your application was approved. Pick a plan to unlock reseller pricing & your storefront."}
         </p>
       </div>
+
+      <EarningsPotential />
 
       <PlanPicker
         selected={selectedPlan}

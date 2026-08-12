@@ -404,14 +404,14 @@ export default function PaymentCallbackPage() {
 
         <div className="flex gap-3">
           <Button variant="outline" asChild className="flex-1 h-12">
-            <Link to="/">
+            <Link to={ref.startsWith("KD-AGS-") ? "/dashboard/become-agent" : "/"}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Try Again
             </Link>
           </Button>
           <Button variant="ghost" asChild className="flex-1 h-12">
-            <Link to="/dashboard/wallet">
-              Back to Wallet
+            <Link to={ref.startsWith("KD-AGS-") ? "/dashboard/become-agent" : "/dashboard/wallet"}>
+              {ref.startsWith("KD-AGS-") ? "Back to Application" : "Back to Wallet"}
             </Link>
           </Button>
         </div>

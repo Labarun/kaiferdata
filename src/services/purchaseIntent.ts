@@ -253,7 +253,22 @@ export async function verifyPayment(reference: string): Promise<{
     body: { reference },
   });
 
-  if (error) throw new Error(error.message || "Payment verification failed");
+  if (error) {
+    let serverMessage: string | null = null;
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        const body = await ctx.json();
+        if (body && typeof body === "object") {
+          serverMessage = (body.error as string) || null;
+        }
+      }
+    } catch (parseErr) {
+      // ignore
+    }
+    console.error("[verifyPayment] edge error:", error, "server:", serverMessage);
+    throw new Error(serverMessage || "Payment verification failed");
+  }
   return data;
 }
 

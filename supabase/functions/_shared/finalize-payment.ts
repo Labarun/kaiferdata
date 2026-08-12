@@ -94,6 +94,15 @@ export async function finalizePaystackPayment(
         intent_reference: existingIntent.intent_reference,
       };
     }
+    
+    if (existingIntent?.intent_type === "agent_subscription" && existingIntent.status === "completed") {
+      return {
+        success: true,
+        already_processed: true,
+        intent_type: "agent_subscription",
+        intent_reference: existingIntent.intent_reference,
+      };
+    }
 
     const { data: existingOrder } = await supabase
       .from("orders")
@@ -144,6 +153,9 @@ export async function finalizePaystackPayment(
   if (intentLookup.status === "completed") {
     if (intentLookup.intent_type === "wallet_deposit") {
       return { success: true, already_processed: true, intent_type: "wallet_deposit", intent_reference: reference };
+    }
+    if (intentLookup.intent_type === "agent_subscription") {
+      return { success: true, already_processed: true, intent_type: "agent_subscription", intent_reference: reference };
     }
     const { data: existingOrder } = await supabase
       .from("orders")
@@ -199,7 +211,11 @@ export async function finalizePaystackPayment(
     const claimed = Array.isArray(claimedRows) ? claimedRows[0] : claimedRows;
 
     if (!claimed) {
-      // Another caller claimed it — re-check for an order created since
+      // Another caller claimed it — re-check for an order created since (if not deposit/subscription)
+      if (intentLookup.intent_type === "wallet_deposit" || intentLookup.intent_type === "agent_subscription") {
+         return { success: true, already_processed: true, intent_type: intentLookup.intent_type, intent_reference: reference };
+      }
+      
       const { data: existingOrder } = await supabase
         .from("orders")
         .select("*")

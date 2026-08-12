@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, ArrowRight, Upload, Loader2, ShieldCheck,
   AlertCircle, Sparkles, Store, User as UserIcon, Briefcase,
+  TrendingUp, Clock, CalendarDays,
 } from "lucide-react";
 import {
   type AgentApplication,
@@ -37,6 +38,7 @@ import {
 } from "@/services/agent";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { EarningsPotential } from "./EarningsPotential";
 
 interface Props {
   application: AgentApplication;
@@ -306,6 +308,7 @@ export function AgentApplicationWizard({ application, onSubmitted, onExit }: Pro
 
         {stepIdx === 1 && (
           <>
+            <EarningsPotential />
             <Field label="Have you sold data before?">
               <div className="flex gap-2">
                 <ToggleChip active={form.has_sold_data_before === true}
