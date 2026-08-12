@@ -127,6 +127,7 @@ export async function listApplications(filter?: {
       agreed_to_terms: true,
       acknowledged_subscription: true,
       admin_note: "",
+      internal_note: "",
       reviewed_at: prof?.created_at || "",
       reviewed_by: "",
       submitted_at: prof?.created_at || "",

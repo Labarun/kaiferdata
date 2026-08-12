@@ -2023,7 +2023,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["account_status"]
       }
       get_admin_profit_stats: {
-        Args: never
+        Args: { timeframe?: string }
         Returns: {
           agent_profit: number
           direct_profit: number
