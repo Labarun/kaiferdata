@@ -12,10 +12,42 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+    // ---- AUTH GATE: service-role callers, or an admin JWT. Nothing else. ----
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    if (token !== serviceKey) {
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      const uid = userData?.user?.id;
+      if (userErr || !uid) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: uid,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
 
     // Get the private key from system_settings
     const { data: setting } = await supabase
@@ -34,11 +66,14 @@ Deno.serve(async (req) => {
       setting.setting_value
     );
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const asText = (v: unknown, fallback: string, max: number) =>
+      typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback;
+
     const payload = JSON.stringify({
-      title: body.title || "KaiferData Alert",
-      body: body.body || "A new alert requires your attention.",
-      data: body.data || {}
+      title: asText(body?.title, "KaiferData Alert", 100),
+      body: asText(body?.body, "A new alert requires your attention.", 300),
+      data: body?.data && typeof body.data === "object" && !Array.isArray(body.data) ? body.data : {}
     });
 
     // Get all admin subscriptions

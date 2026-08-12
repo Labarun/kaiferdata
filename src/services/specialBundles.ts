@@ -236,23 +236,21 @@ export async function fetchSpecialSettings(): Promise<SpecialSettings> {
 }
 
 export async function fetchActiveSpecialPackages(): Promise<SpecialBundlePackage[]> {
-  const { data, error } = await db
-    .from("special_bundle_packages")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  // Read through the role-aware RPC: it never returns supplier cost to
+  // non-admins and only exposes agent pricing to agents/admins.
+  const { data, error } = await (supabase.rpc as any)("list_special_bundle_packages", {
+    _package_id: null,
+  });
   if (error) throw error;
-  return (data || []) as SpecialBundlePackage[];
+  return ((data as SpecialBundlePackage[]) || []).filter((p) => p.is_active);
 }
 
 export async function fetchSpecialPackage(id: string): Promise<SpecialBundlePackage | null> {
-  const { data, error } = await db
-    .from("special_bundle_packages")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const { data, error } = await (supabase.rpc as any)("list_special_bundle_packages", {
+    _package_id: id,
+  });
   if (error) throw error;
-  return (data as SpecialBundlePackage) ?? null;
+  return ((data as SpecialBundlePackage[]) || [])[0] ?? null;
 }
 
 export async function fetchWalletBalance(userId: string): Promise<{ balance: number; active: boolean }> {
