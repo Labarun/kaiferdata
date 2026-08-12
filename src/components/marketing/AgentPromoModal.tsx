@@ -2,24 +2,23 @@
  * AgentPromoModal — Premium landing-page popup that promotes the Agent program.
  *
  * Smart display rules:
- *  - GUESTS: shows once per day. If "X" is closed → silenced for 24h.
- *    If CTA clicked → silenced for 7 days.
+ *  - GUESTS: shows once per session (sessionStorage) + once per day (localStorage).
+ *    If dismissed → silenced for 24h. If CTA clicked → silenced for 7 days.
  *  - LOGGED-IN USERS (regular `user` role only): shows AT MOST once, ever.
- *  - AGENTS / APPLICANTS / APPROVED: never shown.
+ *  - AGENTS / APPLICANTS / APPROVED / ADMIN / STAFF: never shown.
  *
- * State stored in localStorage under `kaifer.agentPromo.v1`.
- * Backend agent state is checked via resolveAgentState() for logged-in users.
+ * NOTE: Uses a plain custom overlay instead of Radix Dialog to avoid
+ * Radix event-interception and [&>button]:hidden CSS conflicts that were
+ * preventing the close buttons from working.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, Store, Wallet, ArrowRight, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveAgentState } from "@/services/agent";
 
 const STORAGE_KEY = "kaifer.agentPromo.v1";
-const SESSION_KEY = "kaifer.session.promo"; // Tab-level memory for hard reloads
+const SESSION_KEY = "kaifer.session.promo";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type StoredState = {
@@ -29,7 +28,6 @@ type StoredState = {
 };
 
 function readState(): StoredState {
-  if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -39,67 +37,71 @@ function readState(): StoredState {
 }
 
 function writeState(s: StoredState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {
-    // ignore
-  }
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+
+function isSessionLocked(): boolean {
+  try { return window.sessionStorage.getItem(SESSION_KEY) === "true"; } catch { return false; }
+}
+
+function lockSession() {
+  try { window.sessionStorage.setItem(SESSION_KEY, "true"); } catch {}
+}
+
+function unlockSession() {
+  try { window.sessionStorage.removeItem(SESSION_KEY); } catch {}
 }
 
 export function AgentPromoModal() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [destroyed, setDestroyed] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (loading || destroyed) return;
+    if (loading) return;
 
-    // ── SYNCHRONOUS GUARD — runs before any async/timeout work ─────────────
-    // Survives page reloads (sessionStorage persists across F5 reloads).
-    try {
-      if (window.sessionStorage.getItem(SESSION_KEY) === "true") return;
-    } catch { /* ignore */ }
+    // ── SYNCHRONOUS GUARD: check before any async/timeout work ─────────────
+    // sessionStorage survives F5 reloads within the same tab.
+    if (isSessionLocked()) return;
 
-    // Check localStorage dismissal rules synchronously
     const state = readState();
     const now = Date.now();
 
+    // Guest dismissal checks (synchronous)
     if (!user) {
       if (state.ctaAt && now - state.ctaAt < 7 * DAY_MS) return;
       if (state.dismissedAt && now - state.dismissedAt < DAY_MS) return;
     }
 
+    // Logged-in role / already-shown checks (synchronous)
     if (user) {
       if (user.role === "agent" || user.role === "admin" || user.role === "staff") return;
       if (state.shownForUserId === user.id) return;
     }
 
-    // ── Write the lock NOW (synchronously) so no concurrent invocation can pass
-    try { window.sessionStorage.setItem(SESSION_KEY, "true"); } catch { /* ignore */ }
+    // ── Lock NOW — before any async work so concurrent re-runs are blocked ──
+    lockSession();
 
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout>;
 
     (async () => {
-      // Async agent-state check for logged-in users only
       if (user) {
         try {
           const agentState = await resolveAgentState(user.id);
           if (agentState.kind !== "no_application") {
-            // Unlock — we decided not to show the modal
-            try { window.sessionStorage.removeItem(SESSION_KEY); } catch {}
+            unlockSession(); // won't show — release lock
             return;
           }
         } catch {
-          try { window.sessionStorage.removeItem(SESSION_KEY); } catch {}
+          unlockSession();
           return;
         }
       }
 
       if (!cancelled) {
         timeoutId = setTimeout(() => {
-          if (!cancelled) setOpen(true);
+          if (!cancelled) setVisible(true);
         }, 1400);
       }
     })();
@@ -108,112 +110,129 @@ export function AgentPromoModal() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [user, loading, destroyed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user?.id]);
 
-  const forceClose = () => {
+  const dismiss = () => {
     const s = readState();
     if (user) {
       writeState({ ...s, shownForUserId: user.id });
     } else {
       writeState({ ...s, dismissedAt: Date.now() });
     }
-    setOpen(false);
-    // Hard unmount from React tree after exit animation
-    setTimeout(() => setDestroyed(true), 300);
+    setVisible(false);
   };
 
-  const handleCta = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCta = () => {
     const s = readState();
     if (user) {
       writeState({ ...s, shownForUserId: user.id });
-      setOpen(false);
-      setTimeout(() => setDestroyed(true), 300);
+      setVisible(false);
       navigate("/dashboard/become-agent");
     } else {
       writeState({ ...s, ctaAt: Date.now() });
-      setOpen(false);
-      setTimeout(() => setDestroyed(true), 300);
+      setVisible(false);
       navigate("/register?intent=agent");
     }
   };
 
-  // If destroyed, physically remove it from the DOM
-  if (destroyed) return null;
+  if (!visible) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(next) => {
-      if (!next) forceClose();
-    }}>
-      <DialogContent className="max-w-[340px] sm:max-w-[360px] p-0 overflow-hidden border-border/40 glass-premium rounded-3xl [&>button]:hidden">
-        
-        {/* Raw button bypasses Radix UI event interceptions */}
-        <button 
-          className="absolute right-3 top-3 z-50 rounded-full bg-background/50 p-1.5 text-muted-foreground hover:bg-background hover:text-foreground transition-all backdrop-blur-md border border-border/50"
-          onClick={forceClose}
-          type="button"
-        >
-          <X className="h-3.5 w-3.5" />
-          <span className="sr-only">Close</span>
-        </button>
-
-        <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden>
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-10 w-52 h-52 rounded-full bg-info/10 blur-3xl pointer-events-none" />
+    // Full-screen overlay — no Radix UI involved, we own every event
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) dismiss();
+      }}
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="agent-promo-title"
+    >
+      {/* Modal card */}
+      <div
+        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl border border-border/40 bg-card shadow-2xl shadow-black/40"
+        style={{ animation: "agentPromoFadeIn 0.22s ease-out" }}
+      >
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
+          <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
+          <div className="absolute -bottom-20 -left-10 h-52 w-52 rounded-full bg-info/10 blur-3xl" />
         </div>
 
-        <div className="relative z-10 p-5 sm:p-6">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 mb-3">
+        {/* X Close button — plain <button>, no Radix */}
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute right-3 top-3 z-10 rounded-full border border-border/50 bg-background/60 p-1.5 text-muted-foreground backdrop-blur-md transition-colors hover:bg-background hover:text-foreground"
+          aria-label="Close"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Content */}
+        <div className="p-5 sm:p-6">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5">
             <Sparkles className="h-2.5 w-2.5 text-primary" />
-            <span className="text-[9px] font-bold text-primary tracking-wider uppercase">New</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-primary">New</span>
           </div>
 
-          <DialogTitle className="text-[18px] sm:text-[20px] font-bold tracking-tight leading-tight text-foreground">
+          <h2
+            id="agent-promo-title"
+            className="text-[18px] font-bold leading-tight tracking-tight text-foreground sm:text-[20px]"
+          >
             Become a Kaiferdata Agent
-          </DialogTitle>
-          <DialogDescription className="text-[12px] text-muted-foreground/80 mt-1.5 leading-relaxed">
+          </h2>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground/80">
             Get cheaper prices, set your own store rates, and earn profit on every order.
-          </DialogDescription>
+          </p>
 
-          {/* Benefits */}
           <div className="mt-4 space-y-2">
             {[
               { icon: TrendingUp, label: "Cheaper agent pricing", sub: "Buy below public rates" },
               { icon: Store, label: "Your own data store", sub: "Branded link you can share" },
               { icon: Wallet, label: "Earn on every sale", sub: "Profit credited automatically" },
             ].map((b) => (
-              <div key={b.label} className="flex items-center gap-2.5 p-2 rounded-xl glass-subtle border border-border/40">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <div key={b.label} className="flex items-center gap-2.5 rounded-xl border border-border/40 bg-muted/20 p-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                   <b.icon className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-foreground leading-tight">{b.label}</p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">{b.sub}</p>
+                  <p className="text-[12px] font-semibold leading-tight text-foreground">{b.label}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground/70">{b.sub}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* CTA */}
-          <Button
-            onClick={handleCta}
-            className="w-full mt-5 h-10 rounded-xl text-[13px] font-semibold bg-gradient-to-r from-primary to-info hover:opacity-95 shadow-lg shadow-primary/20"
-          >
-            {user ? "Start Application" : "Become an Agent"}
-            <ArrowRight className="h-3.5 w-3.5 ml-1" />
-          </Button>
-
-          {/* Raw button for maybe later bypasses DialogClose bugs */}
+          {/* Become an Agent CTA — plain <button> */}
           <button
             type="button"
-            onClick={forceClose}
-            className="w-full mt-1.5 h-8 text-[11px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+            onClick={handleCta}
+            className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-info py-2.5 text-[13px] font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-opacity hover:opacity-90"
+          >
+            {user ? "Start Application" : "Become an Agent"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Maybe later — plain <button> */}
+          <button
+            type="button"
+            onClick={dismiss}
+            className="mt-2 w-full py-2 text-[11px] text-muted-foreground/60 transition-colors hover:text-foreground/80"
           >
             Maybe later
           </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      <style>{`
+        @keyframes agentPromoFadeIn {
+          from { opacity: 0; transform: scale(0.95) translateY(8px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
+    </div>
   );
 }
