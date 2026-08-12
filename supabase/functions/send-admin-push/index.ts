@@ -66,11 +66,14 @@ Deno.serve(async (req) => {
       setting.setting_value
     );
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const asText = (v: unknown, fallback: string, max: number) =>
+      typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback;
+
     const payload = JSON.stringify({
-      title: body.title || "KaiferData Alert",
-      body: body.body || "A new alert requires your attention.",
-      data: body.data || {}
+      title: asText(body?.title, "KaiferData Alert", 100),
+      body: asText(body?.body, "A new alert requires your attention.", 300),
+      data: body?.data && typeof body.data === "object" && !Array.isArray(body.data) ? body.data : {}
     });
 
     // Get all admin subscriptions
