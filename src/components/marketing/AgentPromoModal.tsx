@@ -54,51 +54,59 @@ export function AgentPromoModal() {
 
   useEffect(() => {
     if (loading || destroyed) return;
-    
-    // Hard-lock: If we've shown it in this browser tab, never show it again
-    // This survives page reloads (F5) unlike JS variables!
+
+    // ── SYNCHRONOUS GUARD — runs before any async/timeout work ─────────────
+    // Survives page reloads (sessionStorage persists across F5 reloads).
     try {
-      if (window.sessionStorage.getItem(SESSION_KEY)) return;
-    } catch {
-      // ignore
+      if (window.sessionStorage.getItem(SESSION_KEY) === "true") return;
+    } catch { /* ignore */ }
+
+    // Check localStorage dismissal rules synchronously
+    const state = readState();
+    const now = Date.now();
+
+    if (!user) {
+      if (state.ctaAt && now - state.ctaAt < 7 * DAY_MS) return;
+      if (state.dismissedAt && now - state.dismissedAt < DAY_MS) return;
     }
-    
+
+    if (user) {
+      if (user.role === "agent" || user.role === "admin" || user.role === "staff") return;
+      if (state.shownForUserId === user.id) return;
+    }
+
+    // ── Write the lock NOW (synchronously) so no concurrent invocation can pass
+    try { window.sessionStorage.setItem(SESSION_KEY, "true"); } catch { /* ignore */ }
+
     let cancelled = false;
-    let timeoutId: any;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     (async () => {
-      const state = readState();
-      const now = Date.now();
-
+      // Async agent-state check for logged-in users only
       if (user) {
-        if (user.role === "agent" || user.role === "admin" || user.role === "staff") return;
-        if (state.shownForUserId === user.id) return;
         try {
           const agentState = await resolveAgentState(user.id);
-          if (agentState.kind !== "no_application") return;
+          if (agentState.kind !== "no_application") {
+            // Unlock — we decided not to show the modal
+            try { window.sessionStorage.removeItem(SESSION_KEY); } catch {}
+            return;
+          }
         } catch {
+          try { window.sessionStorage.removeItem(SESSION_KEY); } catch {}
           return;
         }
-      } else {
-        if (state.ctaAt && now - state.ctaAt < 7 * DAY_MS) return;
-        if (state.dismissedAt && now - state.dismissedAt < DAY_MS) return;
       }
 
       if (!cancelled) {
         timeoutId = setTimeout(() => {
-          if (!cancelled) {
-            try {
-              window.sessionStorage.setItem(SESSION_KEY, "true");
-            } catch {}
-            setOpen(true);
-          }
+          if (!cancelled) setOpen(true);
         }, 1400);
       }
     })();
 
     return () => {
       cancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
     };
   }, [user, loading, destroyed]);
 
