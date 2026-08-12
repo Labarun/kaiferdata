@@ -28,10 +28,10 @@ type TabKey = "pending" | "active" | "suspended" | "declined" | "subscribed" | "
 
 const TAB_FILTERS: Record<TabKey, AgentApplicationWithUser["status"][] | undefined> = {
   pending: ["submitted", "under_review", "needs_changes"],
-  active: ["approved"],
-  suspended: ["approved"],
+  active: undefined,
+  suspended: undefined,
   declined: ["declined"],
-  subscribed: ["approved"],
+  subscribed: undefined,
   analytics: undefined,
   all: undefined,
 };
