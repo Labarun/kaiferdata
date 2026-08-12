@@ -2068,6 +2068,26 @@ export type Database = {
         Args: { end_date: string; start_date: string }
         Returns: Json
       }
+      get_public_agent_bundles: {
+        Args: { _agent_profile_id: string }
+        Returns: {
+          buying_enabled: boolean
+          category: string
+          currency: string
+          display_order: number
+          id: string
+          is_active: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type: string
+          package_volume_value: string
+          selling_price: number
+          source_type: string
+          validity_label: string
+        }[]
+      }
       get_public_agent_store: {
         Args: { _slug: string }
         Returns: {
@@ -2142,6 +2162,28 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_agent_resaleable_packages: {
+        Args: never
+        Returns: {
+          agent_base_price: number
+          buying_enabled: boolean
+          category: string
+          currency: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_agent_resaleable: boolean
+          network: string
+          package_code: string
+          package_name: string
+          package_size_label: string
+          package_type: string
+          package_volume_value: string
+          selling_price: number
+          source_type: string
+          validity_label: string
+        }[]
       }
       list_public_packages: {
         Args: { _logged_in?: boolean }
