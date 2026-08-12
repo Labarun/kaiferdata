@@ -2064,6 +2064,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_order_status_breakdown: {
+        Args: { timeframe?: string }
+        Returns: {
+          status: string
+          total_orders: number
+        }[]
+      }
+      get_payment_method_breakdown: {
+        Args: { timeframe?: string }
+        Returns: {
+          payment_method: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
       get_profit_metrics: {
         Args: { end_date: string; start_date: string }
         Returns: Json
@@ -2150,6 +2165,15 @@ export type Database = {
           total_orders: number
           total_revenue: number
           user_id: string
+        }[]
+      }
+      get_top_selling_packages: {
+        Args: { timeframe?: string }
+        Returns: {
+          bundle_name: string
+          network: string
+          total_orders: number
+          total_revenue: number
         }[]
       }
       get_user_role: {
