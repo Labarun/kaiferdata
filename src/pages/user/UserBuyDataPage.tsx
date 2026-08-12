@@ -63,7 +63,7 @@ type PaymentMethod = "wallet" | "paystack";
 export default function UserBuyDataPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const isAgent = user?.role === "agent" || user?.role === "admin";
+  const isAgent = user?.role === "admin" || (user?.role === "agent" && user?.agentStatus === "active");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

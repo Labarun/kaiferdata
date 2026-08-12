@@ -24,14 +24,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminStatStrip, type AdminStat } from "@/components/admin/AdminStatStrip";
 import { AdminAgentAnalyticsView } from "@/components/admin/AdminAgentAnalyticsView";
 
-type TabKey = "pending" | "active" | "suspended" | "declined" | "subscribed" | "analytics" | "all";
+type TabKey = "pending" | "active" | "suspended" | "declined" | "subscribed" | "expired" | "analytics" | "all";
 
 const TAB_FILTERS: Record<TabKey, AgentApplicationWithUser["status"][] | undefined> = {
   pending: ["submitted", "under_review", "needs_changes"],
-  active: ["approved"],
-  suspended: ["approved"],
+  active: undefined,
+  suspended: undefined,
   declined: ["declined"],
-  subscribed: ["approved"],
+  subscribed: undefined,
+  expired: undefined,
   analytics: undefined,
   all: undefined,
 };
@@ -87,11 +88,11 @@ export default function AdminAgentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  // Apply tab-specific post-filter (active vs suspended both share status='approved').
   const visibleRows = useMemo(() => {
     if (tab === "active") return rows.filter((r) => r.profile?.status === "active" || r.profile?.status === "pending_subscription" || r.profile?.status === "subscription_expired");
     if (tab === "suspended") return rows.filter((r) => r.profile?.status === "suspended");
     if (tab === "subscribed") return rows.filter((r) => r.latest_subscription?.status === "active");
+    if (tab === "expired") return rows.filter((r) => r.profile?.status === "subscription_expired" || r.latest_subscription?.status === "expired" || r.latest_subscription?.status === "cancelled");
     return rows;
   }, [rows, tab]);
 
@@ -122,6 +123,7 @@ export default function AdminAgentsPage() {
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="subscribed">Subscribed</TabsTrigger>
+            <TabsTrigger value="expired">Expired</TabsTrigger>
             <TabsTrigger value="suspended">Suspended</TabsTrigger>
             <TabsTrigger value="declined">Declined</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -237,7 +239,7 @@ export default function AdminAgentsPage() {
                         <p className="text-xs text-muted-foreground font-medium">
                           {row.stats?.lastActive 
                             ? `Active ${new Date(row.stats.lastActive).toLocaleDateString()}` 
-                            : 'Inactive'}
+                            : 'No sales yet'}
                         </p>
                       </div>
                       <p className="text-[11px] text-foreground font-medium bg-muted px-2 py-0.5 rounded-md">

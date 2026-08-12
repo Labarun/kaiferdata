@@ -163,13 +163,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     position: relative;
-    background-image:
-      radial-gradient(ellipse 100% 60% at 50% -20%, hsl(213 55% 88% / 0.55) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 45% at 95% 90%, hsl(192 50% 86% / 0.3) 0%, transparent 50%),
-      radial-gradient(ellipse 40% 35% at 3% 65%, hsl(213 50% 86% / 0.2) 0%, transparent 45%),
-      radial-gradient(ellipse 80% 50% at 50% 105%, hsl(213 35% 92% / 0.4) 0%, transparent 55%),
-      radial-gradient(ellipse 35% 25% at 50% 50%, hsl(214 30% 96% / 0.5) 0%, transparent 50%);
-    /* background-attachment: fixed removed — causes full repaint on every scroll on mobile */
+    /* Removed background-image that caused the "landing page flash" effect on all pages */
   }
 
   /* Allow horizontal panning only inside explicit scroll containers

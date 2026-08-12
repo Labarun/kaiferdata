@@ -11,7 +11,7 @@
  * Backend agent state is checked via resolveAgentState() for logged-in users.
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, Store, Wallet, ArrowRight } from "lucide-react";
@@ -163,11 +163,24 @@ export function AgentPromoModal() {
 
           {/* CTA */}
           <Button
-            onClick={handleCta}
+            asChild
             className="w-full mt-6 h-12 rounded-2xl text-[14px] font-semibold bg-gradient-to-r from-primary to-info hover:opacity-95 shadow-lg shadow-primary/20"
           >
-            {user ? "Start Application" : "Become an Agent"}
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <Link
+              to={user ? "/dashboard/become-agent" : "/register?intent=agent"}
+              onClick={() => {
+                const s = readState();
+                if (user) {
+                  writeState({ ...s, shownForUserId: user.id });
+                } else {
+                  writeState({ ...s, ctaAt: Date.now() });
+                }
+                setOpen(false);
+              }}
+            >
+              {user ? "Start Application" : "Become an Agent"}
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
           </Button>
           <button
             type="button"

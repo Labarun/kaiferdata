@@ -39,6 +39,24 @@ interface SalesTrend {
   total_revenue: number;
 }
 
+interface TopPackage {
+  network: string;
+  bundle_name: string;
+  total_orders: number;
+  total_revenue: number;
+}
+
+interface StatusBreakdown {
+  status: string;
+  total_orders: number;
+}
+
+interface PaymentMethod {
+  payment_method: string;
+  total_orders: number;
+  total_revenue: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminAnalyticsPage() {
@@ -48,6 +66,9 @@ export default function AdminAnalyticsPage() {
   const [topAgents, setTopAgents] = useState<TopAgent[]>([]);
   const [salesSources, setSalesSources] = useState<SalesSource[]>([]);
   const [salesTrends, setSalesTrends] = useState<SalesTrend[]>([]);
+  const [topPackages, setTopPackages] = useState<TopPackage[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdown[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [timeframe, setTimeframe] = useState<"today" | "week" | "month" | "all">("month");
   const [loading, setLoading] = useState(true);
 
@@ -55,11 +76,14 @@ export default function AdminAnalyticsPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        const [statsRes, topAgentsRes, sourcesRes, trendsRes] = await Promise.all([
-          supabase.rpc("get_admin_profit_stats"),
+        const [statsRes, topAgentsRes, sourcesRes, trendsRes, packagesRes, statusRes, paymentsRes] = await Promise.all([
+          supabase.rpc("get_admin_profit_stats", { timeframe }),
           supabase.rpc("get_top_agents", { timeframe }),
           supabase.rpc("get_sales_source_breakdown", { timeframe }),
-          supabase.rpc("get_sales_trends", { days_limit: timeframe === 'today' ? 1 : timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : 90 })
+          supabase.rpc("get_sales_trends", { days_limit: timeframe === 'today' ? 1 : timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : 90 }),
+          supabase.rpc("get_top_selling_packages", { timeframe }),
+          supabase.rpc("get_order_status_breakdown", { timeframe }),
+          supabase.rpc("get_payment_method_breakdown", { timeframe })
         ]);
 
         setStats({
@@ -72,6 +96,9 @@ export default function AdminAnalyticsPage() {
         if (topAgentsRes.data) setTopAgents(topAgentsRes.data);
         if (sourcesRes.data) setSalesSources(sourcesRes.data);
         if (trendsRes.data) setSalesTrends(trendsRes.data);
+        if (packagesRes.data) setTopPackages(packagesRes.data);
+        if (statusRes.data) setStatusBreakdown(statusRes.data);
+        if (paymentsRes.data) setPaymentMethods(paymentsRes.data);
 
       } catch (err) {
         console.error("Error fetching analytics:", err);
@@ -86,11 +113,21 @@ export default function AdminAnalyticsPage() {
     return <DashboardSkeleton />;
   }
 
-  // Format data for Pie Chart
+  // Format data for Pie Charts
   const pieData = salesSources.map((source, index) => ({
     name: source.actor_type === 'guest' ? 'Guest / Direct' : 'Agent',
     value: Number(source.total_revenue),
     orders: Number(source.total_orders)
+  }));
+
+  const statusPieData = statusBreakdown.map((s, index) => ({
+    name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
+    value: Number(s.total_orders)
+  }));
+  
+  const paymentPieData = paymentMethods.map((p, index) => ({
+    name: p.payment_method,
+    value: Number(p.total_orders)
   }));
 
   return (
@@ -172,6 +209,101 @@ export default function AdminAnalyticsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mt-6">
+          {/* Fulfillment Health */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Fulfillment Health</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              {statusPieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {statusPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.name === 'Delivered' ? '#10b981' : entry.name === 'Failed' ? '#ef4444' : COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value: number) => `${value} orders`} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-muted-foreground text-sm">No data available</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Payment Methods */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Payment Methods</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              {paymentPieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={paymentPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {paymentPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.name === 'Wallet' ? '#8b5cf6' : '#f59e0b'} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value: number) => `${value} orders`} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-muted-foreground text-sm">No data available</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Packages Leaderboard */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Top Selling Packages</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topPackages.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                    <tr>
+                      <th className="px-4 py-3 rounded-tl-lg font-medium">Rank</th>
+                      <th className="px-4 py-3 font-medium">Network</th>
+                      <th className="px-4 py-3 font-medium">Package</th>
+                      <th className="px-4 py-3 font-medium text-right">Total Orders</th>
+                      <th className="px-4 py-3 rounded-tr-lg font-medium text-right">Revenue Gen.</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {topPackages.map((pkg, index) => (
+                      <tr key={index} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium">
+                          <Badge variant={index === 0 ? "default" : index < 3 ? "secondary" : "outline"}>
+                            #{index + 1}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-foreground">{pkg.network}</td>
+                        <td className="px-4 py-3 font-medium text-foreground">{pkg.bundle_name}</td>
+                        <td className="px-4 py-3 text-right">{pkg.total_orders}</td>
+                        <td className="px-4 py-3 text-right text-success font-medium">
+                          GH₵{Number(pkg.total_revenue).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No packages found for this timeframe.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Top Agents Leaderboard */}
         <Card className="mt-6">

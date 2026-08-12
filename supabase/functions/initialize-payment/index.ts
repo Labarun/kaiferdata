@@ -287,12 +287,31 @@ Deno.serve(async (req) => {
             resolvedPrice = Number(pkg.selling_price);
             priceSource = "data_packages";
           }
-        } else if (intent.intent_type === "agent_bulk_buy" || intent.actor_type === "agent") {
-          resolvedPrice = Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
-          priceSource = "data_packages";
         } else {
-          resolvedPrice = Number(pkg.selling_price);
-          priceSource = "data_packages";
+          // If the intent claims to be an agent buy, securely verify they have an active subscription
+          let isVerifiedActiveAgent = false;
+          if (intent.actor_id && (intent.intent_type === "agent_bulk_buy" || intent.actor_type === "agent")) {
+            const { data: agentProfile } = await supabase
+              .from("agent_profiles")
+              .select("status")
+              .eq("user_id", intent.actor_id)
+              .maybeSingle();
+            if (agentProfile && agentProfile.status === "active") {
+              isVerifiedActiveAgent = true;
+            }
+          }
+
+          if (isVerifiedActiveAgent) {
+            resolvedPrice = Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
+            priceSource = "data_packages";
+          } else {
+            resolvedPrice = Number(pkg.selling_price);
+            priceSource = "data_packages";
+            // If they claimed to be an agent but aren't verified, correct the actor_type
+            if (intent.actor_type === "agent") {
+               intent.actor_type = "user"; 
+            }
+          }
         }
         packageValid = true;
         authoritativeSnapshot = {
