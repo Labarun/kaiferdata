@@ -15,6 +15,7 @@ export interface AuthUser {
   phone: string;
   role: AppRole;
   accountStatus: AccountStatus;
+  agentStatus?: string | null;
 }
 
 interface EnsureUserScaffoldParams {
@@ -135,6 +136,12 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     .select("role")
     .eq("user_id", user.id);
 
+  const { data: agentProfile } = await supabase
+    .from("agent_profiles")
+    .select("status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const roleOrder: Record<string, number> = { admin: 1, staff: 2, agent: 3, user: 4 };
   const roles = (roleData || []).map(r => r.role);
   roles.sort((a, b) => (roleOrder[a] || 99) - (roleOrder[b] || 99));
@@ -148,6 +155,7 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     phone: profile?.phone || "",
     role: primaryRole as AppRole,
     accountStatus: (profile?.account_status || "active") as AccountStatus,
+    agentStatus: agentProfile?.status || null,
   };
 }
 

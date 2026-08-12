@@ -30,7 +30,7 @@ import {
   suspendAgent,
 } from "@/services/agentAdmin";
 import type { AgentApplication, AgentProfile, AgentSubscription } from "@/services/agent";
-import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap, DollarSign, Percent, ShoppingCart, Activity } from "lucide-react";
+import { CheckCircle2, MessageSquareWarning, XCircle, PauseCircle, PlayCircle, Store, Zap, DollarSign, Percent, ShoppingCart, Activity, ExternalLink, Wallet } from "lucide-react";
 
 interface Props {
   applicationId: string;
@@ -46,7 +46,7 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [subscriptions, setSubscriptions] = useState<AgentSubscription[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, successRate: 0, currentBalance: 0 });
+  const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, successRate: 0, earningsBalance: 0, totalEarned: 0, personalBalance: 0 });
   const [activeTab, setActiveTab] = useState<"profile" | "transactions" | "subscription">("profile");
   const [note, setNote] = useState("");
   const [activeForm, setActiveForm] = useState<"approve" | "changes" | "decline" | "suspend" | "activate" | null>(null);
@@ -64,9 +64,10 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
         setSubscriptions(detail.subscriptions);
         
         if (detail.application.user_id) {
-          const [ordersRes, walletRes] = await Promise.all([
+          const [ordersRes, earningsWalletRes, personalWalletRes] = await Promise.all([
             supabase.from("orders").select("id, public_order_id, status, network, amount_charged, created_at").eq("actor_id", detail.application.user_id).eq("actor_type", "agent").order("created_at", { ascending: false }),
-            supabase.from("agent_earnings_wallets").select("current_balance").eq("user_id", detail.application.user_id).maybeSingle()
+            supabase.from("agent_earnings_wallets").select("current_balance, total_earned").eq("user_id", detail.application.user_id).maybeSingle(),
+            supabase.from("wallets").select("current_balance").eq("user_id", detail.application.user_id).maybeSingle()
           ]);
           
           const allOrders = ordersRes.data || [];
@@ -76,9 +77,15 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
           const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
           const successRate = totalOrders > 0 ? (deliveredOrders.length / totalOrders) * 100 : 0;
           const totalRevenue = deliveredOrders.reduce((sum, o) => sum + Number(o.amount_charged || 0), 0);
-          const currentBalance = walletRes.data?.current_balance || 0;
           
-          setStats({ totalOrders, successRate, totalRevenue, currentBalance });
+          setStats({ 
+            totalOrders, 
+            successRate, 
+            totalRevenue, 
+            earningsBalance: earningsWalletRes.data?.current_balance || 0,
+            totalEarned: earningsWalletRes.data?.total_earned || 0,
+            personalBalance: personalWalletRes.data?.current_balance || 0
+          });
         }
 
         // Auto-mark under_review the moment an admin opens a fresh submission
@@ -200,11 +207,20 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Agent Application</DialogTitle>
-          <DialogDescription>
-            Review the application and take action.
-          </DialogDescription>
+        <DialogHeader className="flex flex-row items-start justify-between pr-6">
+          <div>
+            <DialogTitle>{profile ? "Agent Profile" : "Agent Application"}</DialogTitle>
+            <DialogDescription>
+              {profile ? "Overview of agent performance and settings." : "Review the application and take action."}
+            </DialogDescription>
+          </div>
+          {profile && profile.status === "active" && application.store_slug && (
+            <Button variant="outline" size="sm" asChild className="shrink-0 mt-0">
+              <a href={`/store/${application.store_slug}`} target="_blank" rel="noopener noreferrer">
+                View Storefront <ExternalLink className="ml-2 h-3 w-3" />
+              </a>
+            </Button>
+          )}
         </DialogHeader>
 
         {loading || !application ? (
@@ -245,18 +261,30 @@ export function AdminAgentDetailDialog({ applicationId, onClose, onChanged }: Pr
               </div>
             </div>
 
-            {/* Top Summary Grid (4 Cards) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Top Summary Grid (6 Cards) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Card className="border-slate-800 bg-muted/30">
                 <CardContent className="p-4 flex flex-col justify-center">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Total Revenue</p>
-                  <p className="text-lg font-bold text-foreground">GH₵{stats.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><Wallet className="h-3 w-3" /> Personal Wallet</p>
+                  <p className="text-lg font-bold text-foreground">GH₵{stats.personalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                 </CardContent>
               </Card>
               <Card className="border-slate-800 bg-muted/30">
                 <CardContent className="p-4 flex flex-col justify-center">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Earnings Balance</p>
-                  <p className="text-lg font-bold text-success">GH₵{stats.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                  <p className="text-lg font-bold text-success">GH₵{stats.earningsBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><Activity className="h-3 w-3" /> Total Commission</p>
+                  <p className="text-lg font-bold text-foreground">GH₵{stats.totalEarned.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-slate-800 bg-muted/30">
+                <CardContent className="p-4 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1.5"><DollarSign className="h-3 w-3" /> Total Sales</p>
+                  <p className="text-lg font-bold text-foreground">GH₵{stats.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                 </CardContent>
               </Card>
               <Card className="border-slate-800 bg-muted/30">

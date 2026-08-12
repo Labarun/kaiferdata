@@ -20,57 +20,125 @@ export type AgentApplicationWithUser = AgentApplication & {
   };
 };
 
-/** List all applications (most recent first) with optional status filter. */
 export async function listApplications(filter?: {
   status?: AgentApplication["status"][];
   search?: string;
 }): Promise<AgentApplicationWithUser[]> {
-  let query = supabase
+  
+  // 1. Fetch applications based on filter (if any)
+  let appQuery = supabase
     .from("agent_applications")
     .select("*")
     .order("updated_at", { ascending: false });
 
   if (filter?.status && filter.status.length > 0) {
-    query = query.in("status", filter.status);
+    appQuery = appQuery.in("status", filter.status);
   }
 
-  const { data: apps, error } = await query;
-  if (error) throw new Error(error.message);
-  if (!apps) return [];
+  const { data: appsData, error: appsErr } = await appQuery;
+  if (appsErr) throw new Error(appsErr.message);
 
-  // Hydrate with linked profile + latest subscription per user.
-  const userIds = apps.map((a) => a.user_id);
-  if (userIds.length === 0) return apps;
+  const apps = appsData || [];
 
-  const [{ data: profiles }, { data: subs }, { data: wallets }, { data: orders }] = await Promise.all([
-    supabase.from("agent_profiles").select("*").in("user_id", userIds),
-    supabase
-      .from("agent_subscriptions")
-      .select("*")
-      .in("user_id", userIds)
-      .order("created_at", { ascending: false }),
-    supabase.from("agent_earnings_wallets").select("*").in("user_id", userIds),
-    supabase.from("orders").select("actor_id, status, created_at").in("actor_id", userIds).eq("actor_type", "agent")
-  ]);
+  // 2. Fetch all profiles (to catch manually created agents with no application)
+  const { data: allProfiles, error: profErr } = await supabase.from("agent_profiles").select("*");
+  if (profErr) throw new Error(profErr.message);
 
-  const profileByUser = new Map((profiles || []).map((p) => [p.user_id, p]));
+  // 3. Unify user IDs
+  const userIds = new Set<string>();
+  apps.forEach((a) => userIds.add(a.user_id));
+  
+  // Only add profile userIds if we aren't strict filtering for pending/declined applications
+  // If we are filtering by 'submitted', we shouldn't show active profiles.
+  const isStrictAppFilter = filter?.status && !filter.status.includes("approved");
+  if (!isStrictAppFilter) {
+    (allProfiles || []).forEach((p) => userIds.add(p.user_id));
+  }
+  
+  const userIdsArray = Array.from(userIds);
+  if (userIdsArray.length === 0) return [];
+
+  // Helper to chunk arrays
+  const chunkArray = <T>(arr: T[], size: number): T[][] => {
+    return Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+      arr.slice(i * size, i * size + size)
+    );
+  };
+
+  const chunks = chunkArray(userIdsArray, 40);
+
+  let allSubs: AgentSubscription[] = [];
+  let allWallets: any[] = [];
+  let allOrders: any[] = [];
+
+  for (const chunk of chunks) {
+    const [{ data: subs }, { data: wallets }, { data: orders }] = await Promise.all([
+      supabase
+        .from("agent_subscriptions")
+        .select("*")
+        .in("user_id", chunk)
+        .order("created_at", { ascending: false }),
+      supabase.from("agent_earnings_wallets").select("*").in("user_id", chunk),
+      supabase.from("orders").select("actor_id, status, created_at").in("actor_id", chunk).eq("actor_type", "agent")
+    ]);
+    
+    if (subs) allSubs.push(...subs);
+    if (wallets) allWallets.push(...wallets);
+    if (orders) allOrders.push(...orders);
+  }
+
+  // Map everything by user_id
+  const appByUser = new Map(apps.map((a) => [a.user_id, a]));
+  const profileByUser = new Map((allProfiles || []).map((p) => [p.user_id, p]));
   const subByUser = new Map<string, AgentSubscription>();
-  (subs || []).forEach((s) => {
+  allSubs.forEach((s) => {
     if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
   });
-  const walletByUser = new Map((wallets || []).map((w) => [w.user_id, w]));
+  const walletByUser = new Map(allWallets.map((w) => [w.user_id, w]));
   const ordersByUser = new Map<string, any[]>();
-  (orders || []).forEach((o) => {
+  allOrders.forEach((o) => {
     if (!ordersByUser.has(o.actor_id)) ordersByUser.set(o.actor_id, []);
     ordersByUser.get(o.actor_id)!.push(o);
   });
 
-  let hydrated = apps.map((a) => {
-    const userOrders = ordersByUser.get(a.user_id) || [];
+  let hydrated: AgentApplicationWithUser[] = userIdsArray.map((uid) => {
+    const app = appByUser.get(uid);
+    const prof = profileByUser.get(uid);
+
+    // If no app exists (e.g. manually inserted profile), we mock an application wrapper
+    const baseApp: AgentApplication = app || {
+      id: prof?.application_id || uid, // fake id if missing
+      user_id: uid,
+      status: "approved",
+      full_name: prof?.business_name || prof?.store_name || "Agent",
+      email: "",
+      phone: "",
+      city: prof?.city || "",
+      business_name: prof?.business_name || "",
+      has_sold_data_before: true,
+      selling_channels: "",
+      expected_customer_base: "",
+      motivation: "",
+      social_link: "",
+      store_name: prof?.store_name || "",
+      store_slug: prof?.store_slug || "",
+      store_logo_url: prof?.store_logo_url || "",
+      store_tagline: prof?.store_tagline || "",
+      agreed_to_terms: true,
+      acknowledged_subscription: true,
+      admin_note: "",
+      reviewed_at: prof?.created_at || "",
+      reviewed_by: "",
+      submitted_at: prof?.created_at || "",
+      created_at: prof?.created_at || "",
+      updated_at: prof?.updated_at || "",
+    };
+
+    const userOrders = ordersByUser.get(uid) || [];
     const totalOrders = userOrders.length;
-    const delivered = userOrders.filter(o => o.status === 'delivered').length;
+    const delivered = userOrders.filter((o) => o.status === "delivered").length;
     const successRate = totalOrders > 0 ? (delivered / totalOrders) * 100 : 0;
-    
+
     // Get most recent order date
     let lastActive = null;
     if (userOrders.length > 0) {
@@ -79,15 +147,15 @@ export async function listApplications(filter?: {
     }
 
     return {
-      ...a,
-      profile: profileByUser.get(a.user_id) || null,
-      latest_subscription: subByUser.get(a.user_id) || null,
-      wallet: walletByUser.get(a.user_id) || null,
+      ...baseApp,
+      profile: prof || null,
+      latest_subscription: subByUser.get(uid) || null,
+      wallet: walletByUser.get(uid) || null,
       stats: {
         totalOrders,
         successRate,
         lastActive,
-      }
+      },
     };
   });
 
@@ -99,9 +167,11 @@ export async function listApplications(filter?: {
         a.email?.toLowerCase().includes(q) ||
         a.phone?.toLowerCase().includes(q) ||
         a.store_name?.toLowerCase().includes(q) ||
-        a.store_slug?.toLowerCase().includes(q),
+        a.store_slug?.toLowerCase().includes(q)
     );
   }
+  
+  hydrated.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   return hydrated;
 }
