@@ -22,7 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { marked } from "marked";
+import { renderMarkdownSafe } from "@/lib/sanitizeMarkdown";
 
 interface BlogPostFormData {
   title: string;
@@ -165,7 +165,7 @@ export default function AdminBlogEditPage() {
   };
 
   // Convert markdown to HTML for live preview
-  const renderedHtml = marked.parse(formData.content || "");
+  const renderedHtml = renderMarkdownSafe(formData.content || "");
 
   if (isFetching) {
     return (

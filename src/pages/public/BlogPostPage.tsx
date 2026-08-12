@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/shared/LoadingState";
 import { Helmet } from "react-helmet-async";
-import { marked } from "marked";
+import { renderMarkdownSafe } from "@/lib/sanitizeMarkdown";
 import { StructuredData, buildArticleSchema, buildBreadcrumbSchema } from "@/components/seo/StructuredData";
 
 interface BlogPostDetail {
@@ -79,8 +79,8 @@ export default function BlogPostPage() {
     );
   }
 
-  // Parse markdown content to safe HTML
-  const htmlContent = marked.parse(post.content || "");
+  // Parse markdown content and sanitize before rendering (prevents stored XSS)
+  const htmlContent = renderMarkdownSafe(post.content || "");
 
   const articleSchema = buildArticleSchema(
     post.title,
