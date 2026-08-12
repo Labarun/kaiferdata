@@ -88,7 +88,7 @@ export default function BlogPostPage() {
     post.cover_image_url || "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800",
     post.published_at
   );
-  
+
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: "https://kaiferdata.com/" },
     { name: "Blog Spot", url: "https://kaiferdata.com/blog" },
@@ -107,7 +107,7 @@ export default function BlogPostPage() {
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:section" content={post.category} />
       </Helmet>
-      
+
       <StructuredData data={[articleSchema, breadcrumbSchema]} />
 
       {/* Back link */}
@@ -145,17 +145,6 @@ export default function BlogPostPage() {
               </span>
             </div>
           </div>
-
-          {/* Cover Image */}
-          {post.cover_image_url && (
-            <div className="overflow-hidden rounded-3xl aspect-video relative border border-border/30 shadow-lg shadow-black/5">
-              <img
-                src={post.cover_image_url}
-                alt={post.title}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
 
           {/* Markdown Content (Rendered using tailwind prose rules) */}
           <div
@@ -199,16 +188,16 @@ export default function BlogPostPage() {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Save money on your MTN data bills in Ghana! Instantly purchase high-speed 90-day bundles from Kaifer Data.
               </p>
-              
+
               <ul className="space-y-2 text-xs font-semibold text-foreground/80">
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Up to 90 Days Validity
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Direct Instant Credit
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Swift Delivery.
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Zero Transaction Fees
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Trusted Reseller
                 </li>
               </ul>
 

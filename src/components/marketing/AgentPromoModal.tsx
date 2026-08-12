@@ -12,9 +12,9 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, TrendingUp, Store, Wallet, ArrowRight } from "lucide-react";
+import { Sparkles, TrendingUp, Store, Wallet, ArrowRight, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveAgentState } from "@/services/agent";
 
@@ -48,13 +48,17 @@ function writeState(s: StoredState) {
   }
 }
 
+// Track if we've already shown the modal in this browser tab session
+// to prevent it from respawning if AuthContext re-renders.
+let sessionPromoShown = false;
+
 export function AgentPromoModal() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || sessionPromoShown) return;
     let cancelled = false;
     let timeoutId: any;
 
@@ -83,7 +87,10 @@ export function AgentPromoModal() {
       if (!cancelled) {
         // Small delay so it doesn't feel jarring
         timeoutId = setTimeout(() => {
-          if (!cancelled) setOpen(true);
+          if (!cancelled && !sessionPromoShown) {
+            sessionPromoShown = true;
+            setOpen(true);
+          }
         }, 1400);
       }
     })();
@@ -121,7 +128,19 @@ export function AgentPromoModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[420px] p-0 overflow-hidden border-border/40 glass-premium rounded-3xl">
+      <DialogContent className="max-w-[420px] p-0 overflow-hidden border-border/40 glass-premium rounded-3xl [&>button]:hidden">
+        
+        {/* Custom close button to ensure reliable closing */}
+        <DialogClose asChild>
+          <button 
+            className="absolute right-4 top-4 z-50 rounded-full bg-background/50 p-2 text-muted-foreground hover:bg-background hover:text-foreground transition-all backdrop-blur-md border border-border/50"
+            onClick={() => handleOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        </DialogClose>
+
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden>
           <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
@@ -182,13 +201,15 @@ export function AgentPromoModal() {
               <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>
-          <button
-            type="button"
-            onClick={() => handleOpenChange(false)}
-            className="w-full mt-2 h-9 text-[11.5px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
-          >
-            Maybe later
-          </button>
+          <DialogClose asChild>
+            <button
+              type="button"
+              onClick={() => handleOpenChange(false)}
+              className="w-full mt-2 h-9 text-[11.5px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+            >
+              Maybe later
+            </button>
+          </DialogClose>
         </div>
       </DialogContent>
     </Dialog>

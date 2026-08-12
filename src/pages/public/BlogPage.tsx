@@ -129,60 +129,40 @@ export default function BlogPage() {
         <div className="space-y-12">
           {/* Featured Post */}
           {featuredPost && activeCategory === "All" && !searchQuery && (
-            <div className="group relative grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 bg-card/30 border border-border/30 hover:border-primary/30 p-5 rounded-3xl transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
-              {featuredPost.cover_image_url ? (
-                <div className="lg:col-span-7 overflow-hidden rounded-2xl aspect-video lg:aspect-auto lg:h-[380px] relative">
-                  <img
-                    src={featuredPost.cover_image_url}
-                    alt={featuredPost.title}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm border-0 font-medium">
-                    {featuredPost.category}
-                  </Badge>
-                </div>
-              ) : (
-                <div className="lg:col-span-7 overflow-hidden rounded-2xl aspect-video lg:aspect-auto lg:h-[380px] relative bg-muted/30 flex items-center justify-center">
-                  <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur-sm border-0 font-medium">
-                    {featuredPost.category}
-                  </Badge>
-                  <BookOpen className="h-16 w-16 text-muted-foreground/20" />
-                </div>
-              )}
+            <div className="group relative bg-card/30 border border-border/30 hover:border-primary/30 p-8 md:p-12 rounded-3xl transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 flex flex-col items-center text-center space-y-6">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap justify-center">
+                <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0 font-medium">
+                  {featuredPost.category}
+                </Badge>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {new Date(featuredPost.published_at).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" />
+                  Kaifer Team
+                </span>
+              </div>
 
-              <div className="lg:col-span-5 flex flex-col justify-center space-y-4">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(featuredPost.published_at).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <User className="h-3.5 w-3.5" />
-                    Kaifer Team
-                  </span>
-                </div>
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight group-hover:text-primary transition-colors max-w-4xl">
+                <Link to={`/blog/${featuredPost.slug}`}>{featuredPost.title}</Link>
+              </h2>
 
-                <h2 className="text-xl lg:text-3xl font-bold tracking-tight leading-tight group-hover:text-primary transition-colors">
-                  <Link to={`/blog/${featuredPost.slug}`}>{featuredPost.title}</Link>
-                </h2>
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-3xl">
+                {featuredPost.excerpt}
+              </p>
 
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {featuredPost.excerpt}
-                </p>
-
-                <div className="pt-2">
-                  <Link
-                    to={`/blog/${featuredPost.slug}`}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all"
-                  >
-                    Read Article <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+              <div className="pt-4">
+                <Link
+                  to={`/blog/${featuredPost.slug}`}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all bg-primary/5 hover:bg-primary/10 px-6 py-3 rounded-full"
+                >
+                  Read Article <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
           )}
@@ -193,53 +173,37 @@ export default function BlogPage() {
               (post) => (
                 <article
                   key={post.id}
-                  className="group flex flex-col bg-card/25 border border-border/20 hover:border-primary/20 rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                  className="group flex flex-col bg-card/25 border border-border/20 hover:border-primary/20 rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 p-6 space-y-4 min-h-[220px]"
                 >
-                  <div className="relative aspect-video overflow-hidden bg-muted flex items-center justify-center">
-                    {post.cover_image_url ? (
-                      <img
-                        src={post.cover_image_url}
-                        alt={post.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <BookOpen className="h-10 w-10 text-muted-foreground/20" />
-                    )}
-                    <Badge className="absolute top-3 left-3 bg-background/80 hover:bg-background text-foreground backdrop-blur-sm border-0 text-[10px] font-semibold py-0.5 px-2">
+                  <div className="flex items-center justify-between">
+                    <Badge className="bg-background hover:bg-background text-foreground border border-border/30 text-[10px] font-semibold py-0.5 px-2">
                       {post.category}
                     </Badge>
+                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(post.published_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
                   </div>
 
-                  <div className="flex-1 p-5 flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(post.published_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
+                  <h3 className="font-bold text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                    <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+                  </h3>
 
-                      <h3 className="font-bold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                        <Link to={`/blog/${post.slug}`}>{post.title}</Link>
-                      </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
+                    {post.excerpt}
+                  </p>
 
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                        {post.excerpt}
-                      </p>
-                    </div>
-
-                    <div className="pt-2">
-                      <Link
-                        to={`/blog/${post.slug}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:gap-2.5 transition-all"
-                      >
-                        Read Article <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    </div>
+                  <div className="pt-3 border-t border-border/10 mt-auto">
+                    <Link
+                      to={`/blog/${post.slug}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:gap-2.5 transition-all"
+                    >
+                      Read Article <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 </article>
               )
