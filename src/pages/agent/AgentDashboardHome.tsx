@@ -27,6 +27,7 @@ import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { DashboardSkeleton } from "@/components/shared/LoadingState";
 import { WalletCard } from "@/components/shared/WalletCard";
 import { SpecialOfferPromo } from "@/components/special/SpecialOfferPromo";
+import { AgentWhatsAppBanner } from "@/components/agent/AgentWhatsAppBanner";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { createDepositIntent, initializePayment } from "@/services/purchaseIntent";
@@ -212,6 +213,11 @@ export default function AgentDashboardHome() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* WhatsApp channel banner — active agents only */}
+      {!sub.loading && sub.isSubscriptionActive && (
+        <AgentWhatsAppBanner isActive={sub.isSubscriptionActive} />
       )}
 
       {/* Special offer promo (agent panel — near Buy Data, not on storefront)

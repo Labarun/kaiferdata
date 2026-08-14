@@ -27,6 +27,7 @@ import {
 import { ListSkeleton, DashboardSkeleton } from "@/components/shared/LoadingState";
 import { StatCard } from "@/components/shared/StatCard";
 import { SpecialOfferPromo } from "@/components/special/SpecialOfferPromo";
+import { AgentPromoBanner } from "@/components/marketing/AgentPromoBanner";
 
 type OrderRow = Record<string, unknown>;
 type TxnRow = Record<string, unknown>;
@@ -96,6 +97,8 @@ export default function UserDashboardHome() {
 
   return (
     <div className="space-y-6">
+      {/* Logged-in agent promotion — shown once to eligible users */}
+      <AgentPromoBanner />
       {/* Welcome header */}
       <div className="animate-fade-in">
         <div className="flex items-center gap-2 mb-1">
