@@ -84,8 +84,19 @@ async function run() {
       await new Promise(r => setTimeout(r, 1000));
       
       const html = await page.evaluate(() => document.documentElement.outerHTML);
-      
-      const filePath = path.resolve(__dirname, '..', 'dist', route.replace(/^\//, ''), 'index.html');
+
+      // IMPORTANT: When route is '/', the naive replace gives an empty string
+      // which resolves to dist/index.html — overwriting the SPA shell with the
+      // landing page HTML. Every other route would then serve that prerendered
+      // landing page, causing the visible flash on reload for logged-in users.
+      //
+      // Fix: always put the prerendered file in a named subdirectory.
+      // The root route goes to dist/index/index.html (served at /index/),
+      // NOT dist/index.html. The real dist/index.html (the blank SPA shell)
+      // is never touched so the hosting platform can correctly use it as the
+      // fallback for all routes (including /agent, /admin, /dashboard, etc.).
+      const routeSegment = route === '/' ? 'index' : route.replace(/^\//, '');
+      const filePath = path.resolve(__dirname, '..', 'dist', routeSegment, 'index.html');
       const dirPath = path.dirname(filePath);
       
       await fs.mkdir(dirPath, { recursive: true });
