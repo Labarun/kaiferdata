@@ -55,8 +55,40 @@
 </head>
 
 <body>
+  <!--
+    #app-loading-shield: Covers any prerendered HTML in the SPA shell until
+    React mounts the correct page. Fades out automatically after React mounts.
+  -->
+  <div id="app-loading-shield" aria-hidden="true"></div>
+  <style>
+    #app-loading-shield {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: #0f1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: shieldFadeOut 0.15s ease 0.4s forwards;
+    }
+    #app-loading-shield::after {
+      content: '';
+      width: 26px;
+      height: 26px;
+      border: 2px solid rgba(80,140,255,0.2);
+      border-top-color: rgba(80,140,255,0.8);
+      border-radius: 50%;
+      animation: shieldSpin 0.7s linear infinite;
+    }
+    @keyframes shieldFadeOut {
+      to { opacity: 0; pointer-events: none; visibility: hidden; }
+    }
+    @keyframes shieldSpin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
-</html>
+</html>
