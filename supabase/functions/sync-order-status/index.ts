@@ -190,6 +190,10 @@ Deno.serve(async (req) => {
         .replace("{order_id}", encodeURIComponent(order.id));
 
       try {
+        // Small throttle between requests — prevents 429s on bulk runs
+        // (Instant Data / other suppliers have per-minute rate limits)
+        await new Promise((r) => setTimeout(r, 120));
+
         const apiUrl = `${supplier.api_base_url}${resolvedPath}`;
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -206,12 +210,61 @@ Deno.serve(async (req) => {
         });
         clearTimeout(timeout);
 
-        if (!apiRes.ok) {
-          const errText = await apiRes.text();
-          throw new Error(`API ${apiRes.status}: ${errText.slice(0, 200)}`);
+        // ── Read body ONCE (can't read a response stream twice) ──
+        const rawText = await apiRes.text();
+        let apiData: Record<string, unknown> = {};
+        try { apiData = JSON.parse(rawText); } catch { apiData = { raw: rawText }; }
+
+        // ── 429 Rate-limit: log and skip this order, keep processing others ──
+        if (apiRes.status === 429) {
+          const retryAfter = Number(apiRes.headers.get("Retry-After") || "5");
+          console.warn(`Rate limited by supplier for order ${order.public_order_id}. Waiting ${retryAfter}s.`);
+          await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          errors.push(`Order ${order.public_order_id}: Rate limited (429) — skipped this run`);
+          continue;
         }
 
-        let apiData = await apiRes.json();
+        // ── Self-healing: try alternative reference BEFORE throwing on 404 ──
+        // Bug fix: the old code threw on !apiRes.ok before the self-healing
+        // block could run, making that block dead code for 404 responses.
+        if (apiRes.status === 404 || rawText.toLowerCase().includes("not found")) {
+          const possibleId = order.delivery_message;
+          if (
+            possibleId &&
+            possibleId !== order.supplier_reference &&
+            possibleId.length > 3 &&
+            !possibleId.includes(" ")
+          ) {
+            console.log(
+              `Order ${order.public_order_id}: 404 received. Self-healing — retrying with delivery_message as reference: ${possibleId}`
+            );
+            const retryPath = statusPath
+              .replace("{reference}", encodeURIComponent(possibleId))
+              .replace("{order_id}", encodeURIComponent(order.id));
+            const retryUrl = `${supplier.api_base_url}${retryPath}`;
+            const retryRes = await fetch(retryUrl, { method: statusMethod, headers });
+            if (retryRes.ok) {
+              const healed = await retryRes.json() as Record<string, unknown>;
+              // Swap the reference permanently in the DB
+              await supabase
+                .from("orders")
+                .update({ supplier_reference: possibleId, delivery_message: order.supplier_reference })
+                .eq("id", order.id);
+              console.log(`Order ${order.public_order_id}: Self-healing successful — reference updated to ${possibleId}`);
+              // Replace apiData with the healed response and continue processing
+              Object.assign(apiData, healed);
+            } else {
+              // Self-healing also failed — log and skip
+              throw new Error(`API 404 (self-healing also failed with reference ${possibleId}): ${rawText.slice(0, 200)}`);
+            }
+          } else if (!apiRes.ok) {
+            // 404 but no alternative reference to try
+            throw new Error(`API ${apiRes.status}: ${rawText.slice(0, 200)}`);
+          }
+        } else if (!apiRes.ok) {
+          // All other non-OK responses
+          throw new Error(`API ${apiRes.status}: ${rawText.slice(0, 200)}`);
+        }
 
         // Extract status from response
         const statusField = orderResponseMapping.status || "status";
@@ -220,7 +273,6 @@ Deno.serve(async (req) => {
 
         let rawStatusVal = getNestedValue(apiData, statusField);
         if (rawStatusVal === undefined || rawStatusVal === null || rawStatusVal === "") {
-          // Aggressively search for status in various common fields if the mapped one is missing
           rawStatusVal = apiData.status || apiData.state || apiData.status_text || apiData.message || "";
         }
         let rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
@@ -237,46 +289,13 @@ Deno.serve(async (req) => {
         }
         const rawReference = (rawRefVal !== undefined && rawRefVal !== null) ? String(rawRefVal) : "";
 
-        // SELF-HEALING: If supplier says "Not Found" (404), and we suspect the reference was swapped
-        // (like with the old Afrohub mapping bug), we can check if delivery_message contains the real ID.
-        if (
-          apiRes.status === 404 || 
-          rawStatus.toLowerCase().includes("not found") || 
-          rawMessage.toLowerCase().includes("not found")
-        ) {
-          const possibleId = order.delivery_message;
-          if (possibleId && possibleId !== order.supplier_reference && possibleId.length > 3 && !possibleId.includes(" ")) {
-            console.log(`Order ${order.id}: 404 received. Attempting self-healing swap with delivery_message: ${possibleId}`);
-            const retryPath = statusPath
-              .replace("{reference}", encodeURIComponent(possibleId))
-              .replace("{order_id}", encodeURIComponent(order.id));
-            const retryUrl = `${supplier.api_base_url}${retryPath}`;
-            
-            try {
-              const retryRes = await fetch(retryUrl, { method: statusMethod, headers });
-              if (retryRes.ok) {
-                apiData = await retryRes.json();
-                
-                rawStatusVal = getNestedValue(apiData, statusField) || apiData.status || apiData.state || apiData.status_text || apiData.message || "";
-                rawStatus = (rawStatusVal !== undefined && rawStatusVal !== null) ? String(rawStatusVal) : "";
-                
-                // Update the order in the DB to fix the reference permanently
-                await supabase.from("orders").update({ supplier_reference: possibleId, delivery_message: order.supplier_reference }).eq("id", order.id);
-                console.log(`Order ${order.id}: Self-healing successful!`);
-              }
-            } catch (retryErr) {
-              console.error(`Order ${order.id}: Self-healing failed`, retryErr);
-            }
-          }
-        }
-
         if (!rawStatus) continue; // No status info, skip
 
         let normalizedStatus = normalizeStatus(rawStatus, statusMapping);
 
         // Check for specific beneficiary verification failure to mark as on_hold
-        const detailMessage = String(apiData.message || apiData.details?.message || "").trim();
-        const skipped = Array.isArray(apiData.details?.skipped) ? apiData.details.skipped : [];
+        const detailMessage = String(apiData.message || (apiData.details as any)?.message || "").trim();
+        const skipped = Array.isArray((apiData.details as any)?.skipped) ? (apiData.details as any).skipped : [];
         const hasBeneficiaryVerificationFailure =
           /all numbers were skipped|beneficiary verification failed|not approved/i.test(detailMessage) ||
           skipped.some((entry: any) => /beneficiary number not approved|not approved/i.test(String(entry.reason || "")));
@@ -332,7 +351,7 @@ Deno.serve(async (req) => {
           order_id: order.id,
           request_payload: { path: resolvedPath, method: statusMethod },
           response_payload: apiData,
-          normalized_result: normalizedStatus,
+          normalized_result: normalizedStatus ?? "unknown",
           is_success: true,
           supplier_reference: rawReference,
           request_started_at: new Date().toISOString(),
