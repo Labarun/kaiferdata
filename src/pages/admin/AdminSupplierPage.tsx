@@ -485,14 +485,18 @@ function SupplierFormDialog({
       return;
     }
 
-    const productsEndpoint = endpointConfig.products as Record<string, unknown> | undefined;
-    if (!productsEndpoint || typeof productsEndpoint !== "object" || typeof productsEndpoint.path !== "string") {
-      toast({
-        title: "Invalid endpoint config",
-        description: "The endpoint config must include a products object with a valid path and response_data_field.",
-        variant: "destructive",
-      });
-      return;
+    // Only require a products endpoint if this supplier actually does product sync.
+    // Suppliers like DataBundlesHub manage packages via SQL, not via a sync endpoint.
+    if (form.supports_product_sync) {
+      const productsEndpoint = endpointConfig.products as Record<string, unknown> | undefined;
+      if (!productsEndpoint || typeof productsEndpoint !== "object" || typeof productsEndpoint.path !== "string") {
+        toast({
+          title: "Invalid endpoint config",
+          description: "Product sync is enabled — the endpoint config must include a products object with a valid path and response_data_field.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setSaving(true);
