@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       .select("id, public_order_id, status, supplier_reference, supplier_status, delivery_message, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
       .not("supplier_reference", "is", null)
       .not("status", "in", `(${FINAL_STATUSES.join(",")})`)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(100);
 
     if (targetOrderId) {
