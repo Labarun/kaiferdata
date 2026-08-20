@@ -408,7 +408,7 @@ export default function BuyDataPage() {
                             <div className="flex items-start gap-2.5">
                               <Zap className="h-4 w-4 text-success mt-0.5 shrink-0 fill-success/20" />
                               <AlertDescription className="text-[11px] text-success/90 font-medium leading-[1.4]">
-                                <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in minutes. For unverified numbers delivery may take longer than usual. <span className="opacity-80">(Failed Order will be retired automatically).</span>
+                                <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in minutes. For unverified numbers delivery may take longer than usual. <span className="opacity-80">(Failed Order will be retried automatically).</span>
                               </AlertDescription>
                             </div>
                           </Alert>

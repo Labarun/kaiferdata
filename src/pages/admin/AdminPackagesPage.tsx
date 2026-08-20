@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { PackageFormDialog } from "@/components/admin/PackageFormDialog";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
-import { fetchAllPackages, calcProfit, calcMargin, deletePackage, type DataPackage } from "@/services/packageCatalog";
+import { fetchAllPackages, calcProfit, calcMargin, deletePackage, updatePackage, type DataPackage } from "@/services/packageCatalog";
 import { triggerProductSync, fetchSuppliers, type Supplier } from "@/services/supplierAdmin";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -37,6 +37,7 @@ import {
   ArrowDownToLine,
   Trash2,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const NETWORKS = ["All", "MTN", "Telecel", "AirtelTigo"];
 const STATUS_FILTERS = ["All", "Active", "Inactive"];
@@ -190,6 +191,7 @@ export default function AdminPackagesPage() {
           { key: "network", header: "Network", mobile: "row", cell: (p) => <Badge variant="outline" className="text-xs">{p.network}</Badge> },
           { key: "supplier", header: "Supplier", align: "right", mobile: "row", cell: (p) => <span className="font-mono text-xs">GH₵{Number(p.supplier_price).toFixed(2)}</span> },
           { key: "profit", header: "Profit", align: "right", mobile: "row", cell: (p) => { const pr = calcProfit(p); return <span className={`font-mono text-xs font-semibold ${pr >= 0 ? "text-success" : "text-destructive"}`}>GH₵{pr.toFixed(2)} <span className="text-[10px] text-muted-foreground">({calcMargin(p).toFixed(0)}%)</span></span>; } },
+          { key: "express", header: "Express", align: "center", mobile: "row", cell: (p) => <ExpressToggle pkg={p} onToggle={load} /> },
           { key: "status", header: "Status", align: "center", mobile: "row", cell: (p) => (
             <div className="flex flex-col items-center gap-1">
               <Badge variant={p.is_active ? "default" : "secondary"} className="text-[10px]">
@@ -273,5 +275,40 @@ function SyncButton({ onSuccess }: { onSuccess: () => void }) {
       {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowDownToLine className="h-3.5 w-3.5" />}
       Sync Products
     </Button>
+  );
+}
+
+function ExpressToggle({ pkg, onToggle }: { pkg: DataPackage; onToggle: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  
+  const handleToggle = async (checked: boolean) => {
+    setLoading(true);
+    try {
+      await updatePackage(pkg.id, { category: checked ? "express" : "regular" });
+      toast({ title: "Category Updated", description: `${pkg.package_size_label} moved to ${checked ? "Express" : "Regular"} page.` });
+      onToggle();
+    } catch (err: any) {
+      toast({ title: "Update Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="flex flex-col items-center gap-1">
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <Switch 
+          checked={pkg.category === "express"} 
+          onCheckedChange={handleToggle}
+          className="scale-[0.8] data-[state=checked]:bg-green-500"
+        />
+      )}
+      <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
+        {pkg.category === "express" ? "Express" : "Regular"}
+      </span>
+    </div>
   );
 }
