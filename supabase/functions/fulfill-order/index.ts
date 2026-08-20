@@ -209,33 +209,10 @@ async function submitToSupplierApi(
 
     if (supplierPackages && supplierPackages.length > 0) {
       const codeNeedle = normalizeToken(order.bundle_code);
-      const sizeHints = new Set<string>();
-      const addHint = (v: unknown) => {
-        const n = normalizeSize(v);
-        if (n) sizeHints.add(n);
-      };
-
-      addHint(snapshot.volume);
-      addHint(snapshot.package_size_label);
-      addHint(snapshot.package_volume_value);
-      addHint(order.bundle_name);
-
-      const codeVolumeMatch = String(order.bundle_code || "").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
-      if (codeVolumeMatch) addHint(codeVolumeMatch[1]);
-
       let pkg = supplierPackages.find((p: Record<string, unknown>) => normalizeToken(p.package_code) === codeNeedle);
 
-      if (!pkg && sizeHints.size > 0) {
-        pkg = supplierPackages.find((p: Record<string, unknown>) => {
-          const packageValues = [p.package_size_label, p.package_volume_value, p.package_name, p.package_code]
-            .map((v) => normalizeSize(v))
-            .filter(Boolean);
-          return Array.from(sizeHints).some((hint) => packageValues.includes(hint));
-        });
-      }
-
-      if (!pkg && supplierPackages.length === 1) {
-        pkg = supplierPackages[0];
+      if (!pkg) {
+        console.warn(`[fulfill-order] SECURITY: Strict package matching failed. Bundle code '${order.bundle_code}' not explicitly mapped to a supplier package.`);
       }
 
       if (pkg?.supplier_source_id) {
