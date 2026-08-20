@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("id, public_order_id, status, supplier_reference, supplier_status, delivery_message, network, bundle_code, bundle_snapshot, amount_charged, beneficiary_number")
       .not("supplier_reference", "is", null)
-      .not("status", "in", `(${FINAL_STATUSES.join(",")})`)
+      .in("status", ["processing", "queued", "pending", "on_hold"])
       .order("created_at", { ascending: false })
       .limit(100);
 
