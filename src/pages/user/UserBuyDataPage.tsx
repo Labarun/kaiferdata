@@ -27,7 +27,7 @@ import {
 } from "@/services/purchaseIntent";
 import { purchaseWithWallet } from "@/services/walletPurchase";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getNetworkBrand } from "@/config/networkBrands";
@@ -70,13 +70,16 @@ export default function UserBuyDataPage() {
   const { user } = useAuth();
   const isAgent = user?.role === "admin" || (user?.role === "agent" && user?.agentStatus === "active");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [packages, setPackages] = useState<DataPackage[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [network, setNetwork] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<"regular" | "express">("regular");
+  const [network, setNetwork] = useState<string | null>(searchParams.get("network"));
+  const [activeCategory, setActiveCategory] = useState<"regular" | "express">(
+    searchParams.get("category") === "express" || searchParams.get("type") === "express" ? "express" : "regular"
+  );
   const [selectedPkg, setSelectedPkg] = useState<DataPackage | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
   const [userTouchedPayment, setUserTouchedPayment] = useState(false);

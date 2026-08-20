@@ -8,7 +8,7 @@
  * commission trigger can compute exact profit on delivery.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { Wifi, Search, Store as StoreIcon, Shield, Zap, Clock, MessageCircle, AlertTriangle, Sparkles, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,8 +81,11 @@ export default function AgentStorefrontPage() {
   const [packages, setPackages] = useState<(DataPackage & { _agent_base_price?: number })[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
 
-  const [network, setNetwork] = useState<string | null>(null);
-  const [category, setCategory] = useState<"regular" | "express">("regular");
+  const [searchParams] = useSearchParams();
+  const [network, setNetwork] = useState<string | null>(searchParams.get("network"));
+  const [category, setCategory] = useState<"regular" | "express">(
+    searchParams.get("category") === "express" || searchParams.get("type") === "express" ? "express" : "regular"
+  );
   const [plan, setPlan] = useState<DataPlan | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
