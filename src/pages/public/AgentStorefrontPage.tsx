@@ -20,6 +20,7 @@ import { NetworkSelector } from "@/components/buy/NetworkSelector";
 import { PlanSelector } from "@/components/buy/PlanSelector";
 import { CheckoutSheet } from "@/components/buy/CheckoutSheet";
 import { NoticeBanner } from "@/components/shared/NoticeBanner";
+import { DeliveryStatusPill } from "@/components/shared/DeliveryStatusPill";
 import {
   Tooltip,
   TooltipContent,
@@ -94,6 +95,7 @@ export default function AgentStorefrontPage() {
   const [trackOpen, setTrackOpen] = useState(false);
   const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
   const [deliverySpeed, setDeliverySpeed] = useState("Swift Delivery");
+  const [expressDeliverySpeed, setExpressDeliverySpeed] = useState("within 10 - 30 minutes");
   const [masterEnabled, setMasterEnabled] = useState(true);
 
   useEffect(() => {
@@ -101,11 +103,14 @@ export default function AgentStorefrontPage() {
       const { data, error } = await supabase
         .from("system_settings")
         .select("setting_key, setting_value")
-        .in("setting_key", ["delivery_speed", "master_storefront_enabled"]);
+        .in("setting_key", ["delivery_speed", "express_delivery_speed", "master_storefront_enabled"]);
 
       if (!error && data) {
         const speed = data.find(d => d.setting_key === "delivery_speed");
         if (speed?.setting_value) setDeliverySpeed(speed.setting_value);
+        
+        const expressSpeed = data.find(d => d.setting_key === "express_delivery_speed");
+        if (expressSpeed?.setting_value) setExpressDeliverySpeed(expressSpeed.setting_value);
         
         const master = data.find(d => d.setting_key === "master_storefront_enabled");
         if (master?.setting_value) setMasterEnabled(master.setting_value === "true");
@@ -346,37 +351,7 @@ export default function AgentStorefrontPage() {
         </div>
       </section>
 
-      {/* Delivery speed pill */}
-      <div className="container relative z-10 pt-6 mb-2 flex flex-col items-center">
-        <div className="flex flex-nowrap items-center w-full md:w-auto max-w-full gap-2 sm:gap-3 rounded-[2rem] border border-success/20 bg-[#0A1A14] p-1.5 pl-1.5 pr-2 sm:pl-3 sm:pr-4 shadow-lg shadow-success/5 backdrop-blur-xl overflow-hidden">
-          <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
-          </span>
-          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
-            <Zap className="h-4 w-4 sm:h-4 sm:w-4" fill="currentColor" />
-          </div>
-          <div className="flex flex-1 flex-col mr-1 sm:mr-4 min-w-0 text-left overflow-hidden">
-            <p className="text-[11px] sm:text-[13px] font-bold text-success leading-tight truncate">Delivery: {deliverySpeed}</p>
-            <p className="text-[9px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are delivered based on this status.</p>
-          </div>
-          <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto hidden sm:flex">
-            <div className="flex items-end gap-0.5 h-3">
-              <div className="w-[3px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
-              <div className="w-[3px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
-              <div className="w-[3px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
-            </div>
-          </div>
-          <div className="ml-1 sm:ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
-            <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
-              <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-success"></span> Live
-            </span>
-          </div>
-        </div>
-        <a href="#notices" className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-warning hover:text-warning/80 transition-colors">
-          <AlertTriangle className="h-3 w-3" /> Important Notices
-        </a>
-      </div>
+
 
       <div className="container pt-4 sm:pt-6">
         <div className="max-w-lg mx-auto">
@@ -450,6 +425,16 @@ export default function AgentStorefrontPage() {
                           </button>
                         </div>
                       )}
+
+                      <DeliveryStatusPill
+                        isExpress={network === "MTN" && category === "express"}
+                        speedText={
+                          network === "Telecel" ? "within an hour" :
+                          network === "AirtelTigo" ? "Instant" :
+                          category === "express" ? expressDeliverySpeed : deliverySpeed
+                        }
+                        className="mb-4 items-start w-full"
+                      />
 
                       {category === "express" && (
                         <>
