@@ -115,7 +115,7 @@ function BulkOrderFlow() {
 
   const filteredPackages = useMemo(() => {
     if (!network) return [];
-    let list = filterPackagesByNetwork(packages, network);
+    let list = filterPackagesByNetwork(packages, network).filter(p => p.is_agent_resaleable !== false);
     if (category === "express") {
       list = list.filter(p => p.category === "express");
     } else {
@@ -129,7 +129,7 @@ function BulkOrderFlow() {
     setSelectedPkg(null);
   }, []);
 
-  const getAgentPrice = (pkg: DataPackage) => Number(pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
+  const getAgentPrice = (pkg: DataPackage) => Number(pkg.is_agent_resaleable !== false && pkg.agent_base_price > 0 ? pkg.agent_base_price : pkg.selling_price);
 
   const totalCost = selectedPkg ? getAgentPrice(selectedPkg) * validNumbers.length : 0;
   const canAffordWallet = walletBalance >= totalCost;
@@ -303,7 +303,7 @@ function BulkOrderFlow() {
               <div className="flex items-start gap-2.5">
                 <Zap className="h-4 w-4 text-success mt-0.5 shrink-0 fill-success/20" />
                 <AlertDescription className="text-[11px] text-success/90 font-medium leading-[1.4]">
-                  <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in seconds. Ensure your MTN number is verified. <span className="opacity-80">(Instant 24hr refunds for failed orders).</span>
+                  <strong className="text-success">Ultra-Fast Delivery!</strong> Delivered in minutes. For unverified numbers delivery may take longer than usual. <span className="opacity-80">(Failed Order will be retried automatically).</span>
                 </AlertDescription>
               </div>
             </Alert>
@@ -315,7 +315,7 @@ function BulkOrderFlow() {
             <div className="flex items-start gap-2.5">
               <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <AlertDescription className="text-[11px] text-muted-foreground font-medium leading-[1.4]">
-                Regular fulfillment may take longer than usual (5-15 mins). Need it instantly?{" "}
+                Regular fulfillment may take longer than usual. Need it instantly?{" "}
                 <button onClick={() => { setCategory("express"); setSelectedPkg(null); }} className="text-foreground underline font-bold hover:text-success transition-colors">
                   Switch to Express
                 </button>

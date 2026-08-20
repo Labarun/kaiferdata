@@ -135,7 +135,7 @@ export default function UserBuyDataPage() {
   // Paystack auto-takes over when wallet can't cover the selected bundle.
   useEffect(() => {
     if (userTouchedPayment || !selectedPkg) return;
-    const pkgPrice = (isAgent && Number(selectedPkg.agent_base_price) > 0)
+    const pkgPrice = (isAgent && selectedPkg.is_agent_resaleable !== false && Number(selectedPkg.agent_base_price) > 0)
       ? Number(selectedPkg.agent_base_price)
       : Number(selectedPkg.selling_price);
 
@@ -193,7 +193,7 @@ export default function UserBuyDataPage() {
       plan_code: selectedPkg.package_code,
       plan_name: selectedPkg.package_name,
       volume: selectedPkg.package_size_label,
-      amount: (isAgent && Number(selectedPkg.agent_base_price) > 0)
+      amount: (isAgent && selectedPkg.is_agent_resaleable !== false && Number(selectedPkg.agent_base_price) > 0)
         ? Number(selectedPkg.agent_base_price)
         : Number(selectedPkg.selling_price),
       description: selectedPkg.validity_label,
@@ -227,7 +227,7 @@ export default function UserBuyDataPage() {
       const previousOrders = queryClient.getQueryData(["user-orders", user?.id, ""]);
       const previousWallet = queryClient.getQueryData(["user-wallet", user?.id]);
 
-      const pkgPrice = (isAgent && Number(selectedPkg!.agent_base_price) > 0)
+      const pkgPrice = (isAgent && selectedPkg!.is_agent_resaleable !== false && Number(selectedPkg!.agent_base_price) > 0)
         ? Number(selectedPkg!.agent_base_price)
         : Number(selectedPkg!.selling_price);
 
@@ -297,7 +297,7 @@ export default function UserBuyDataPage() {
 
     setPaymentError(null);
     try {
-      const pkgPrice = (isAgent && Number(selectedPkg.agent_base_price) > 0)
+      const pkgPrice = (isAgent && selectedPkg.is_agent_resaleable !== false && Number(selectedPkg.agent_base_price) > 0)
         ? Number(selectedPkg.agent_base_price)
         : Number(selectedPkg.selling_price);
 
@@ -341,7 +341,7 @@ export default function UserBuyDataPage() {
   };
 
   const canAfford = selectedPkg
-    ? walletBalance >= ((isAgent && Number(selectedPkg.agent_base_price) > 0) ? Number(selectedPkg.agent_base_price) : Number(selectedPkg.selling_price))
+    ? walletBalance >= ((isAgent && selectedPkg.is_agent_resaleable !== false && Number(selectedPkg.agent_base_price) > 0) ? Number(selectedPkg.agent_base_price) : Number(selectedPkg.selling_price))
     : false;
 
   if (loading) {
@@ -636,9 +636,9 @@ export default function UserBuyDataPage() {
                             )}
                             style={(isActive && !isBuyingPaused) ? { color: `hsl(${brand.hsl})` } : undefined}
                           >
-                            GH₵{(isAgent && Number(pkg.agent_base_price) > 0 ? Number(pkg.agent_base_price) : Number(pkg.selling_price)).toLocaleString()}
+                            GH₵{(isAgent && pkg.is_agent_resaleable !== false && Number(pkg.agent_base_price) > 0 ? Number(pkg.agent_base_price) : Number(pkg.selling_price)).toLocaleString()}
                           </span>
-                          {isAgent && Number(pkg.agent_base_price) > 0 && (
+                          {isAgent && pkg.is_agent_resaleable !== false && Number(pkg.agent_base_price) > 0 && (
                             <span className="text-[9px] font-semibold text-success tracking-wide uppercase mt-0.5">
                               Agent Price
                             </span>
