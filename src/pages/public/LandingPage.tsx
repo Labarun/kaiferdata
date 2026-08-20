@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+
 import {
   Zap, ShieldCheck, Wallet, Headset, Clock, Map,
   ArrowRight, Store, Smartphone, CheckCircle2
@@ -48,19 +48,9 @@ export default function LandingPage() {
           <div className="absolute top-[45%] left-[-8%] w-[340px] h-[340px] rounded-full bg-[hsl(213_45%_82%/0.2)] blur-[60px] will-change-transform" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="flex flex-col items-center relative z-10 w-full max-w-5xl mx-auto glass-hero rounded-[3rem] p-8 sm:p-12 md:p-16 border border-border/50 shadow-2xl shadow-primary/5"
         >
-          {/* Service Status Badge */}
-          <div className="glass-elevated px-4 py-1.5 rounded-full flex items-center gap-2 mb-8 border border-primary/20 bg-background/40 backdrop-blur-md">
-            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-[10px] sm:text-[11px] whitespace-nowrap uppercase tracking-wider font-semibold text-muted-foreground">
-              System Online · <span className="text-foreground">Delivery Status: {deliverySpeed}</span>
-            </span>
-          </div>
 
           <h1 className="text-5xl md:text-4xl font-extrabold tracking-tight max-w-4xl leading-[1.1] mb-6">
             Buy Cheap Data<br />
@@ -68,7 +58,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10">
-            MTN Data Bundles, Vodafone & AirtelTigo all available at the cheapest prices. Trusted by over 50,000 Ghanaian Data users, top up your data bundles for MTN, Vodafone & AirtelTigo. No need for registrations.
+            Buy MTN, Vodafone & AirtelTigo data bundles at the cheapest prices. No need for registrations.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -94,21 +84,18 @@ export default function LandingPage() {
             <div className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-success" /> Secure Payments</div>
             <div className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> No signup required</div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ── NETWORKS SECTION ── */}
       <section className="w-full max-w-5xl px-4 py-16 md:py-24 flex flex-col items-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
+        <div
           className="text-center mb-12"
         >
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Networks</p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Choose Your Network</h2>
           <p className="text-muted-foreground mt-2">Select your network to view available data bundles tailored for your needs.</p>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           {[
@@ -116,12 +103,8 @@ export default function LandingPage() {
             { name: "Telecel", desc: "Reliable nationwide coverage", color: "text-[#E60000]", bg: "bg-[#E60000]/10", ring: "ring-[#E60000]/20" },
             { name: "AirtelTigo", desc: "Best value bundles", color: "text-[#0033A0]", bg: "bg-[#0033A0]/10", ring: "ring-[#0033A0]/20" },
           ].map((net, i) => (
-            <motion.div
+            <div
               key={net.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
               onClick={() => navigate(`/buy?network=${net.name}`)}
               className={`glass-card p-6 rounded-3xl border-border/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer ring-1 ring-inset ${net.ring}`}
             >
@@ -131,28 +114,25 @@ export default function LandingPage() {
               <h3 className="text-xl font-bold">{net.name}</h3>
               <p className="text-sm text-muted-foreground mt-1 mb-4">{net.desc}</p>
               <p className="text-sm font-semibold text-foreground">Click to view bundles →</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
 
       {/* ── WHY CHOOSE US (FEATURES) ── */}
       <section className="w-full max-w-6xl px-4 py-16 md:py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+        <div
           className="text-center mb-16"
         >
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Why Kaifer Data?</p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">We Provide The Best Offers in Ghana</h2>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">We understand the competitive nature of the telecom industry, hence we provide the best data bundle prices that are affordable and reliable.</p>
-          <div className="mt-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+          <div className="mt-6">
             <Button variant="outline" size="lg" className="rounded-full glass-subtle border-border/50 text-foreground/80 hover:text-foreground" asChild>
               <Link to="/about">More About Kaifer Data</Link>
             </Button>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
@@ -170,12 +150,8 @@ export default function LandingPage() {
               linkText: "Learn More About Kaifer Agents →"
             },
           ].map((feature, i) => (
-            <motion.div
+            <div
               key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
               className="glass-card p-8 rounded-3xl border-border/40 hover:bg-muted/20 transition-colors"
             >
               <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center mb-5 ring-1 ring-inset ring-foreground/5">
@@ -189,17 +165,14 @@ export default function LandingPage() {
                   {feature.linkText}
                 </Link>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
 
       {/* ── UNLOCK FULL EXPERIENCE ── */}
       <section className="w-full max-w-5xl px-4 py-16 md:py-32 flex flex-col items-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+        <div
           className="text-center w-full glass-card p-10 md:p-16 rounded-[2.5rem] border-border/50 relative overflow-hidden isolate"
         >
           {/* Internal Glow */}
@@ -236,7 +209,7 @@ export default function LandingPage() {
           >
             Create A Free Account Today
           </Button>
-        </motion.div>
+        </div>
       </section>
 
     </div>

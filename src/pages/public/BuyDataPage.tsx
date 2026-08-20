@@ -67,7 +67,9 @@ export default function BuyDataPage() {
   const [loading, setLoading] = useState(true);
 
   const [network, setNetwork] = useState<string | null>(searchParams.get("network"));
-  const [activeCategory, setActiveCategory] = useState<"regular" | "express">("regular");
+  const [activeCategory, setActiveCategory] = useState<"regular" | "express">(
+    searchParams.get("category") === "express" || searchParams.get("type") === "express" ? "express" : "regular"
+  );
   const [plan, setPlan] = useState<DataPlan | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
