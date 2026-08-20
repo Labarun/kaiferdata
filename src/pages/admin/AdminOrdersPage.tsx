@@ -194,6 +194,7 @@ export default function AdminOrdersPage() {
        .from("orders")
        .select("id")
        .in("status", ["processing", "queued"])
+       .order("created_at", { ascending: false })
        .limit(2000);
        
     if (!processingOrders || processingOrders.length === 0) {
