@@ -37,9 +37,14 @@ import {
   ChevronRight,
   Zap,
   AlertTriangle,
-  SendHorizonal,
+  ChevronDown,
+  CheckCircle2,
+  Copy,
+  Sparkles,
   Clock,
+  SendHorizonal,
 } from "lucide-react";
+import { DeliveryStatusPill } from "@/components/shared/DeliveryStatusPill";
 
 /** Inline WhatsApp glyph (lucide has no brand icon). */
 function WhatsAppIcon({ className, size = 12 }: { className?: string; size?: number }) {
@@ -103,6 +108,7 @@ export default function UserBuyDataPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const [deliverySpeed, setDeliverySpeed] = useState("Fast Delivery");
+  const [expressDeliverySpeed, setExpressDeliverySpeed] = useState("within 10 - 30 minutes");
   const [orderingPaused, setOrderingPaused] = useState(false);
 
   useEffect(() => {
@@ -115,10 +121,11 @@ export default function UserBuyDataPage() {
       const { data } = await supabase
         .from("system_settings")
         .select("setting_key, setting_value")
-        .in("setting_key", ["delivery_speed", "user_buy_enabled", "order_submission_enabled", "system_maintenance_mode"]);
+        .in("setting_key", ["delivery_speed", "express_delivery_speed", "user_buy_enabled", "order_submission_enabled", "system_maintenance_mode"]);
 
       const map = new Map((data || []).map((r: any) => [r.setting_key, r.setting_value]));
       if (map.get("delivery_speed")) setDeliverySpeed(map.get("delivery_speed")!);
+      if (map.get("express_delivery_speed")) setExpressDeliverySpeed(map.get("express_delivery_speed")!);
 
       // Fail-open: only an explicit pause toggle hides the buy flow. Paystack-only
       // toggle is excluded so wallet buyers aren't wrongly blocked.
@@ -382,35 +389,7 @@ export default function UserBuyDataPage() {
           <p className="text-sm text-muted-foreground mt-0.5">Purchase data bundles quickly from your dashboard</p>
         </div>
 
-        {!orderingPaused && (
-        <div className="mt-4 flex flex-col items-start w-full">
-          <div className="flex items-center gap-2 sm:gap-3 rounded-full border border-success/20 bg-[#0A1A14] p-1.5 pl-3 pr-4 shadow-lg shadow-success/5 backdrop-blur-xl max-w-full overflow-hidden">
-            <span className="relative flex h-2 w-2 shrink-0 hidden sm:flex">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success/60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-success shadow-[0_0_8px_hsl(150_52%_37%/0.6)]" />
-            </span>
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-success/10 text-success shrink-0">
-              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
-            </div>
-            <div className="flex flex-col mr-2 sm:mr-4 min-w-0">
-              <p className="text-[12px] sm:text-[13px] font-bold text-success leading-tight truncate">Delivery Status: {deliverySpeed}</p>
-              <p className="text-[10px] sm:text-[11px] text-success/70 leading-tight truncate">Orders are being delivered according to this status.</p>
-            </div>
-            <div className="flex items-center gap-1 opacity-80 shrink-0 ml-auto">
-              <div className="flex items-end gap-0.5 h-3">
-                <div className="w-[3px] bg-success rounded-full h-full animate-[pulse_1s_ease-in-out_infinite]" />
-                <div className="w-[3px] bg-success rounded-full h-[60%] animate-[pulse_1s_ease-in-out_infinite_0.2s]" />
-                <div className="w-[3px] bg-success rounded-full h-[80%] animate-[pulse_1s_ease-in-out_infinite_0.4s]" />
-              </div>
-            </div>
-            <div className="ml-2 rounded-full border border-success/30 px-1.5 sm:px-2 py-0.5 shrink-0">
-              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-success uppercase flex items-center gap-1">
-                <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-success"></span> Live
-              </span>
-            </div>
-          </div>
-        </div>
-        )}
+
       </div>
 
 
@@ -478,6 +457,17 @@ export default function UserBuyDataPage() {
               </button>
             </div>
           )}
+
+          <DeliveryStatusPill
+            paused={orderingPaused}
+            isExpress={network === "MTN" && activeCategory === "express"}
+            speedText={
+              network === "Telecel" ? "within an hour" :
+              network === "AirtelTigo" ? "Instant" :
+              activeCategory === "express" ? expressDeliverySpeed : deliverySpeed
+            }
+            className="mb-6 items-start w-full"
+          />
 
           {activeCategory === "express" && (
             <>
