@@ -1,73 +1,61 @@
-# Welcome to your Lovable project
+# Kaiferdata Platform
 
-## Project info
+A modern, highly responsive platform for purchasing and managing mobile data bundles. Built with an intuitive user interface and a robust backend for handling automated order fulfillments, agent dashboards, and real-time data syncs.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Tech Stack
+- **Frontend**: React 18, Vite, TypeScript
+- **Styling**: Tailwind CSS, Shadcn UI (Radix UI), Framer Motion
+- **State Management**: React Query (TanStack Query), React Hook Form, Zod
+- **Backend & Database**: Supabase (PostgreSQL, Edge Functions, RPCs)
+- **Routing**: React Router DOM
 
-## How can I edit this code?
+## ✨ Core Features
+- **User Dashboard**: Seamless interface for purchasing data, managing wallet balances, and tracking order statuses.
+- **Agent Portal**: Specialized wizard and dashboard for data agents to process bulk orders, track earnings, and manage express packages.
+- **Admin Hub**: Comprehensive admin tools for package management, financial analytics, system settings, and user oversight.
+- **Automated Fulfillment**: Edge Functions handle automatic routing to various suppliers (like DataBundlesHub and Afrohub) with intelligent fallback mechanisms.
+- **Real-Time Sync**: Background cron jobs and status webhooks keep supplier order statuses perfectly synchronized with the local database.
+- **Content Engine**: Built-in SEO-optimized blog platform and promotional modules.
 
-There are several ways of editing your application.
+## 🛠 Getting Started
 
-**Use Lovable**
+### Prerequisites
+- Node.js (v18+)
+- Supabase CLI (for backend edge functions and migrations)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Labarun/kaiferdata.git
+   cd kaiferdata
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-**Use your preferred IDE**
+3. Set up environment variables:
+   Create a `.env` file in the root directory and add your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Edge Functions
+If you need to deploy or update the background fulfillment functions:
+```bash
+npx supabase functions deploy
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📦 Deployment
+To build the frontend for production:
+```bash
+npm run build
+```
+This will compile the application and pre-render essential routes for SEO optimization.
